@@ -26,11 +26,25 @@ export default function Login() {
       console.log('Login successful, navigating to dashboard');
       navigate('/');
     } catch (error: any) {
+      console.log('Login error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.response?.data?.message || error.message
+      });
+      
       // Clear password field on error
       setPassword('');
       
-      // Use our error handler utility
-      handleError(error);
+      // Show error toast with detailed message
+      toast({
+        title: "Login Failed",
+        description: error.response?.data?.message || 
+                    error.response?.data?.error || 
+                    error.message || 
+                    "Failed to sign in. Please check your credentials.",
+        variant: "destructive",
+        duration: 5000
+      });
     } finally {
       setIsLoading(false);
     }

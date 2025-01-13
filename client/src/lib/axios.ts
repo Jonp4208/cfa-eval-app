@@ -45,6 +45,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    console.log('Axios interceptor caught error:', {
+      status: error.response?.status,
+      originalMessage: error.response?.data?.message,
+      errorObject: error
+    });
+
     // Handle 401 Unauthorized errors, but not for login/register routes
     const isPublicRoute = PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
     
@@ -56,8 +62,10 @@ api.interceptors.response.use(
         window.location.href = '/login';
       } else {
         // For login/register routes, ensure error message is properly structured
+        console.log('Login route error - before restructure:', error.response?.data);
         const message = error.response?.data?.message || 'Authentication failed';
         error.response.data = { message };
+        console.log('Login route error - after restructure:', error.response?.data);
       }
     }
 

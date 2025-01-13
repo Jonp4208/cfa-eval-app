@@ -12,7 +12,12 @@ interface ErrorResponse {
 }
 
 export const handleError = (error: ErrorResponse, customMessage?: string) => {
-  console.error('Error occurred:', error);
+  console.log('Error handler received:', {
+    responseData: error.response?.data,
+    responseStatus: error.response?.status,
+    errorMessage: error.message,
+    customMessage
+  });
   
   // Get the most appropriate error message
   const errorMessage = error.response?.data?.message || 
@@ -21,6 +26,8 @@ export const handleError = (error: ErrorResponse, customMessage?: string) => {
                       customMessage ||
                       'An unexpected error occurred';
 
+  console.log('Error handler using message:', errorMessage);
+                      
   // Show toast with error message
   toast({
     title: "Error",

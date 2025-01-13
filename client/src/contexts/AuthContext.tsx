@@ -66,6 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       return response.data;
     } catch (error: any) {
+      console.log('AuthContext login error:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        error: error
+      });
+      
       // Clear any existing auth state on login error
       localStorage.removeItem('token');
       setToken(null);
