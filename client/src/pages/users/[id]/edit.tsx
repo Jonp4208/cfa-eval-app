@@ -78,10 +78,21 @@ export default function EditUser() {
   useEffect(() => {
     if (user) {
       console.log('Setting form data with user:', user);
+      
+      // Transform department to match select options
+      const transformDepartment = (dept: string) => {
+        switch(dept?.toUpperCase()) {
+          case 'LEADERSHIP': return 'Leadership';
+          case 'FOH': return 'FOH';
+          case 'BOH': return 'BOH';
+          default: return dept;
+        }
+      };
+
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        department: user.department || '',
+        department: transformDepartment(user.department),
         position: user.position || '',
         role: user.role?.toLowerCase() || '',
         status: user.status || 'active',
