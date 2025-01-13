@@ -21,27 +21,14 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      console.log('Submitting login form...');
       await login(email, password);
-      console.log('Login successful, navigating to dashboard');
       navigate('/');
     } catch (error: any) {
-      // Clear password field on error
       setPassword('');
-      
-      // Log the full error object to see what we're receiving
-      console.log('Login error caught:', {
-        error,
-        responseData: error.response?.data,
-        responseStatus: error.response?.status,
-        message: error.message
-      });
-
-      // Show error toast to user
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message || "Failed to sign in. Please check your credentials and try again."
+        description: error.message
       });
     } finally {
       setIsLoading(false);
