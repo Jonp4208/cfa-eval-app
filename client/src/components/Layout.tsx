@@ -294,7 +294,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
               {/* Notification Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border py-2 z-50">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border py-2 z-50 backdrop-blur-none">
                   <div className="px-4 py-2 border-b">
                     <h3 className="font-medium">Notifications</h3>
                   </div>
