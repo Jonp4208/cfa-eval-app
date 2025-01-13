@@ -184,7 +184,7 @@ export default function Dashboard() {
                       Due: {new Date(goal.dueDate).toLocaleDateString()}
                     </p>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-sm ${
+                  <span className={`px-2 py-1 rounded-lg text-sm ${
                     goal.status === 'completed'
                       ? 'bg-green-100 text-green-800'
                       : goal.status === 'in-progress'
@@ -199,9 +199,9 @@ export default function Dashboard() {
                     <span>Progress</span>
                     <span>{goal.progress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-lg h-2">
                     <div 
-                      className="bg-red-600 h-2 rounded-full" 
+                      className="bg-red-600 h-2 rounded-lg" 
                       style={{ width: `${goal.progress}%` }}
                     />
                   </div>
