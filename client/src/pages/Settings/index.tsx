@@ -7,21 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, X } from 'lucide-react';
+import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import UserAccessSettings from './components/UserAccessSettings';
 import EvaluationSettings from './components/EvaluationSettings';
-import { handleError } from '@/lib/utils/error-handler';
 import ChangePasswordForm from './components/ChangePasswordForm';
-
-interface Notification {
-  id: number;
-  message: string;
-  type: 'success' | 'error';
-}
+import { settingsService } from '@/lib/services/settings';
 
 const SettingsPage = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -36,8 +29,6 @@ const SettingsPage = () => {
     darkMode: false,
     compactMode: false
   });
-
-  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Fetch settings and store info
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
@@ -74,28 +65,11 @@ const SettingsPage = () => {
     }
   };
 
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    const id = Date.now();
-    setNotifications(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 3000);
-  };
-
-  const removeNotification = (id: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
   // Update mutations
   const updateSettingsMutation = useMutation({
     mutationFn: settingsService.updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      showNotification('Settings updated successfully', 'success');
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || 'Failed to update settings';
-      showNotification(message, 'error');
     }
   });
 
@@ -103,11 +77,6 @@ const SettingsPage = () => {
     mutationFn: settingsService.updateStoreInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storeInfo'] });
-      showNotification('Store information updated successfully', 'success');
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || 'Failed to update store information';
-      showNotification(message, 'error');
     }
   });
 
@@ -116,11 +85,6 @@ const SettingsPage = () => {
     mutationFn: settingsService.resetSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      showNotification('Settings have been reset to defaults', 'success');
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || 'Failed to reset settings';
-      showNotification(message, 'error');
     }
   });
 
@@ -147,24 +111,9 @@ const SettingsPage = () => {
         storePhone: formState.storePhone,
         storeEmail: formState.storeEmail
       });
-
-      showNotification('All changes saved successfully', 'success');
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to save changes';
-      showNotification(message, 'error');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
     }
-  };
-
-  const handleToggleSetting = (section: string, setting: string, value: boolean) => {
-    updateSettingsMutation.mutate({
-      [section]: {
-        [setting]: value
-      }
-    }, {
-      onError: (error) => {
-        handleError(error, `Failed to update ${setting}`);
-      }
-    });
   };
 
   if (isSettingsLoading) {
@@ -173,27 +122,6 @@ const SettingsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      {/* Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map(notification => (
-          <div
-            key={notification.id}
-            className={cn(
-              "p-4 rounded-lg shadow-lg flex items-center justify-between gap-2 min-w-[300px]",
-              notification.type === 'success' ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
-            )}
-          >
-            <span>{notification.message}</span>
-            <button
-              onClick={() => removeNotification(notification.id)}
-              className="p-1 hover:bg-black/5 rounded"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
@@ -365,61 +293,7 @@ const SettingsPage = () => {
               <CardDescription>Choose how you want to be notified</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label htmlFor="emailNotifications" className="text-sm font-medium">Email Notifications</label>
-                  <p className="text-sm text-gray-500">Receive notifications via email</p>
-                </div>
-                <Switch
-                  id="emailNotifications"
-                  checked={settings?.emailNotifications || false}
-                  onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label htmlFor="pushNotifications" className="text-sm font-medium">Push Notifications</label>
-                  <p className="text-sm text-gray-500">Receive push notifications in your browser</p>
-                </div>
-                <Switch
-                  id="pushNotifications"
-                  checked={settings?.pushNotifications || false}
-                  onCheckedChange={(checked) => handleSettingChange('pushNotifications', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle>Report Settings</CardTitle>
-              <CardDescription>Configure your report preferences</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label htmlFor="autoExport" className="text-sm font-medium">Automatic Export</label>
-                  <p className="text-sm text-gray-500">Automatically export reports on schedule</p>
-                </div>
-                <Switch
-                  id="autoExport"
-                  checked={settings?.autoExport || false}
-                  onCheckedChange={(checked) => handleSettingChange('autoExport', checked)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label htmlFor="includeCharts" className="text-sm font-medium">Include Charts</label>
-                  <p className="text-sm text-gray-500">Include visual charts in reports</p>
-                </div>
-                <Switch
-                  id="includeCharts"
-                  checked={settings?.includeCharts || false}
-                  onCheckedChange={(checked) => handleSettingChange('includeCharts', checked)}
-                />
-              </div>
+              {/* Notification settings content */}
             </CardContent>
           </Card>
         </TabsContent>
