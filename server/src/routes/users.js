@@ -31,7 +31,9 @@ const upload = multer({
 // Get all users
 router.get('/', auth, async (req, res) => {
   try {
-    console.log('GET /users - Request received');
+    console.log('\n=== GET /users Request ===');
+    console.log('Headers:', req.headers);
+    console.log('Query params:', req.query);
     console.log('User from auth middleware:', {
       _id: req.user._id,
       name: req.user.name,
@@ -80,10 +82,16 @@ router.get('/', auth, async (req, res) => {
       manager: u.manager?._id
     })), null, 2));
 
+    console.log('=== Sending Response ===\n');
     res.json({ users });
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+    console.error('Error in GET /users:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ 
+      message: 'Failed to fetch users', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
