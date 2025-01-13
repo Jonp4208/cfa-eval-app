@@ -21,24 +21,33 @@ export default function Login() {
 
     try {
       console.log('Submitting login form...');
-      const response = await login(email, password);
+      await login(email, password);
       console.log('Login successful, navigating to dashboard');
       navigate('/');
     } catch (error: any) {
       console.error('Login submission error:', error);
+      
+      // Clear password field on error
+      setPassword('');
+      
+      // Get the error message from the response
       const errorMessage = error.response?.data?.message || 
                          error.response?.data?.error || 
                          error.message || 
                          'Failed to login. Please check your credentials and try again.';
       
-      setPassword('');
-      
+      // Show error toast
       toast({
         title: 'Login Failed',
         description: errorMessage,
         variant: 'destructive',
         duration: 5000,
       });
+
+      // Log additional error details for debugging
+      console.log('Full error object:', error);
+      console.log('Error response:', error.response);
+      console.log('Error message:', errorMessage);
     } finally {
       setIsLoading(false);
     }

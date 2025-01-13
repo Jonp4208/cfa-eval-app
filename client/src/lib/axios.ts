@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from '@/components/ui/use-toast';
 
 const PUBLIC_ROUTES = ['/api/login', '/api/register', '/api/auth/login', '/api/auth/register'];
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -50,6 +51,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Log the full error details
     console.error('API Error Details:', {
       url: `${API_URL}${error.config?.url}`,
       method: error.config?.method,
@@ -60,9 +62,22 @@ api.interceptors.response.use(
       headers: {
         request: error.config?.headers,
         response: error.response?.headers
-      },
-      fullError: error
+      }
     });
+
+    // Format the error response
+    const errorResponse = {
+      ...error,
+      response: {
+        ...error.response,
+        data: {
+          message: error.response?.data?.message || 
+                  error.response?.data?.error || 
+                  error.message || 
+                  'An unexpected error occurred'
+        }
+      }
+    };
 
     // Handle 401 Unauthorized errors, but not for login/register routes
     const isPublicRoute = PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
@@ -70,10 +85,9 @@ api.interceptors.response.use(
       console.log('Unauthorized request - redirecting to login');
       localStorage.removeItem('token');
       window.location.href = '/login';
-      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    return Promise.reject(errorResponse);
   }
 );
 
