@@ -18,7 +18,8 @@ import {
   Search as SearchIcon,
   Clock,
   Target,
-  BarChart
+  BarChart,
+  User2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
@@ -28,6 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MobileNav } from './MobileNav';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [upcomingEvaluations, setUpcomingEvaluations] = useState<any[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
   // Close notifications when clicking outside
   useEffect(() => {
@@ -149,7 +152,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Logo and Store Info */}
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity touch-manipulation"
           >
             <TrendingUp className="h-6 w-6 text-red-600" />
             <div className="flex flex-col">
@@ -161,7 +164,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 hover:bg-gray-50 rounded-xl"
+            className="p-2 hover:bg-gray-50 rounded-xl touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <MenuIcon className="w-6 h-6 text-gray-600" />
           </button>
@@ -201,7 +204,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         <DropdownMenuTrigger asChild>
                           <button
                             className={cn(
-                              "px-4 py-2 flex items-center gap-2 rounded-xl",
+                              "px-4 py-2 flex items-center gap-2 rounded-xl min-h-[44px]",
                               (isActive || item.submenu.some(sub => location.pathname.startsWith(sub.href)))
                                 ? "bg-red-50 text-red-600" 
                                 : "hover:bg-gray-50 text-gray-600"
@@ -212,7 +215,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             <ChevronDown className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56 py-2 bg-white">
+                        <DropdownMenuContent align="start" className="w-56">
                           {item.submenu.map(subItem => {
                             const SubIcon = subItem.icon;
                             const isSubActive = location.pathname.startsWith(subItem.href);
@@ -221,14 +224,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                 key={subItem.href}
                                 onClick={() => navigate(subItem.href)}
                                 className={cn(
-                                  "cursor-pointer px-3 py-2 text-sm hover:bg-gray-50",
-                                  isSubActive && "bg-red-50 text-red-600"
+                                  "flex items-center gap-2 min-h-[44px] cursor-pointer",
+                                  isSubActive ? "bg-red-50" : ""
                                 )}
                               >
-                                <SubIcon className="w-4 h-4 mr-3" />
-                                <span className="flex-1">{subItem.label}</span>
+                                <SubIcon className={cn(
+                                  "w-4 h-4",
+                                  subItem.color || (isSubActive ? "text-red-600" : "text-gray-400")
+                                )} />
+                                <span className={cn(
+                                  subItem.color || (isSubActive ? "text-red-600" : "text-gray-700")
+                                )}>
+                                  {subItem.label}
+                                </span>
                                 {subItem.badge && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                                  <span className="ml-auto px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
                                     {subItem.badge}
                                   </span>
                                 )}
@@ -240,24 +250,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     );
                   }
 
+                  // Regular menu item without submenu
                   return (
                     <button
                       key={item.href}
                       onClick={() => navigate(item.href)}
                       className={cn(
-                        "px-4 py-2 flex items-center gap-2 rounded-xl",
-                        isActive 
-                          ? "bg-red-50 text-red-600" 
-                          : "hover:bg-gray-50 text-gray-600"
+                        "px-4 py-2 flex items-center gap-2 rounded-xl min-h-[44px]",
+                        isActive ? "bg-red-50 text-red-600" : "hover:bg-gray-50 text-gray-600"
                       )}
                     >
                       <Icon className="w-4 h-4" />
                       <span className="text-sm font-medium">{item.label}</span>
-                      {item.badge && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
-                          {item.badge}
-                        </span>
-                      )}
                     </button>
                   );
                 })}
@@ -276,18 +280,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               />
             </div>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden flex flex-col items-center"
-            >
-              <MenuIcon className="w-5 h-5" />
-            </button>
-
             {/* Notifications */}
             <div className="relative" ref={notificationRef}>
               <button 
-                className="relative"
+                className="relative min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
                 <Bell className="w-5 h-5" />
@@ -296,57 +292,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 )}
               </button>
 
-              {/* Notifications Dropdown */}
+              {/* Notification Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  <div className="p-4 border-b border-gray-200">
-                    <h3 className="font-semibold">Notifications</h3>
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border py-2 z-50">
+                  <div className="px-4 py-2 border-b">
+                    <h3 className="font-medium">Notifications</h3>
                   </div>
-                  
-                  {pendingEvaluations > 0 ? (
-                    <div className="p-4">
-                      <div className="space-y-4">
-                        {upcomingEvaluations.map((evaluation) => (
-                          <div 
-                            key={evaluation.id}
-                            className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-                            onClick={() => {
-                              navigate(`/evaluations/${evaluation.id}`);
-                              setShowNotifications(false);
-                            }}
-                          >
-                            <div className="mt-1">
-                              <Clock className="w-5 h-5 text-red-600" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">{evaluation.employeeName}</p>
-                              <p className="text-sm text-gray-500">{evaluation.templateName}</p>
-                              <p className="text-xs text-gray-400">
-                                Due {new Date(evaluation.scheduledDate).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-4 pt-4 border-t">
-                        <Button
-                          variant="outline"
-                          className="w-full"
+                  <div className="max-h-[300px] overflow-y-auto momentum-scroll custom-scrollbar">
+                    {upcomingEvaluations.length > 0 ? (
+                      upcomingEvaluations.map((evaluation: any) => (
+                        <button
+                          key={evaluation._id}
                           onClick={() => {
-                            navigate('/evaluations');
+                            navigate(`/evaluations/${evaluation._id}`);
                             setShowNotifications(false);
                           }}
+                          className="w-full px-4 py-2 hover:bg-gray-50 text-left flex items-start gap-3 min-h-[44px]"
                         >
-                          View All Evaluations
-                        </Button>
+                          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                            <ClipboardList className="w-4 h-4 text-red-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">
+                              Upcoming Evaluation: {evaluation.employee.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Scheduled for {new Date(evaluation.scheduledDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500">
+                        No new notifications
                       </div>
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      <Bell className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                      <p>No new notifications</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -354,32 +335,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 hover:bg-gray-50 rounded-xl px-3 py-2">
-                  <span className="text-sm font-medium">{user?.name?.split(' ')[0]}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                <button className="flex items-center gap-2 hover:opacity-80 transition-opacity min-h-[44px]">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <User2 className="w-4 h-4 text-gray-600" />
+                  </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 py-2 bg-white">
-                <DropdownMenuItem
-                  onClick={() => navigate(`/users/${user?._id}`)}
-                  className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-50"
-                >
-                  <Users className="w-4 h-4 mr-3" />
-                  View Profile
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem
                   onClick={() => navigate('/settings')}
-                  className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-50"
+                  className="flex items-center gap-2 min-h-[44px] cursor-pointer"
                 >
-                  <Settings className="w-4 h-4 mr-3" />
-                  Settings
+                  <Settings className="w-4 h-4 text-gray-400" />
+                  <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}
-                  className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 focus:bg-red-50 focus:text-red-600"
+                  className="flex items-center gap-2 min-h-[44px] cursor-pointer text-red-600"
                 >
-                  <LogOut className="w-4 h-4 mr-3" />
-                  Sign Out
+                  <LogOut className="w-4 h-4" />
+                  <span>Log Out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -393,12 +368,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="fixed top-0 right-0 bottom-0 w-64 bg-white shadow-lg">
             <div className="p-4 border-b flex justify-between items-center">
               <span className="font-bold">Menu</span>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="text-gray-500">
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-gray-500 min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="py-2">
+            <div className="py-2 overflow-y-auto momentum-scroll custom-scrollbar h-[calc(100vh-64px)]">
               {menuItems
                 .filter(item => item.show)
                 .map(item => {
@@ -407,70 +385,74 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     ? location.pathname === '/'
                     : location.pathname.startsWith(item.href);
 
-                  // If item has submenu, render it and its subitems
                   if (item.submenu) {
-                    const isSubActive = item.submenu.some(sub => 
-                      location.pathname.startsWith(sub.href)
-                    );
                     return (
                       <div key={item.href}>
                         <button
+                          onClick={() => {
+                            setActiveSubmenu(activeSubmenu === item.href ? null : item.href);
+                          }}
                           className={cn(
-                            "w-full px-4 py-3 flex items-center justify-between",
-                            (isActive || isSubActive) ? "bg-red-50" : "hover:bg-gray-50"
+                            "w-full px-4 py-3 flex items-center justify-between min-h-[44px]",
+                            activeSubmenu === item.href ? "bg-red-50" : "hover:bg-gray-50"
                           )}
                         >
                           <div className="flex items-center gap-3">
                             <Icon className={cn(
                               "w-5 h-5",
-                              (isActive || isSubActive) ? "text-red-600" : "text-gray-500"
+                              activeSubmenu === item.href ? "text-red-600" : "text-gray-500"
                             )} />
                             <span className={cn(
                               "text-base",
-                              (isActive || isSubActive) ? "text-red-600" : "text-gray-900"
+                              activeSubmenu === item.href ? "text-red-600" : "text-gray-900"
                             )}>
                               {item.label}
                             </span>
                           </div>
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                          <ChevronDown className={cn(
+                            "w-5 h-5 transition-transform",
+                            activeSubmenu === item.href ? "rotate-180" : ""
+                          )} />
                         </button>
-                        <div className="pl-4 py-1 bg-gray-50">
-                          {item.submenu.map(subItem => {
-                            const SubIcon = subItem.icon;
-                            const isSubItemActive = location.pathname.startsWith(subItem.href);
-                            return (
-                              <button
-                                key={subItem.href}
-                                onClick={() => {
-                                  navigate(subItem.href);
-                                  setIsMobileMenuOpen(false);
-                                }}
-                                className={cn(
-                                  "w-full px-4 py-2 flex items-center justify-between",
-                                  isSubItemActive ? "bg-red-50" : "hover:bg-gray-100"
-                                )}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <SubIcon className={cn(
-                                    "w-4 h-4",
-                                    subItem.color || (isSubItemActive ? "text-red-600" : "text-gray-500")
-                                  )} />
-                                  <span className={cn(
-                                    "text-sm",
-                                    subItem.color || (isSubItemActive ? "text-red-600" : "text-gray-900")
-                                  )}>
-                                    {subItem.label}
-                                  </span>
-                                </div>
-                                {subItem.badge && (
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">
-                                    {subItem.badge}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {activeSubmenu === item.href && (
+                          <div className="bg-gray-50 py-2">
+                            {item.submenu.map(subItem => {
+                              const SubIcon = subItem.icon;
+                              const isSubItemActive = location.pathname.startsWith(subItem.href);
+                              return (
+                                <button
+                                  key={subItem.href}
+                                  onClick={() => {
+                                    navigate(subItem.href);
+                                    setIsMobileMenuOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-4 py-2 flex items-center justify-between min-h-[44px]",
+                                    isSubItemActive ? "bg-red-50" : "hover:bg-gray-100"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <SubIcon className={cn(
+                                      "w-4 h-4",
+                                      subItem.color || (isSubItemActive ? "text-red-600" : "text-gray-500")
+                                    )} />
+                                    <span className={cn(
+                                      "text-sm",
+                                      subItem.color || (isSubItemActive ? "text-red-600" : "text-gray-900")
+                                    )}>
+                                      {subItem.label}
+                                    </span>
+                                  </div>
+                                  {subItem.badge && (
+                                    <span className="px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-50 text-red-600">
+                                      {subItem.badge}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   }
@@ -484,7 +466,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         setIsMobileMenuOpen(false);
                       }}
                       className={cn(
-                        "w-full px-4 py-3 flex items-center justify-between",
+                        "w-full px-4 py-3 flex items-center justify-between min-h-[44px]",
                         isActive ? "bg-red-50" : "hover:bg-gray-50"
                       )}
                     >
@@ -509,34 +491,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   );
                 })}
             </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Users className="w-4 h-4 text-gray-500" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.role}</p>
-                </div>
-                <button 
-                  onClick={logout}
-                  className="text-gray-500 hover:text-red-600"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
 
       {/* Main Content */}
-      <div className="pt-16">
-        <div className="max-w-7xl mx-auto px-4">
-          {children}
-        </div>
-      </div>
+      <main className="pt-16 pb-16 md:pb-0 min-h-screen">
+        {children}
+      </main>
+
+      {/* Mobile Navigation */}
+      <MobileNav />
     </div>
   );
 }

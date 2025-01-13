@@ -51,21 +51,21 @@ export function TeamComparison() {
   const hasData = data?.members?.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <AnalyticsPageHeader title="Team Comparison" />
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Select
               value={timeframe} 
               onValueChange={(value: string) => setTimeframe(value as TimeframeValue)}
             >
-              <SelectTrigger className="w-full rounded-xl">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select timeframe" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent>
                 <SelectItem value="week">This Week</SelectItem>
                 <SelectItem value="month">This Month</SelectItem>
                 <SelectItem value="quarter">This Quarter</SelectItem>
@@ -77,10 +77,10 @@ export function TeamComparison() {
               value={sortBy} 
               onValueChange={(value: string) => setSortBy(value as SortValue)}
             >
-              <SelectTrigger className="w-full rounded-xl">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent>
                 <SelectItem value="score">Score</SelectItem>
                 <SelectItem value="improvement">Improvement</SelectItem>
                 <SelectItem value="name">Name</SelectItem>
@@ -91,10 +91,10 @@ export function TeamComparison() {
               value={filterPosition} 
               onValueChange={(value: string) => setFilterPosition(value as PositionValue)}
             >
-              <SelectTrigger className="w-full rounded-xl">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Filter position" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent>
                 <SelectItem value="all">All Positions</SelectItem>
                 <SelectItem value="cashier">Cashier</SelectItem>
                 <SelectItem value="kitchen">Kitchen</SelectItem>
@@ -108,10 +108,10 @@ export function TeamComparison() {
       {/* Error State */}
       {error && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-5 w-5" />
-              <p>Failed to load team comparison data. Please try again later.</p>
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm">Failed to load team comparison data. Please try again later.</p>
             </div>
           </CardContent>
         </Card>
@@ -120,10 +120,10 @@ export function TeamComparison() {
       {/* Loading State */}
       {isLoading && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
-              <p className="text-gray-500">Loading team comparison data...</p>
+              <p className="text-sm text-gray-500">Loading team comparison data...</p>
             </div>
           </CardContent>
         </Card>
@@ -132,9 +132,9 @@ export function TeamComparison() {
       {/* Empty State */}
       {!isLoading && !error && !hasData && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="text-center text-gray-500">
-              <p>No team comparison data available for the selected filters.</p>
+              <p className="text-sm">No team comparison data available for the selected filters.</p>
             </div>
           </CardContent>
         </Card>
@@ -142,16 +142,16 @@ export function TeamComparison() {
 
       {/* Team Performance Grid */}
       {!isLoading && !error && hasData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.members.map((member: TeamMember) => (
             <Card key={member.id}>
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="font-medium">{member.name}</h3>
-                    <p className="text-sm text-gray-500">{member.position}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium truncate">{member.name}</h3>
+                    <p className="text-sm text-gray-500 truncate">{member.position}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right ml-4">
                     <p className="text-2xl font-semibold">{member.score.toFixed(1)}</p>
                     <p className={`text-sm ${
                       member.improvement >= 0 ? 'text-green-600' : 'text-red-600'
@@ -162,12 +162,12 @@ export function TeamComparison() {
                 </div>
 
                 {/* Category Scores */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {Object.entries(member.categories).map(([category, score]) => (
                     <div key={category}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span>{category}</span>
-                        <span>{score.toFixed(1)}</span>
+                        <span className="truncate mr-2">{category}</span>
+                        <span className="flex-shrink-0">{score.toFixed(1)}</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
@@ -185,7 +185,7 @@ export function TeamComparison() {
                   <div className="space-y-2">
                     {member.recentEvaluations.map((evaluation) => (
                       <div key={evaluation.id} className="flex justify-between text-sm">
-                        <span>{new Date(evaluation.date).toLocaleDateString()}</span>
+                        <span className="text-gray-500">{new Date(evaluation.date).toLocaleDateString()}</span>
                         <span className={evaluation.score >= 4 ? 'text-green-600' : 'text-red-600'}>
                           {evaluation.score.toFixed(1)}
                         </span>

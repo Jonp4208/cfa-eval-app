@@ -251,323 +251,262 @@ export default function NewEvaluation() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pt-8">
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
       {/* Progress Steps */}
-      <div className="max-w-2xl mx-auto mb-8 px-4">
-        <div className="relative">
-          {/* Progress Line */}
-          <div className="absolute left-0 right-0 top-4 sm:top-6 h-0.5 bg-gray-200">
-            <div 
-              className="h-0.5 bg-red-600 transition-all duration-500"
-              style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-            />
-          </div>
-
-          {/* Steps */}
-          <div className="relative flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={`step-${step.id}`} className="flex flex-col items-center">
-                <div 
-                  className={`flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 transition-colors
-                    ${currentStep > step.id 
-                      ? 'bg-red-600 border-red-600 text-white' 
-                      : currentStep === step.id
-                        ? 'bg-white border-red-600 text-red-600'
-                        : 'bg-white border-gray-200 text-gray-400'}`}
-                >
-                  {currentStep > step.id ? (
-                    <Check className="w-4 h-4 sm:w-6 sm:h-6" />
-                  ) : (
-                    <step.icon className="w-4 h-4 sm:w-6 sm:h-6" />
+      <div className="overflow-x-auto -mx-4 px-4 pb-4">
+        <nav aria-label="Progress" className="min-w-max">
+          <ol role="list" className="flex items-center gap-2">
+            {steps.map((step, stepIdx) => {
+              const Icon = step.icon;
+              return (
+                <li key={step.id} className={`relative ${stepIdx !== steps.length - 1 ? 'pr-8' : ''}`}>
+                  {stepIdx !== steps.length - 1 && (
+                    <div className="absolute top-4 right-0 w-6 h-0.5 bg-gray-200" />
                   )}
-                </div>
-                <span className={`hidden sm:block text-sm font-medium mt-2 transition-colors
-                  ${currentStep >= step.id ? 'text-red-600' : 'text-gray-500'}`}>
-                  {step.name}
-                </span>
-                <span className={`block sm:hidden text-[10px] font-medium mt-1 transition-colors text-center
-                  ${currentStep >= step.id ? 'text-red-600' : 'text-gray-500'}`}>
-                  {step.name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+                  <div className={`flex items-center gap-2 ${currentStep === step.id ? 'text-red-600' : 'text-gray-500'}`}>
+                    <div className={`w-8 h-8 flex items-center justify-center rounded-full border-2 
+                      ${currentStep === step.id ? 'border-red-600 bg-red-50' : 'border-gray-300'}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-medium hidden sm:inline">{step.name}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       </div>
 
-      <Card className="mx-4">
-        <CardHeader>
-          <CardTitle>
-            {steps[currentStep - 1].name}
-            {currentStep === 1 && selectedEmployees.length > 0 && (
-              <span className="ml-2 text-sm text-gray-500">
-                ({selectedEmployees.length} selected)
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Step 1: Select Employee */}
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search by name, email, or position..."
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-red-100 focus:border-red-300 transition-colors"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                    <Users className="w-5 h-5" />
+      {/* Step Content */}
+      <div className="space-y-6">
+        {currentStep === 1 && (
+          <>
+            {/* Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <input
+                type="text"
+                placeholder="Search employees..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="w-full rounded-xl">
+                  <SelectValue placeholder="Filter by department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept === 'all' ? 'All Departments' : dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Employee List */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(groupedEmployees).map(([department, departmentEmployees]) => (
+                <div key={department}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">{department}</h3>
+                    {selectedCountByDepartment[department] > 0 && (
+                      <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                        {selectedCountByDepartment[department]} selected
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {departmentEmployees.map((employee) => (
+                      <Card
+                        key={employee._id}
+                        className={`cursor-pointer transition-colors ${
+                          selectedEmployees.find(emp => emp._id === employee._id)
+                            ? 'bg-red-50 border-red-200'
+                            : employee.pendingEvaluation
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'hover:border-red-200'
+                        }`}
+                        onClick={(e) => handleEmployeeToggle(employee, e)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {employee.imageUrl ? (
+                                <img
+                                  src={employee.imageUrl}
+                                  alt={employee.name}
+                                  className="w-8 h-8 rounded-full"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <Users className="w-4 h-4 text-gray-400" />
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium">{employee.name}</p>
+                                <p className="text-sm text-gray-500">{employee.position}</p>
+                              </div>
+                            </div>
+                            {employee.pendingEvaluation ? (
+                              <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
+                                Pending
+                              </Badge>
+                            ) : selectedEmployees.find(emp => emp._id === employee._id) ? (
+                              <Check className="w-5 h-5 text-red-600" />
+                            ) : null}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-                <Select
-                  value={selectedDepartment}
-                  onValueChange={setSelectedDepartment}
-                >
-                  <SelectTrigger className="flex h-10 w-full items-center justify-between rounded-full border border-input bg-gray-50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-100 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 hover:bg-white transition-colors min-w-[200px]">
-                    <SelectValue placeholder="All Departments" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DEPARTMENTS.map((dept: string) => (
-                      <SelectItem key={`dept-${dept}`} value={dept}>
-                        {dept === 'all' ? 'All Departments' : `${dept} ${selectedCountByDepartment[dept] ? `(${selectedCountByDepartment[dept]})` : ''}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-8">
-                {loadingEmployees ? (
-                  <div className="text-center py-8 text-gray-500">Loading employees...</div>
-                ) : Object.keys(groupedEmployees).length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {searchQuery ? 'No employees found matching your search' : 'No employees found'}
-                  </div>
-                ) : (
-                  Object.entries(groupedEmployees).map(([department, departmentEmployees]) => (
-                    <div key={department} className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {department}
-                        </h3>
-                        {selectedCountByDepartment[department] > 0 && (
-                          <span className="text-sm font-medium text-red-600 bg-red-50 px-3 py-1 rounded-full">
-                            {selectedCountByDepartment[department]} selected
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 gap-3">
-                        {departmentEmployees.map((employee: Employee) => (
-                          <div
-                            key={employee._id}
-                            onClick={(e) => handleEmployeeToggle(employee, e)}
-                            className={`p-4 border rounded-xl flex flex-col sm:flex-row gap-4 transition-all ${
-                              employee.pendingEvaluation 
-                                ? 'opacity-75 cursor-not-allowed bg-gray-50' 
-                                : employee.manager?._id !== user?._id
-                                ? 'opacity-75 cursor-not-allowed bg-gray-50'
-                                : 'cursor-pointer ' + (
-                                    selectedEmployees.find(emp => emp._id === employee._id)
-                                      ? 'border-red-200 bg-red-50/50 shadow-sm'
-                                      : 'hover:border-gray-300 hover:bg-gray-50/50'
-                                  )
-                            }`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center ring-2 ring-white flex-shrink-0">
-                                {employee.imageUrl ? (
-                                  <img 
-                                    src={employee.imageUrl} 
-                                    alt="" 
-                                    className="w-full h-full rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <Users className="w-5 h-5 text-gray-400" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-gray-900">{employee.name}</h3>
-                                <div className="flex flex-wrap gap-1 items-center text-sm text-gray-500">
-                                  <span className="font-medium">{employee.position}</span>
-                                  <span className="w-1 h-1 rounded-full bg-gray-300" />
-                                  <span>{employee.department}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-gray-500 pl-14">
-                              {employee.lastEvaluation && (
-                                <span>Last eval: {new Date(employee.lastEvaluation).toLocaleDateString()}</span>
-                              )}
-                              {employee.pendingEvaluation && (
-                                <span className="text-yellow-600 font-medium">
-                                  Has pending evaluation ({employee.pendingEvaluation.status.replace(/_/g, ' ')})
-                                </span>
-                              )}
-                              {employee.manager?._id !== user?._id && (
-                                <span className="text-orange-600 font-medium">
-                                  Cannot be evaluated (not in your team)
-                                </span>
-                              )}
-                              {employee.email && (
-                                <span className="truncate text-gray-400">{employee.email}</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              ))}
             </div>
-          )}
+          </>
+        )}
 
-          {/* Step 2: Choose Template */}
-          {currentStep === 2 && (
-            <div className="space-y-4">
-              {/* Template Filter */}
-              <div className="overflow-x-auto -mx-4 px-4 pb-2">
-                <div className="flex gap-2 mb-4 min-w-max">
+        {/* Step 2: Choose Template */}
+        {currentStep === 2 && (
+          <div className="space-y-4">
+            {/* Template Filter */}
+            <div className="overflow-x-auto -mx-4 px-4 pb-2">
+              <div className="flex gap-2 mb-4 min-w-max">
+                <Button
+                  variant={selectedTag === 'All' ? 'default' : 'outline'}
+                  onClick={() => setSelectedTag('All')}
+                  size="sm"
+                >
+                  All
+                </Button>
+                {['FOH', 'BOH', 'Leadership', 'General'].map((tag) => (
                   <Button
-                    variant={selectedTag === 'All' ? 'default' : 'outline'}
-                    onClick={() => setSelectedTag('All')}
+                    key={tag}
+                    variant={selectedTag === tag ? 'default' : 'outline'}
+                    onClick={() => setSelectedTag(tag)}
                     size="sm"
                   >
-                    All
+                    {tag}
                   </Button>
-                  {['FOH', 'BOH', 'Leadership', 'General'].map((tag) => (
-                    <Button
-                      key={tag}
-                      variant={selectedTag === tag ? 'default' : 'outline'}
-                      onClick={() => setSelectedTag(tag)}
-                      size="sm"
-                    >
-                      {tag}
-                    </Button>
-                  ))}
-                </div>
+                ))}
               </div>
+            </div>
 
-              {loadingTemplates ? (
-                <div className="text-center py-4">Loading templates...</div>
-              ) : (
-                (templates || [])
-                  .filter((template: Template) => 
-                    selectedTag === 'All' || (template.tags && template.tags.includes(selectedTag))
-                  )
-                  .map((template: Template) => (
-                    <div
-                      key={`template-${template._id || template.id}`}
-                      onClick={() => setSelectedTemplate(template)}
-                      className={`p-4 border rounded-lg cursor-pointer 
-                        ${selectedTemplate?.id === (template.id || template._id) ? 'border-red-600 bg-red-50' : 'hover:bg-gray-50'}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium">{template.name}</h3>
-                          <div className="flex gap-2 mt-1">
-                            {(template.tags || []).map(tag => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
+            {loadingTemplates ? (
+              <div className="text-center py-4">Loading templates...</div>
+            ) : (
+              (templates || [])
+                .filter((template: Template) => 
+                  selectedTag === 'All' || (template.tags && template.tags.includes(selectedTag))
+                )
+                .map((template: Template) => (
+                  <div
+                    key={`template-${template._id || template.id}`}
+                    onClick={() => setSelectedTemplate(template)}
+                    className={`p-4 border rounded-lg cursor-pointer 
+                      ${selectedTemplate?.id === (template.id || template._id) ? 'border-red-600 bg-red-50' : 'hover:bg-gray-50'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">{template.name}</h3>
+                        <div className="flex gap-2 mt-1">
+                          {(template.tags || []).map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
                         </div>
-                        <FileText className="w-5 h-5 text-gray-400" />
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">{template.description}</p>
+                      <FileText className="w-5 h-5 text-gray-400" />
                     </div>
-                  ))
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Schedule */}
-          {currentStep === 3 && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Scheduled Date
-                </label>
-                <input
-                  type="date"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Review */}
-          {currentStep === 4 && (
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-2">Selected Employees ({selectedEmployees.length})</h3>
-                <div className="space-y-4">
-                  {selectedEmployees.length > 0 && Object.entries(
-                    selectedEmployees.reduce((acc: { [key: string]: Employee[] }, emp) => {
-                      const dept = emp.department || 'Uncategorized';
-                      if (!acc[dept]) acc[dept] = [];
-                      acc[dept].push(emp);
-                      return acc;
-                    }, {})
-                  ).map(([department, employees]) => (
-                    <div key={`review-${department}`}>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        {department} ({employees.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {employees.map(employee => (
-                          <div key={`review-${employee._id}`} className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            <p>{employee.name}</p>
-                            <p className="text-sm text-gray-500">({employee.position})</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-2">Template</h3>
-                <p>{selectedTemplate?.name}</p>
-                <p className="text-sm text-gray-500">{selectedTemplate?.description}</p>
-              </div>
-              <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-2">Scheduled Date</h3>
-                <p>{new Date(scheduledDate).toLocaleDateString()}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className="flex justify-between mt-8">
-            <button
-              onClick={handleBack}
-              disabled={currentStep === 1}
-              className="flex items-center gap-2 px-4 py-2 border rounded-full hover:bg-gray-50 disabled:opacity-50"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={isNextDisabled()}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 disabled:opacity-50"
-            >
-              {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
-              <ChevronRight className="w-4 h-4" />
-            </button>
+                    <p className="text-sm text-gray-500 mt-1">{template.description}</p>
+                  </div>
+                ))
+            )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Step 3: Schedule */}
+        {currentStep === 3 && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Scheduled Date
+              </label>
+              <input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="w-full p-2 border rounded-md"
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Review */}
+        {currentStep === 4 && (
+          <div className="space-y-4">
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-2">Selected Employees ({selectedEmployees.length})</h3>
+              <div className="space-y-4">
+                {selectedEmployees.length > 0 && Object.entries(
+                  selectedEmployees.reduce((acc: { [key: string]: Employee[] }, emp) => {
+                    const dept = emp.department || 'Uncategorized';
+                    if (!acc[dept]) acc[dept] = [];
+                    acc[dept].push(emp);
+                    return acc;
+                  }, {})
+                ).map(([department, employees]) => (
+                  <div key={`review-${department}`}>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      {department} ({employees.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {employees.map(employee => (
+                        <div key={`review-${employee._id}`} className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-gray-400" />
+                          <p>{employee.name}</p>
+                          <p className="text-sm text-gray-500">({employee.position})</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-2">Template</h3>
+              <p>{selectedTemplate?.name}</p>
+              <p className="text-sm text-gray-500">{selectedTemplate?.description}</p>
+            </div>
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-2">Scheduled Date</h3>
+              <p>{new Date(scheduledDate).toLocaleDateString()}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <div className="flex justify-between mt-8">
+          <button
+            onClick={handleBack}
+            disabled={currentStep === 1}
+            className="flex items-center gap-2 px-4 py-2 border rounded-full hover:bg-gray-50 disabled:opacity-50"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={isNextDisabled()}
+            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 disabled:opacity-50"
+          >
+            {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

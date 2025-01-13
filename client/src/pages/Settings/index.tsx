@@ -109,7 +109,7 @@ const SettingsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="mb-6 space-y-4 sm:space-y-0 sm:flex sm:justify-between sm:items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
           <p className="text-gray-600">Manage your store settings and preferences</p>
@@ -133,7 +133,7 @@ const SettingsPage = () => {
       </div>
 
       <Tabs defaultValue="general" className="space-y-4">
-        <div className="overflow-x-auto -mx-4 px-4">
+        <div className="overflow-x-auto -mx-4 px-4 pb-4">
           <TabsList className="w-full border-b justify-start min-w-max">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <SettingsIcon className="h-4 w-4" />
@@ -158,158 +158,143 @@ const SettingsPage = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="general">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Information</CardTitle>
-                <CardDescription>Manage your store details and preferences</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSaveGeneral} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Store Name</label>
-                      <Input 
-                        name="storeName"
-                        defaultValue={storeInfo?.name}
-                        placeholder="Enter store name"
-                        disabled={!isAdmin}
-                        className={cn(
-                          "h-10 rounded-lg",
-                          !isAdmin ? "bg-gray-100" : ""
-                        )}
-                      />
-                      {!isAdmin && (
-                        <p className="text-sm text-gray-500">Only administrators can change store name</p>
-                      )}
-                    </div>
+        <TabsContent value="general" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Store Information</CardTitle>
+              <CardDescription>Update your store's basic information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="storeName" className="text-sm font-medium">Store Name</label>
+                  <Input
+                    id="storeName"
+                    value={settings?.storeName || ''}
+                    onChange={(e) => handleSettingChange('storeName', e.target.value)}
+                    placeholder="Enter store name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="storeNumber" className="text-sm font-medium">Store Number</label>
+                  <Input
+                    id="storeNumber"
+                    value={settings?.storeNumber || ''}
+                    onChange={(e) => handleSettingChange('storeNumber', e.target.value)}
+                    placeholder="Enter store number"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="storeAddress" className="text-sm font-medium">Store Address</label>
+                <Input
+                  id="storeAddress"
+                  value={settings?.storeAddress || ''}
+                  onChange={(e) => handleSettingChange('storeAddress', e.target.value)}
+                  placeholder="Enter store address"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="storePhone" className="text-sm font-medium">Store Phone</label>
+                  <Input
+                    id="storePhone"
+                    value={settings?.storePhone || ''}
+                    onChange={(e) => handleSettingChange('storePhone', e.target.value)}
+                    placeholder="Enter store phone"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="storeEmail" className="text-sm font-medium">Store Email</label>
+                  <Input
+                    id="storeEmail"
+                    value={settings?.storeEmail || ''}
+                    onChange={(e) => handleSettingChange('storeEmail', e.target.value)}
+                    placeholder="Enter store email"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Store Number</label>
-                      <Input 
-                        name="storeNumber"
-                        defaultValue={storeInfo?.storeNumber}
-                        placeholder="Enter store number"
-                        disabled={!isAdmin}
-                        className={cn(
-                          "h-10 rounded-lg",
-                          !isAdmin ? "bg-gray-100" : ""
-                        )}
-                      />
-                    </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>Customize how the application looks</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label htmlFor="darkMode" className="text-sm font-medium">Dark Mode</label>
+                  <p className="text-sm text-gray-500">Enable dark mode for the application</p>
+                </div>
+                <Switch
+                  id="darkMode"
+                  checked={settings?.darkMode || false}
+                  onCheckedChange={(checked) => handleSettingChange('darkMode', checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label htmlFor="compactMode" className="text-sm font-medium">Compact Mode</label>
+                  <p className="text-sm text-gray-500">Make the interface more compact</p>
+                </div>
+                <Switch
+                  id="compactMode"
+                  checked={settings?.compactMode || false}
+                  onCheckedChange={(checked) => handleSettingChange('compactMode', checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Location</label>
-                      <Input 
-                        name="location"
-                        defaultValue={storeInfo?.location}
-                        placeholder="Enter store location"
-                        disabled={!isAdmin}
-                        className={cn(
-                          "h-10 rounded-lg",
-                          !isAdmin ? "bg-gray-100" : ""
-                        )}
-                      />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Dark Mode</label>
-                        <p className="text-sm text-gray-500">Switch between light and dark themes</p>
-                      </div>
-                      <Switch 
-                        name="darkMode"
-                        checked={settings?.general.darkMode}
-                        onCheckedChange={(checked) => 
-                          handleToggleSetting('general', 'darkMode', checked)
-                        }
-                        className={cn(
-                          "data-[state=checked]:bg-red-600",
-                          "data-[state=unchecked]:bg-slate-200",
-                          "rounded-full w-12 h-7",
-                          "shadow-sm"
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
-                    disabled={updateSettingsMutation.isPending || updateStoreInfoMutation.isPending}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {updateSettingsMutation.isPending ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-
-            <ChangePasswordForm />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Security</CardTitle>
+              <CardDescription>Update your security settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChangePasswordForm />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="users">
-          <UserAccessSettings 
-            settings={settings} 
-            onUpdate={(section: string, value: boolean) => handleToggleSetting('userAccess', section, value)}
-            isUpdating={updateSettingsMutation.isPending}
-          />
+          <UserAccessSettings />
         </TabsContent>
 
         <TabsContent value="evaluations">
-          <EvaluationSettings 
-            settings={settings} 
-            onUpdate={(section: string, value: boolean) => handleToggleSetting('evaluations', section, value)}
-            isUpdating={updateSettingsMutation.isPending}
-          />
+          <EvaluationSettings />
         </TabsContent>
 
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Manage your notification settings</CardDescription>
+              <CardDescription>Choose how you want to be notified</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-sm font-medium">Email Notifications</label>
-                    <p className="text-sm text-gray-500">Receive notifications via email</p>
-                  </div>
-                  <Switch 
-                    checked={settings?.notifications?.emailEnabled}
-                    onCheckedChange={(checked) => 
-                      handleToggleSetting('notifications', 'emailEnabled', checked)
-                    }
-                    className={cn(
-                      "data-[state=checked]:bg-red-600",
-                      "data-[state=unchecked]:bg-slate-200",
-                      "rounded-full w-12 h-7",
-                      "shadow-sm"
-                    )}
-                  />
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label htmlFor="emailNotifications" className="text-sm font-medium">Email Notifications</label>
+                  <p className="text-sm text-gray-500">Receive notifications via email</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-sm font-medium">New Evaluation Alerts</label>
-                    <p className="text-sm text-gray-500">Get notified when new evaluations are assigned</p>
-                  </div>
-                  <Switch 
-                    checked={settings?.notifications?.newEvaluationAlerts}
-                    onCheckedChange={(checked) => 
-                      handleToggleSetting('notifications', 'newEvaluationAlerts', checked)
-                    }
-                    className={cn(
-                      "data-[state=checked]:bg-red-600",
-                      "data-[state=unchecked]:bg-slate-200",
-                      "rounded-full w-12 h-7",
-                      "shadow-sm"
-                    )}
-                  />
+                <Switch
+                  id="emailNotifications"
+                  checked={settings?.emailNotifications || false}
+                  onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label htmlFor="pushNotifications" className="text-sm font-medium">Push Notifications</label>
+                  <p className="text-sm text-gray-500">Receive push notifications in your browser</p>
                 </div>
+                <Switch
+                  id="pushNotifications"
+                  checked={settings?.pushNotifications || false}
+                  onCheckedChange={(checked) => handleSettingChange('pushNotifications', checked)}
+                />
               </div>
             </CardContent>
           </Card>
@@ -318,11 +303,32 @@ const SettingsPage = () => {
         <TabsContent value="reports">
           <Card>
             <CardHeader>
-              <CardTitle>Reports Settings</CardTitle>
-              <CardDescription>Configure report generation and display preferences</CardDescription>
+              <CardTitle>Report Settings</CardTitle>
+              <CardDescription>Configure your report preferences</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-500">Report settings coming soon...</p>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label htmlFor="autoExport" className="text-sm font-medium">Automatic Export</label>
+                  <p className="text-sm text-gray-500">Automatically export reports on schedule</p>
+                </div>
+                <Switch
+                  id="autoExport"
+                  checked={settings?.autoExport || false}
+                  onCheckedChange={(checked) => handleSettingChange('autoExport', checked)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label htmlFor="includeCharts" className="text-sm font-medium">Include Charts</label>
+                  <p className="text-sm text-gray-500">Include visual charts in reports</p>
+                </div>
+                <Switch
+                  id="includeCharts"
+                  checked={settings?.includeCharts || false}
+                  onCheckedChange={(checked) => handleSettingChange('includeCharts', checked)}
+                />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
