@@ -46,17 +46,33 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
     console.log('Login attempt for:', email);
 
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Failed to log in: Email and password are required' });
+    }
+
     const user = await User.findOne({ email }).populate('store');
     if (!user) {
       console.log('User not found:', email);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Failed to log in: Email not found' });
+    }
+
+    // Check if user is active
+    if (user.status === 'inactive') {
+      console.log('Inactive user attempted login:', email);
+      return res.status(403).json({ message: 'Failed to log in: Account is inactive' });
     }
 
     console.log('Comparing passwords...');
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       console.log('Password mismatch for:', email);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Failed to log in: Incorrect password' });
+    }
+
+    // Check if user has required fields
+    if (!user.store) {
+      console.log('User has no store assigned:', email);
+      return res.status(403).json({ message: 'Failed to log in: Account not configured properly' });
     }
 
     console.log('Login successful for:', email);
@@ -73,12 +89,13 @@ export const login = async (req, res) => {
         name: user.name, 
         email: user.email, 
         role: user.role,
-        store: user.store
+        store: user.store,
+        status: user.status
       } 
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Failed to log in: Server error' });
   }
 };
 
@@ -250,5 +267,25 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Reset password error:', error);
     res.status(500).json({ message: 'Error resetting password' });
+  }
+};
+
+// Temporary function to delete user by email
+export const deleteUserByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    console.log('Attempting to delete user with email:', email);
+    
+    const result = await User.deleteOne({ email });
+    console.log('Delete result:', result);
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted successfully', result });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ message: 'Error deleting user', error: error.message });
   }
 };

@@ -9,5 +9,8 @@
     "start": "cd server && npm start",
     "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install --prefix client && npm run build --prefix client && npm install --prefix server",
     "build": "cd client && npm run build"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0"
   }
 } 
