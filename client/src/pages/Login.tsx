@@ -31,21 +31,10 @@ export default function Login() {
       setPassword('');
       
       // Get error message from server response
-      const serverMessage = error.response?.data?.message;
+      const serverMessage = error.response?.data?.error || error.response?.data?.message;
       
       // Format the error message for display
-      let displayMessage = 'Incorrect email or password';
-      if (serverMessage) {
-        if (serverMessage.includes('Email not found')) {
-          displayMessage = 'Email address not found';
-        } else if (serverMessage.includes('Incorrect password')) {
-          displayMessage = 'Incorrect password';
-        } else if (serverMessage.includes('Account is inactive')) {
-          displayMessage = 'Your account is inactive. Please contact your administrator.';
-        } else {
-          displayMessage = serverMessage;
-        }
-      }
+      let displayMessage = serverMessage || 'Incorrect email or password';
       
       // Show error toast with formatted message
       toast({
