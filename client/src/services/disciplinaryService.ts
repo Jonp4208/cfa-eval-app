@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { getAuthHeader } from '@/utils/auth';
+import api from '@/lib/axios';
 
 export interface DisciplinaryIncident {
   _id: string;
@@ -16,8 +15,8 @@ export interface DisciplinaryIncident {
   description: string;
   witnesses?: string;
   actionTaken: string;
-  followUpDate: string;
-  followUpActions: string;
+  followUpDate?: string;
+  followUpActions?: string;
   previousIncidents: boolean;
   documentationAttached: boolean;
   supervisor: {
@@ -64,8 +63,8 @@ export interface CreateIncidentData {
   description: string;
   witnesses?: string;
   actionTaken: string;
-  followUpDate: string;
-  followUpActions: string;
+  followUpDate?: string;
+  followUpActions?: string;
   previousIncidents: boolean;
   documentationAttached: boolean;
 }
@@ -73,57 +72,43 @@ export interface CreateIncidentData {
 const disciplinaryService = {
   // Get all incidents
   getAllIncidents: async (): Promise<DisciplinaryIncident[]> => {
-    const response = await axios.get(`${API_URL}/api/disciplinary`, {
-      headers: getAuthHeader()
-    });
+    const response = await api.get('/api/disciplinary');
     return response.data;
   },
 
   // Get incident by ID
   getIncidentById: async (id: string): Promise<DisciplinaryIncident> => {
-    const response = await axios.get(`${API_URL}/api/disciplinary/${id}`, {
-      headers: getAuthHeader()
-    });
+    const response = await api.get(`/api/disciplinary/${id}`);
     return response.data;
   },
 
   // Create new incident
   createIncident: async (data: CreateIncidentData): Promise<DisciplinaryIncident> => {
-    const response = await axios.post(`${API_URL}/api/disciplinary`, data, {
-      headers: getAuthHeader()
-    });
+    const response = await api.post('/api/disciplinary', data);
     return response.data;
   },
 
   // Update incident
   updateIncident: async (id: string, data: Partial<CreateIncidentData>): Promise<DisciplinaryIncident> => {
-    const response = await axios.put(`${API_URL}/api/disciplinary/${id}`, data, {
-      headers: getAuthHeader()
-    });
+    const response = await api.put(`/api/disciplinary/${id}`, data);
     return response.data;
   },
 
   // Add follow-up
   addFollowUp: async (id: string, data: { date: string; note: string; status: string }): Promise<DisciplinaryIncident> => {
-    const response = await axios.post(`${API_URL}/api/disciplinary/${id}/follow-up`, data, {
-      headers: getAuthHeader()
-    });
+    const response = await api.post(`/api/disciplinary/${id}/follow-up`, data);
     return response.data;
   },
 
   // Add document
   addDocument: async (id: string, data: { name: string; type: string; url: string }): Promise<DisciplinaryIncident> => {
-    const response = await axios.post(`${API_URL}/api/disciplinary/${id}/document`, data, {
-      headers: getAuthHeader()
-    });
+    const response = await api.post(`/api/disciplinary/${id}/document`, data);
     return response.data;
   },
 
   // Delete incident
   deleteIncident: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/api/disciplinary/${id}`, {
-      headers: getAuthHeader()
-    });
+    await api.delete(`/api/disciplinary/${id}`);
   }
 };
 

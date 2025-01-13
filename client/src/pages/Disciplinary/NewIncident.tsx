@@ -228,38 +228,40 @@ export default function NewIncidentForm() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Follow-up Date</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Follow-up Date <span className="text-gray-500">(Optional)</span>
+                    </label>
                     <input
                       type="date"
-                      className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-                      value={formData.followUpDate}
+                      className="w-full h-[42px] px-3 border border-gray-200 rounded-lg bg-white hover:bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      value={formData.followUpDate || ''}
                       onChange={(e) => setFormData({...formData, followUpDate: e.target.value})}
-                      required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Follow-up Actions</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Follow-up Actions <span className="text-gray-500">(Optional)</span>
+                    </label>
                     <textarea
                       className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                       rows={3}
-                      value={formData.followUpActions}
+                      value={formData.followUpActions || ''}
                       onChange={(e) => setFormData({...formData, followUpActions: e.target.value})}
-                      placeholder="Describe required follow-up actions..."
-                      required
+                      placeholder="Describe any follow-up actions needed..."
                     />
                   </div>
 
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      id="documentation"
+                      id="documentationAttached"
                       checked={formData.documentationAttached}
                       onChange={(e) => setFormData({...formData, documentationAttached: e.target.checked})}
                       className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                     />
-                    <label htmlFor="documentation" className="text-sm">
-                      Supporting documentation attached
+                    <label htmlFor="documentationAttached" className="text-sm">
+                      Documentation attached
                     </label>
                   </div>
                 </div>
