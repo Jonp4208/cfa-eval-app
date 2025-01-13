@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import UserAccessSettings from './components/UserAccessSettings';
 import EvaluationSettings from './components/EvaluationSettings';
 import { handleError } from '@/lib/utils/error-handler';
+import ChangePasswordForm from './components/ChangePasswordForm';
 
 const SettingsPage = () => {
   const { toast } = useToast();
@@ -158,91 +159,95 @@ const SettingsPage = () => {
         </div>
 
         <TabsContent value="general">
-          <Card>
-            <CardHeader>
-              <CardTitle>Store Information</CardTitle>
-              <CardDescription>Manage your store details and preferences</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveGeneral} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Store Name</label>
-                    <Input 
-                      name="storeName"
-                      defaultValue={storeInfo?.name}
-                      placeholder="Enter store name"
-                      disabled={!isAdmin}
-                      className={cn(
-                        "h-10 rounded-lg",
-                        !isAdmin ? "bg-gray-100" : ""
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Information</CardTitle>
+                <CardDescription>Manage your store details and preferences</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSaveGeneral} className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Store Name</label>
+                      <Input 
+                        name="storeName"
+                        defaultValue={storeInfo?.name}
+                        placeholder="Enter store name"
+                        disabled={!isAdmin}
+                        className={cn(
+                          "h-10 rounded-lg",
+                          !isAdmin ? "bg-gray-100" : ""
+                        )}
+                      />
+                      {!isAdmin && (
+                        <p className="text-sm text-gray-500">Only administrators can change store name</p>
                       )}
-                    />
-                    {!isAdmin && (
-                      <p className="text-sm text-gray-500">Only administrators can change store name</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Store Number</label>
-                    <Input 
-                      name="storeNumber"
-                      defaultValue={storeInfo?.storeNumber}
-                      placeholder="Enter store number"
-                      disabled={!isAdmin}
-                      className={cn(
-                        "h-10 rounded-lg",
-                        !isAdmin ? "bg-gray-100" : ""
-                      )}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Location</label>
-                    <Input 
-                      name="location"
-                      defaultValue={storeInfo?.location}
-                      placeholder="Enter store location"
-                      disabled={!isAdmin}
-                      className={cn(
-                        "h-10 rounded-lg",
-                        !isAdmin ? "bg-gray-100" : ""
-                      )}
-                    />
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Dark Mode</label>
-                      <p className="text-sm text-gray-500">Switch between light and dark themes</p>
                     </div>
-                    <Switch 
-                      name="darkMode"
-                      checked={settings?.general.darkMode}
-                      onCheckedChange={(checked) => 
-                        handleToggleSetting('general', 'darkMode', checked)
-                      }
-                      className={cn(
-                        "data-[state=checked]:bg-red-600",
-                        "data-[state=unchecked]:bg-slate-200",
-                        "rounded-full w-12 h-7",
-                        "shadow-sm"
-                      )}
-                    />
-                  </div>
-                </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
-                  disabled={updateSettingsMutation.isPending || updateStoreInfoMutation.isPending}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {updateSettingsMutation.isPending ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Store Number</label>
+                      <Input 
+                        name="storeNumber"
+                        defaultValue={storeInfo?.storeNumber}
+                        placeholder="Enter store number"
+                        disabled={!isAdmin}
+                        className={cn(
+                          "h-10 rounded-lg",
+                          !isAdmin ? "bg-gray-100" : ""
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Location</label>
+                      <Input 
+                        name="location"
+                        defaultValue={storeInfo?.location}
+                        placeholder="Enter store location"
+                        disabled={!isAdmin}
+                        className={cn(
+                          "h-10 rounded-lg",
+                          !isAdmin ? "bg-gray-100" : ""
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Dark Mode</label>
+                        <p className="text-sm text-gray-500">Switch between light and dark themes</p>
+                      </div>
+                      <Switch 
+                        name="darkMode"
+                        checked={settings?.general.darkMode}
+                        onCheckedChange={(checked) => 
+                          handleToggleSetting('general', 'darkMode', checked)
+                        }
+                        className={cn(
+                          "data-[state=checked]:bg-red-600",
+                          "data-[state=unchecked]:bg-slate-200",
+                          "rounded-full w-12 h-7",
+                          "shadow-sm"
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
+                    disabled={updateSettingsMutation.isPending || updateStoreInfoMutation.isPending}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {updateSettingsMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <ChangePasswordForm />
+          </div>
         </TabsContent>
 
         <TabsContent value="users">
