@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { TrendingUp } from 'lucide-react';
-import { handleError } from '@/lib/utils/error-handler';
+import { handleAuthError } from '@/lib/utils/error-handler';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,11 +25,17 @@ export default function Login() {
       navigate('/');
     } catch (error: any) {
       setPassword('');
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: error.message
+      
+      // Log the error for debugging
+      console.log('Login error caught:', {
+        error,
+        responseData: error.response?.data,
+        responseStatus: error.response?.status,
+        message: error.message
       });
+      
+      // Use the auth-specific error handler
+      handleAuthError(error);
     } finally {
       setIsLoading(false);
     }
