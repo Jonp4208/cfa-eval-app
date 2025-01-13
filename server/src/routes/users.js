@@ -37,7 +37,7 @@ router.get('/', auth, async (req, res) => {
     const { managerId } = req.query;
     let query = { store: req.user.store._id };
 
-    console.log('Query filter:', query);
+    console.log('Initial query filter:', query);
 
     // If managerId is provided, filter by manager
     if (managerId) {
@@ -45,12 +45,22 @@ router.get('/', auth, async (req, res) => {
       console.log('Added manager filter:', query);
     }
 
+    console.log('Final query:', JSON.stringify(query, null, 2));
+    
     const users = await User.find(query)
       .populate('manager', 'name _id')  // Populate manager field with name and _id
       .populate('store', 'name storeNumber')
       .sort({ name: 1 });  // Sort by name ascending
 
-    console.log(`Found ${users.length} users`);
+    console.log(`Found ${users.length} users with query:`, JSON.stringify(query, null, 2));
+    console.log('Users:', JSON.stringify(users.map(u => ({ 
+      _id: u._id, 
+      name: u.name, 
+      email: u.email,
+      store: u.store?._id,
+      role: u.role 
+    })), null, 2));
+
     res.json({ users });
   } catch (error) {
     console.error('Error fetching users:', error);
