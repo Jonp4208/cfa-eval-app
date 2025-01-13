@@ -81,15 +81,13 @@ export default function EditUser() {
       
       // Transform department to match select options
       const transformDepartment = (dept: string) => {
-        switch(dept?.toUpperCase()) {
-          case 'LEADERSHIP': return 'Leadership';
-          case 'FOH': return 'FOH';
-          case 'BOH': return 'BOH';
-          default: return dept;
-        }
+        if (!dept) return '';
+        
+        // Keep the original case from the server
+        return dept;
       };
 
-      setFormData({
+      const transformedData = {
         name: user.name || '',
         email: user.email || '',
         department: transformDepartment(user.department),
@@ -97,7 +95,10 @@ export default function EditUser() {
         role: user.role?.toLowerCase() || '',
         status: user.status || 'active',
         manager: user.manager?._id || 'none'
-      });
+      };
+      
+      console.log('Transformed form data:', transformedData);
+      setFormData(transformedData);
     }
   }, [user]);
 
@@ -248,7 +249,7 @@ export default function EditUser() {
                     <SelectContent>
                       <SelectItem value="FOH">Front of House</SelectItem>
                       <SelectItem value="BOH">Back of House</SelectItem>
-                      <SelectItem value="Leadership">Leadership</SelectItem>
+                      <SelectItem value="LEADERSHIP">Leadership</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

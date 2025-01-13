@@ -20,13 +20,20 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      console.log('Submitting login form...');
       const response = await login(email, password);
-      // All users go to dashboard, which will show appropriate view based on role
+      console.log('Login successful, navigating to dashboard');
       navigate('/');
     } catch (error: any) {
+      console.error('Login submission error:', error);
+      const errorMessage = error.response?.data?.message || 
+                         error.response?.data?.error || 
+                         error.message || 
+                         'Failed to login. Please check your credentials and try again.';
+      
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to login',
+        title: 'Login Failed',
+        description: errorMessage,
         variant: 'destructive',
         duration: 5000,
       });

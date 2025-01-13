@@ -51,15 +51,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('Attempting login for:', email);
       const response = await api.post('/api/auth/login', { email, password });
+      console.log('Login response:', response.data);
+      
+      if (!response.data.token || !response.data.user) {
+        console.error('Invalid login response:', response.data);
+        throw new Error('Invalid login response from server');
+      }
+
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
       setToken(token);
       setUser(user);
       return response.data;
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       throw error;
     }
   };
