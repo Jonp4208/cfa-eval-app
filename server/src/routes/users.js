@@ -32,17 +32,35 @@ const upload = multer({
 router.get('/', auth, async (req, res) => {
   try {
     console.log('GET /users - Request received');
-    console.log('User from auth middleware:', req.user);
+    console.log('User from auth middleware:', {
+      _id: req.user._id,
+      name: req.user.name,
+      role: req.user.role,
+      store: req.user.store
+    });
     
     const { managerId } = req.query;
     let query = { store: req.user.store._id };
 
-    console.log('Initial query filter:', query);
+    console.log('Initial query filter:', JSON.stringify(query, null, 2));
 
-    // If managerId is provided, filter by manager
-    if (managerId) {
-      query.manager = managerId;
-      console.log('Added manager filter:', query);
+    // For admin users, only filter by store
+    if (req.user.role === 'admin') {
+      console.log('Admin user - fetching all users in store');
+    }
+    // For managers, filter by manager ID
+    else if (req.user.role === 'manager') {
+      if (managerId) {
+        query.manager = managerId;
+      } else {
+        query.manager = req.user._id;  // By default, fetch their team
+      }
+      console.log('Manager user - query updated:', JSON.stringify(query, null, 2));
+    }
+    // For other roles, they shouldn't access this endpoint
+    else {
+      console.log('Unauthorized role attempted to fetch users:', req.user.role);
+      return res.status(403).json({ message: 'Not authorized to view users' });
     }
 
     console.log('Final query:', JSON.stringify(query, null, 2));
@@ -58,7 +76,8 @@ router.get('/', auth, async (req, res) => {
       name: u.name, 
       email: u.email,
       store: u.store?._id,
-      role: u.role 
+      role: u.role,
+      manager: u.manager?._id
     })), null, 2));
 
     res.json({ users });
