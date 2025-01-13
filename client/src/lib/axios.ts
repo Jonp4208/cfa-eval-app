@@ -3,7 +3,7 @@ import axios from 'axios';
 const PUBLIC_ROUTES = ['/api/login', '/api/register', '/api/auth/login', '/api/auth/register'];
 
 const api = axios.create({
-  baseURL: '',
+  baseURL: process.env.NODE_ENV === 'production' ? 'https://cfa-eval-7eb74e14c3a4.herokuapp.com' : '',
   headers: {
     'Content-Type': 'application/json',
   },
