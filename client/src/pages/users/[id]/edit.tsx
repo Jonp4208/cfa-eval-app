@@ -83,41 +83,40 @@ export default function EditUser() {
       const transformDepartment = (dept: string) => {
         if (!dept) return '';
         console.log('Transforming department:', dept);
-        return dept;
+        // Handle both uppercase and regular case
+        const deptMap: { [key: string]: string } = {
+          'LEADERSHIP': 'LEADERSHIP',
+          'FOH': 'FOH',
+          'BOH': 'BOH',
+          'Leadership': 'LEADERSHIP',
+          'Front of House': 'FOH',
+          'Back of House': 'BOH'
+        };
+        return deptMap[dept] || dept;
       };
 
       // Transform position to match select options
       const transformPosition = (pos: string) => {
         if (!pos) return '';
         console.log('Original position:', pos);
-        // Convert position to match the exact values in SelectItem
-        const positionMap: { [key: string]: string } = {
-          'DIRECTOR': 'Director',
-          'MANAGER': 'Manager',
-          'SHIFT LEADER': 'Shift Leader',
-          'TEAM LEADER': 'Team Leader',
-          'TRAINER': 'Trainer',
-          'TEAM MEMBER': 'Team Member'
-        };
-        const upperPos = pos.toUpperCase();
-        const transformed = positionMap[upperPos] || pos;
-        console.log('Transformed position:', transformed);
-        return transformed;
+        // Keep original case since SelectItem values match server values
+        return pos;
       };
 
       // Transform role to match select options
       const transformRole = (role: string) => {
         if (!role) return '';
         console.log('Original role:', role);
+        // Handle both uppercase and regular case
         const roleMap: { [key: string]: string } = {
-          'ADMIN': 'admin',
-          'EVALUATOR': 'evaluator',
-          'USER': 'user'
+          'ADMIN': 'ADMIN',
+          'EVALUATOR': 'EVALUATOR',
+          'USER': 'USER',
+          'admin': 'ADMIN',
+          'evaluator': 'EVALUATOR',
+          'user': 'USER'
         };
-        const upperRole = role.toUpperCase();
-        const transformed = roleMap[upperRole] || role.toLowerCase();
-        console.log('Transformed role:', transformed);
-        return transformed;
+        return roleMap[role] || role.toUpperCase();
       };
 
       const transformedData = {
@@ -146,8 +145,9 @@ export default function EditUser() {
         const transformedData = {
           ...data,
           manager: data.manager === 'none' ? null : data.manager,
-          // Ensure role is in the correct format
-          role: data.role.toLowerCase()
+          // Keep the case as is since we're now handling it in the form
+          role: data.role,
+          department: data.department
         };
 
         console.log('Transformed mutation data:', transformedData);
@@ -290,9 +290,9 @@ export default function EditUser() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="LEADERSHIP">Leadership</SelectItem>
                       <SelectItem value="FOH">Front of House</SelectItem>
                       <SelectItem value="BOH">Back of House</SelectItem>
-                      <SelectItem value="LEADERSHIP">Leadership</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -306,12 +306,12 @@ export default function EditUser() {
                       <SelectValue placeholder="Select position" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Team Member">Team Member</SelectItem>
-                      <SelectItem value="Trainer">Trainer</SelectItem>
-                      <SelectItem value="Team Leader">Team Leader</SelectItem>
-                      <SelectItem value="Shift Leader">Shift Leader</SelectItem>
-                      <SelectItem value="Manager">Manager</SelectItem>
                       <SelectItem value="Director">Director</SelectItem>
+                      <SelectItem value="Manager">Manager</SelectItem>
+                      <SelectItem value="Shift Leader">Shift Leader</SelectItem>
+                      <SelectItem value="Team Leader">Team Leader</SelectItem>
+                      <SelectItem value="Trainer">Trainer</SelectItem>
+                      <SelectItem value="Team Member">Team Member</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -332,9 +332,9 @@ export default function EditUser() {
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="evaluator">Evaluator</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="EVALUATOR">Evaluator</SelectItem>
+                      <SelectItem value="USER">User</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
