@@ -143,8 +143,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-50">
+        <div className="h-16 px-4 flex items-center justify-between">
+          {/* Logo and Store Info */}
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-6 w-6 text-red-600" />
+            <div className="flex flex-col">
+              <span className="font-bold">Growth Hub</span>
+              <span className="text-xs text-gray-500">#{user?.store?.storeNumber || '00000'}</span>
+            </div>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="p-2 hover:bg-gray-50 rounded-xl"
+          >
+            <MenuIcon className="w-6 h-6 text-gray-600" />
+          </button>
+        </div>
+      </div>
+
       {/* Desktop Navigation Bar */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b z-50">
+      <div className="hidden md:block fixed top-0 left-0 right-0 bg-white border-b z-50">
         <div className="h-16 mx-auto max-w-7xl px-4 flex items-center justify-between gap-8">
           {/* Left Section: Logo and Store Info */}
           <div className="flex items-center gap-8">
