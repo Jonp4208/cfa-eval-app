@@ -30,8 +30,9 @@ export default function Login() {
       
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: errorMessage
+        title: "� Login Failed",
+        description: errorMessage,
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);

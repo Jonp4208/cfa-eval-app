@@ -19,9 +19,20 @@ export default function ResetPassword() {
     
     if (password !== confirmPassword) {
       toast({
-        title: 'Error',
+        title: '� Error',
         description: 'Passwords do not match',
         variant: 'destructive',
+        duration: 5000,
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      toast({
+        title: '❌ Error',
+        description: 'Password must be at least 8 characters long',
+        variant: 'destructive',
+        duration: 5000,
       });
       return;
     }
@@ -35,14 +46,14 @@ export default function ResetPassword() {
       });
 
       toast({
-        title: '� Success',
-        description: 'Your password has been reset successfully. You can now log in with your new password.',
+        title: '✅ Password Reset Successful',
+        description: 'Your password has been reset. You will be redirected to login.',
         duration: 5000,
       });
 
       setTimeout(() => {
         navigate('/login');
-      }, 2000);
+      }, 3000);
     } catch (error: any) {
       toast({
         title: '❌ Error',

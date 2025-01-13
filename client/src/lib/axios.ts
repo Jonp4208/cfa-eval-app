@@ -60,20 +60,10 @@ api.interceptors.response.use(
         console.log('Unauthorized request - redirecting to login');
         localStorage.removeItem('token');
         window.location.href = '/login';
-      } else {
-        // For login/register routes, preserve the original error message
-        const originalMessage = error.response?.data?.message;
-        if (originalMessage) {
-          error.response.data = {
-            message: originalMessage,
-            error: originalMessage // Include in both fields for compatibility
-          };
-        }
-        // Don't redirect on login failures
-        return Promise.reject(error);
       }
     }
 
+    // Always reject the promise with the error
     return Promise.reject(error);
   }
 );
