@@ -13,6 +13,8 @@ import UserAccessSettings from './components/UserAccessSettings';
 import EvaluationSettings from './components/EvaluationSettings';
 import ChangePasswordForm from './components/ChangePasswordForm';
 import { settingsService } from '@/lib/services/settings';
+import api from '@/lib/axios';
+import { handleError } from '@/lib/utils/error-handler';
 
 const SettingsPage = () => {
   const queryClient = useQueryClient();
@@ -67,24 +69,54 @@ const SettingsPage = () => {
 
   // Update mutations
   const updateSettingsMutation = useMutation({
-    mutationFn: settingsService.updateSettings,
+    mutationFn: async (data: any) => {
+      const response = await api.patch('/api/settings', data);
+      return response.data;
+    },
     onSuccess: () => {
+      setSuccess('Settings updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+      setError('');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+    onError: (error: any) => {
+      setError(error.response?.data?.message || 'Failed to update settings');
+      setSuccess('');
     }
   });
 
   const updateStoreInfoMutation = useMutation({
-    mutationFn: settingsService.updateStoreInfo,
+    mutationFn: async (data: any) => {
+      const response = await api.patch('/api/settings/store', data);
+      return response.data;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['storeInfo'] });
+      setSuccess('Store information updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+      setError('');
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+    onError: (error: any) => {
+      setError(error.response?.data?.message || 'Failed to update store information');
+      setSuccess('');
     }
   });
 
   // Reset settings mutation
   const resetSettingsMutation = useMutation({
-    mutationFn: settingsService.resetSettings,
+    mutationFn: async () => {
+      const response = await api.post('/api/settings/reset');
+      return response.data;
+    },
     onSuccess: () => {
+      setSuccess('Settings reset successfully');
+      setTimeout(() => setSuccess(''), 3000);
+      setError('');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+    onError: (error: any) => {
+      setError(error.response?.data?.message || 'Failed to reset settings');
+      setSuccess('');
     }
   });
 
@@ -116,34 +148,28 @@ const SettingsPage = () => {
     }
   };
 
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
   if (isSettingsLoading) {
     return <div>Loading settings...</div>;
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
-          <p className="text-gray-600">Manage your store settings and preferences</p>
+    <div className="container mx-auto p-6 max-w-2xl space-y-6">
+      <h1 className="text-2xl font-bold">Settings</h1>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+          {error}
         </div>
-        {isAdmin && (
-          <Button
-            variant="outline"
-            onClick={() => resetSettingsMutation.mutate()}
-            disabled={resetSettingsMutation.isPending}
-            className={cn(
-              "w-full sm:w-auto",
-              "hover:bg-destructive hover:text-destructive-foreground",
-              "border-destructive text-destructive",
-              "transition-colors duration-200"
-            )}
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            {resetSettingsMutation.isPending ? 'Resetting...' : 'Reset to Defaults'}
-          </Button>
-        )}
-      </div>
+      )}
+      
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
+          {success}
+        </div>
+      )}
 
       <Tabs defaultValue="general" className="space-y-4">
         <div className="overflow-x-auto -mx-4 px-4 pb-4">
@@ -279,11 +305,19 @@ const SettingsPage = () => {
         </TabsContent>
 
         <TabsContent value="users">
-          <UserAccessSettings />
+          <UserAccessSettings 
+            settings={settings?.userAccess}
+            onUpdate={(data) => updateSettingsMutation.mutate({ userAccess: data })}
+            isUpdating={updateSettingsMutation.isPending}
+          />
         </TabsContent>
 
         <TabsContent value="evaluations">
-          <EvaluationSettings />
+          <EvaluationSettings 
+            settings={settings?.evaluations}
+            onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
+            isUpdating={updateSettingsMutation.isPending}
+          />
         </TabsContent>
 
         <TabsContent value="notifications">

@@ -2,13 +2,20 @@
 import api from '../axios';
 
 export interface StoreSettings {
-  darkMode: boolean;
   compactMode: boolean;
   storeName: string;
   storeNumber: string;
   storeAddress: string;
   storePhone: string;
   storeEmail: string;
+  userAccess: {
+    allowRegistration: boolean;
+    defaultRole: string;
+  };
+  evaluations: {
+    allowSelfEvaluations: boolean;
+    reviewPeriodDays: number;
+  };
 }
 
 export interface StoreInfo {

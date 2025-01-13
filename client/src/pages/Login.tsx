@@ -4,20 +4,20 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
 import { TrendingUp } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     try {
       await login(email, password);
@@ -27,13 +27,7 @@ export default function Login() {
       
       // Get error message from response data
       const errorMessage = error.response?.data?.message || "Failed to sign in";
-      
-      toast({
-        variant: "destructive",
-        title: "� Login Failed",
-        description: errorMessage,
-        duration: 5000,
-      });
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +52,11 @@ export default function Login() {
             <CardTitle className="text-center">Sign in to your account</CardTitle>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
