@@ -80,7 +80,7 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="flex flex-col items-center">
               <div className="text-center mb-4">
-                <h1 className="text-2xl font-bold">Manager Dashboard</h1>
+                <h1 className="text-2xl font-bold">Welcome, {user?.name}</h1>
                 <p className="text-gray-500">CFA Store #{user?.store?.storeNumber}</p>
               </div>
               <div className="flex gap-2 w-full sm:w-auto justify-center">

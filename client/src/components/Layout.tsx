@@ -163,7 +163,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsMobileMenuOpen(true)}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 hover:bg-gray-50 rounded-xl touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <MenuIcon className="w-6 h-6 text-gray-600" />
@@ -490,6 +490,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </button>
                   );
                 })}
+              
+              {/* Logout Button */}
+              <div className="border-t mt-4 pt-4">
+                <button
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 flex items-center gap-3 text-red-600 hover:bg-red-50 min-h-[44px]"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="text-base">Log Out</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
