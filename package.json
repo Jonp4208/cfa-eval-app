@@ -1,0 +1,11 @@
+{
+  "name": "cfa-eval-app",
+  "version": "1.0.0",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "start": "cd server && npm start",
+    "heroku-postbuild": "cd client && npm install && npm run build && cd ../server && npm install"
+  }
+} 

@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide scrollbars by default */
+.custom-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Custom Scrollbar Styles */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #f87171;
+  border-radius: 20px;
+  border: 3px solid #f3f4f6;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #ef4444;
+}
+
+/* Override for custom scrollbar */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+  display: block !important;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: #f3f4f6 !important;
+  border-radius: 3px !important;
+  border: none !important;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: #f87171 !important;
+  border-radius: 3px !important;
+  border: none !important;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: #ef4444 !important;
+}
+
+/* Firefox */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: #f87171 #f3f4f6;
+}

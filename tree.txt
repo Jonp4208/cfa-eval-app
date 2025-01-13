@@ -1,0 +1,104 @@
+.
+└── CFA-EVAL-APp/
+    ├── client/
+    │   ├── node_modules
+    │   ├── public
+    │   └── src/
+    │       ├── assets
+    │       ├── components/
+    │       │   ├── ui/
+    │       │   │   ├── card.tsx
+    │       │   │   ├── toast.tsx
+    │       │   │   ├── toaster.tsx
+    │       │   │   └── use-toast.ts
+    │       │   └── Layout.tsx
+    │       ├── contexts/
+    │       │   └── AuthContext.tsx
+    │       ├── hooks
+    │       ├── lib/
+    │       │   ├── axios.ts
+    │       │   └── utils.ts
+    │       ├── pages/
+    │       │   ├── Analytics/
+    │       │   │   ├── DepartmentReport.tsx
+    │       │   │   ├── DevelopmentMetrics.tsx
+    │       │   │   ├── PerformanceAnalytics.tsx
+    │       │   │   ├── TeamComparison.tsx
+    │       │   │   └── TeamDynamics.tsx
+    │       │   ├── Evaluations/
+    │       │   │   ├── EmployeeReview.tsx
+    │       │   │   ├── EnhancedEvaluationForm.tsx
+    │       │   │   ├── EvaluationHistory.tsx
+    │       │   │   ├── EvaluationList.tsx
+    │       │   │   ├── index.tsx
+    │       │   │   └── NewEvaluation.tsx
+    │       │   ├── Templates/
+    │       │   │   ├── components/
+    │       │   │   │   └── DraggableSection.tsx
+    │       │   │   ├── index.tsx
+    │       │   │   └── TemplateBuilder.tsx
+    │       │   ├── Dashboard.tsx
+    │       │   ├── Evaluations.ts
+    │       │   ├── Login.tsx
+    │       │   └── Register.tsx
+    │       ├── routes/
+    │       │   └── index.tsx
+    │       ├── utils/
+    │       │   └── PdfExports.ts
+    │       ├── App.css
+    │       ├── App.jsx
+    │       ├── App.tsx
+    │       ├── env.d.ts
+    │       ├── index.css
+    │       ├── main.tsx
+    │       ├── .gitignore
+    │       ├── componenets.json
+    │       ├── eslint.config.js
+    │       ├── index.html
+    │       ├── package-lock.json
+    │       ├── package.json
+    │       ├── postcss.config.cjs
+    │       ├── tailwind.config.js
+    │       ├── tsconfig.json
+    │       ├── tsconfig.node.json
+    │       ├── vite.config.js
+    │       └── vite.config.ts
+    └── server/
+        ├── node_modules
+        ├── public
+        ├── src/
+        │   ├── assets
+        │   ├── controllers/
+        │   │   ├── auth.js
+        │   │   ├── dashboard.js
+        │   │   ├── evaluations.js
+        │   │   ├── stores.js
+        │   │   └── templates.js
+        │   ├── middleware/
+        │   │   ├── auth.js
+        │   │   └── roles.js
+        │   ├── models/
+        │   │   ├── Evaluation.js
+        │   │   ├── Store.js
+        │   │   ├── Templates.js
+        │   │   └── Users.js
+        │   ├── routes/
+        │   │   ├── auth.js
+        │   │   ├── dashboard.js
+        │   │   ├── evaluations.js
+        │   │   ├── stores.js
+        │   │   └── templates.js
+        │   └── .env
+        ├── App.css
+        ├── app.js
+        ├── App.jsx
+        ├── index.css
+        ├── index.text
+        ├── main.jsx
+        ├── .env
+        ├── .gitignore
+        ├── eslint.config.js
+        ├── index.html
+        ├── package-lock.json
+        ├── package.json
+        └── vite.config.js
