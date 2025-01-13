@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { TrendingUp } from 'lucide-react';
+import { handleError } from '@/lib/utils/error-handler';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,24 +26,11 @@ export default function Login() {
       console.log('Login successful, navigating to dashboard');
       navigate('/');
     } catch (error: any) {
-      console.error('Login submission error:', error);
-      
       // Clear password field on error
       setPassword('');
       
-      // Get error message from server response
-      const serverMessage = error.response?.data?.error || error.response?.data?.message;
-      
-      // Format the error message for display
-      let displayMessage = serverMessage || 'Incorrect email or password';
-      
-      // Show error toast with formatted message
-      toast({
-        title: 'Login Failed',
-        description: displayMessage,
-        variant: 'destructive',
-        duration: 5000,
-      });
+      // Use our error handler utility
+      handleError(error);
     } finally {
       setIsLoading(false);
     }
