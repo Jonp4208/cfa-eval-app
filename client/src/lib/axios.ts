@@ -61,11 +61,14 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         window.location.href = '/login';
       } else {
-        // For login/register routes, ensure error message is properly structured
-        console.log('Login route error - before restructure:', error.response?.data);
-        const message = error.response?.data?.message || 'Authentication failed';
-        error.response.data = { message };
-        console.log('Login route error - after restructure:', error.response?.data);
+        // For login/register routes, preserve the original error message
+        const originalMessage = error.response?.data?.message;
+        if (originalMessage) {
+          error.response.data = {
+            message: originalMessage,
+            error: originalMessage // Include in both fields for compatibility
+          };
+        }
       }
     }
 

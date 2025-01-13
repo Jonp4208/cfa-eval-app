@@ -29,19 +29,24 @@ export default function Login() {
       console.log('Login error details:', {
         status: error.response?.status,
         data: error.response?.data,
-        message: error.response?.data?.message || error.message
+        message: error.response?.data?.message,
+        error: error.response?.data?.error,
+        originalError: error
       });
       
       // Clear password field on error
       setPassword('');
       
-      // Show error toast with detailed message
+      // Get the most appropriate error message
+      const errorMessage = error.response?.data?.message || 
+                         error.response?.data?.error || 
+                         (error.response?.status === 401 ? "Invalid email or password" : error.message) ||
+                         "Failed to sign in. Please check your credentials.";
+      
+      // Show error toast
       toast({
         title: "Login Failed",
-        description: error.response?.data?.message || 
-                    error.response?.data?.error || 
-                    error.message || 
-                    "Failed to sign in. Please check your credentials.",
+        description: errorMessage,
         variant: "destructive",
         duration: 5000
       });
