@@ -36,20 +36,31 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// API Routes - Make sure these come BEFORE the static file serving
-app.use('/api/auth', authRoutes);
-app.use('/api/stores', storesRoutes);
-app.use('/api/templates', templateRoutes);
-app.use('/api/evaluations', evaluationRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/disciplinary', disciplinaryRoutes);
-app.use('/api/goals', goalsRoutes);
-app.use('/api/analytics', analyticsRoutes);
+// Create a router for API routes
+const apiRouter = express.Router();
 
-// Error handling middleware for API routes
-app.use('/api', errorHandler);
+// Mount all API routes on the apiRouter
+apiRouter.use('/auth', authRoutes);
+apiRouter.use('/stores', storesRoutes);
+apiRouter.use('/templates', templateRoutes);
+apiRouter.use('/evaluations', evaluationRoutes);
+apiRouter.use('/dashboard', dashboardRoutes);
+apiRouter.use('/settings', settingsRoutes);
+apiRouter.use('/users', usersRoutes);
+apiRouter.use('/disciplinary', disciplinaryRoutes);
+apiRouter.use('/goals', goalsRoutes);
+apiRouter.use('/analytics', analyticsRoutes);
+
+// Add error handling for the API routes
+apiRouter.use(errorHandler);
+
+// Mount the API router at /api
+app.use('/api', apiRouter);
+
+// Handle 404s for API routes specifically
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ message: 'API endpoint not found' });
+});
 
 // Serve static files from the React build
 app.use(express.static(path.join(__dirname, '../../client/dist')));

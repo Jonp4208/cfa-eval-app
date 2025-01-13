@@ -31,12 +31,18 @@ const upload = multer({
 // Get all users
 router.get('/', auth, async (req, res) => {
   try {
+    console.log('GET /users - Request received');
+    console.log('User from auth middleware:', req.user);
+    
     const { managerId } = req.query;
     let query = { store: req.user.store._id };
+
+    console.log('Query filter:', query);
 
     // If managerId is provided, filter by manager
     if (managerId) {
       query.manager = managerId;
+      console.log('Added manager filter:', query);
     }
 
     const users = await User.find(query)
@@ -44,10 +50,11 @@ router.get('/', auth, async (req, res) => {
       .populate('store', 'name storeNumber')
       .sort({ name: 1 });  // Sort by name ascending
 
+    console.log(`Found ${users.length} users`);
     res.json({ users });
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Failed to fetch users' });
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
   }
 });
 
