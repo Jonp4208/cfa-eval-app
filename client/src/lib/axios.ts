@@ -1,9 +1,13 @@
 import axios from 'axios';
 
 const PUBLIC_ROUTES = ['/api/login', '/api/register', '/api/auth/login', '/api/auth/register'];
+const API_URL = import.meta.env.VITE_API_URL || '';
+
+// Ensure API_URL ends with /api
+const baseURL = API_URL.endsWith('/api') ? API_URL : `${API_URL}/api`;
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -13,7 +17,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  console.log('Making request to:', config.url);
+  console.log('Making request to:', `${baseURL}${config.url}`);
   console.log('With token:', token);
   
   // Don't redirect if accessing public routes
@@ -33,7 +37,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', {
-      url: error.config?.url,
+      url: `${baseURL}${error.config?.url}`,
       method: error.config?.method,
       status: error.response?.status,
       data: error.response?.data,
