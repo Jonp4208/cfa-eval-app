@@ -31,6 +31,8 @@ export default function Login() {
                          error.message || 
                          'Failed to login. Please check your credentials and try again.';
       
+      setPassword('');
+      
       toast({
         title: 'Login Failed',
         description: errorMessage,

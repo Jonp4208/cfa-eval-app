@@ -64,15 +64,16 @@ api.interceptors.response.use(
       fullError: error
     });
 
-    // Handle 401 Unauthorized errors, but not for public routes
+    // Handle 401 Unauthorized errors, but not for login/register routes
     const isPublicRoute = PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
     if (error.response?.status === 401 && !isPublicRoute) {
       console.log('Unauthorized request - redirecting to login');
       localStorage.removeItem('token');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
 
-    throw error;
+    return Promise.reject(error);
   }
 );
 

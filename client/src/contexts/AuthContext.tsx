@@ -72,6 +72,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         response: error.response?.data,
         status: error.response?.status
       });
+
+      // Clear any existing auth state on login error
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      
       throw error;
     }
   };
