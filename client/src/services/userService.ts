@@ -1,8 +1,6 @@
 import axios from 'axios';
 import { getAuthHeader } from '@/utils/auth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 export interface User {
   _id: string;
   name: string;
@@ -17,7 +15,7 @@ export interface User {
 const userService = {
   // Get all users
   getAllUsers: async (): Promise<User[]> => {
-    const response = await axios.get(`${API_URL}/api/users`, {
+    const response = await axios.get(`/api/users`, {
       headers: getAuthHeader()
     });
     return response.data.users;
@@ -25,7 +23,7 @@ const userService = {
 
   // Get user by ID
   getUserById: async (id: string): Promise<User> => {
-    const response = await axios.get(`${API_URL}/api/users/${id}`, {
+    const response = await axios.get(`/api/users/${id}`, {
       headers: getAuthHeader()
     });
     return response.data;

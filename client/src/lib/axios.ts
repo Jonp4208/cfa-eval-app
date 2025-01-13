@@ -3,7 +3,7 @@ import axios from 'axios';
 const PUBLIC_ROUTES = ['/api/login', '/api/register', '/api/auth/login', '/api/auth/register'];
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },

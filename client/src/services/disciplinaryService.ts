@@ -1,8 +1,6 @@
 import axios from 'axios';
 import { getAuthHeader } from '@/utils/auth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 export interface DisciplinaryIncident {
   _id: string;
   employee: {
