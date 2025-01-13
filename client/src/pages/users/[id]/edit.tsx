@@ -78,19 +78,14 @@ export default function EditUser() {
   useEffect(() => {
     if (user) {
       console.log('Setting form data with user:', user);
-      const transformedDepartment = user.department === 'LEADERSHIP' ? 'Leadership' :
-                                  user.department === 'FOH' ? 'FOH' : 'BOH';
-      
-      const transformedRole = user.role?.toLowerCase();
-
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        department: transformedDepartment,
+        department: user.department || '',
         position: user.position || '',
-        role: transformedRole,
+        role: user.role?.toLowerCase() || '',
         status: user.status || 'active',
-        manager: user.reportsTo === 'No Manager Assigned' ? 'none' : user.manager?._id || 'none'
+        manager: user.manager?._id || 'none'
       });
     }
   }, [user]);
@@ -102,19 +97,13 @@ export default function EditUser() {
         setError(null);
         console.log('Original data:', data);
         
-        // Transform department to match enum values
+        // Transform data to match server expectations
         const transformedData = {
           ...data,
-          department: data.department === 'Leadership' ? 'Leadership' :
-                     data.department === 'FOH' ? 'FOH' : 
-                     data.department === 'BOH' ? 'BOH' : data.department,
           manager: data.manager === 'none' ? null : data.manager
         };
 
         console.log('Transformed data:', transformedData);
-        console.log('Department value type:', typeof transformedData.department);
-        console.log('Department value:', transformedData.department);
-
         const response = await api.put(`/api/users/${id}`, transformedData);
         console.log('Server response:', response.data);
         return response.data;
