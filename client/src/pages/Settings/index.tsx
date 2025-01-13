@@ -7,14 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
-import { settingsService } from '@/lib/services/settings';
+import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import UserAccessSettings from './components/UserAccessSettings';
 import EvaluationSettings from './components/EvaluationSettings';
 import { handleError } from '@/lib/utils/error-handler';
 import ChangePasswordForm from './components/ChangePasswordForm';
+
+interface Notification {
+  id: number;
+  message: string;
+  type: 'success' | 'error';
+}
 
 const SettingsPage = () => {
   const { toast } = useToast();
@@ -32,6 +36,8 @@ const SettingsPage = () => {
     darkMode: false,
     compactMode: false
   });
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Fetch settings and store info
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
@@ -68,14 +74,28 @@ const SettingsPage = () => {
     }
   };
 
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  };
+
+  const removeNotification = (id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   // Update mutations
   const updateSettingsMutation = useMutation({
     mutationFn: settingsService.updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+      showNotification('Settings updated successfully', 'success');
     },
-    onError: (error) => {
-      handleError(error, 'Failed to update settings');
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to update settings';
+      showNotification(message, 'error');
     }
   });
 
@@ -83,9 +103,11 @@ const SettingsPage = () => {
     mutationFn: settingsService.updateStoreInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storeInfo'] });
+      showNotification('Store information updated successfully', 'success');
     },
-    onError: (error) => {
-      handleError(error, 'Failed to update store information');
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to update store information';
+      showNotification(message, 'error');
     }
   });
 
@@ -94,14 +116,11 @@ const SettingsPage = () => {
     mutationFn: settingsService.resetSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast({
-        title: "Settings Reset",
-        description: "All settings have been restored to their default values.",
-        variant: "default",
-      });
+      showNotification('Settings have been reset to defaults', 'success');
     },
-    onError: (error) => {
-      handleError(error, 'Failed to reset settings');
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Failed to reset settings';
+      showNotification(message, 'error');
     }
   });
 
@@ -109,7 +128,6 @@ const SettingsPage = () => {
     e.preventDefault();
     
     try {
-      // Update store info if admin
       if (isAdmin) {
         await updateStoreInfoMutation.mutateAsync({
           name: formState.storeName,
@@ -120,7 +138,6 @@ const SettingsPage = () => {
         });
       }
 
-      // Update general settings
       await updateSettingsMutation.mutateAsync({
         darkMode: formState.darkMode,
         compactMode: formState.compactMode,
@@ -131,13 +148,10 @@ const SettingsPage = () => {
         storeEmail: formState.storeEmail
       });
 
-      toast({
-        title: "Settings Saved",
-        description: "Your changes have been saved successfully.",
-        variant: "default",
-      });
-    } catch (error) {
-      handleError(error, 'Failed to save settings');
+      showNotification('All changes saved successfully', 'success');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to save changes';
+      showNotification(message, 'error');
     }
   };
 
@@ -159,6 +173,27 @@ const SettingsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map(notification => (
+          <div
+            key={notification.id}
+            className={cn(
+              "p-4 rounded-lg shadow-lg flex items-center justify-between gap-2 min-w-[300px]",
+              notification.type === 'success' ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+            )}
+          >
+            <span>{notification.message}</span>
+            <button
+              onClick={() => removeNotification(notification.id)}
+              className="p-1 hover:bg-black/5 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Settings</h1>
