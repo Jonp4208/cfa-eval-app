@@ -99,9 +99,13 @@ export default function NewIncidentForm() {
                       <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Employee" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white border rounded-md shadow-md">
                         {employees.map((emp) => (
-                          <SelectItem key={emp._id} value={emp._id}>
+                          <SelectItem 
+                            key={emp._id} 
+                            value={emp._id}
+                            className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer"
+                          >
                             {emp.name} - {emp.position} ({emp.department})
                           </SelectItem>
                         ))}
@@ -129,9 +133,15 @@ export default function NewIncidentForm() {
                       <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white border rounded-md shadow-md">
                         {incidentTypes.map((type) => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                          <SelectItem 
+                            key={type} 
+                            value={type}
+                            className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer"
+                          >
+                            {type}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -146,11 +156,11 @@ export default function NewIncidentForm() {
                       <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Severity" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Minor">Minor</SelectItem>
-                        <SelectItem value="Moderate">Moderate</SelectItem>
-                        <SelectItem value="Major">Major</SelectItem>
-                        <SelectItem value="Critical">Critical</SelectItem>
+                      <SelectContent className="bg-white border rounded-md shadow-md">
+                        <SelectItem value="Minor" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Minor</SelectItem>
+                        <SelectItem value="Moderate" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Moderate</SelectItem>
+                        <SelectItem value="Major" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Major</SelectItem>
+                        <SelectItem value="Critical" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Critical</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -166,8 +176,7 @@ export default function NewIncidentForm() {
                   <div>
                     <label className="block text-sm font-medium mb-2">Description</label>
                     <textarea
-                      className="flex border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
-                      rows={4}
+                      className="min-h-[120px] flex w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50/50"
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
                       placeholder="Provide a detailed description of the incident..."
@@ -179,7 +188,7 @@ export default function NewIncidentForm() {
                     <label className="block text-sm font-medium mb-2">Witnesses (if any)</label>
                     <input
                       type="text"
-                      className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
+                      className="flex h-[42px] w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50/50"
                       value={formData.witnesses}
                       onChange={(e) => setFormData({...formData, witnesses: e.target.value})}
                       placeholder="List any witnesses to the incident"
@@ -216,13 +225,13 @@ export default function NewIncidentForm() {
                       <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Action" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Verbal Warning">Verbal Warning</SelectItem>
-                        <SelectItem value="Written Warning">Written Warning</SelectItem>
-                        <SelectItem value="Final Warning">Final Warning</SelectItem>
-                        <SelectItem value="Performance Plan">Performance Improvement Plan</SelectItem>
-                        <SelectItem value="Suspension">Suspension</SelectItem>
-                        <SelectItem value="Termination">Termination</SelectItem>
+                      <SelectContent className="bg-white border rounded-md shadow-md">
+                        <SelectItem value="Verbal Warning" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Verbal Warning</SelectItem>
+                        <SelectItem value="Written Warning" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Written Warning</SelectItem>
+                        <SelectItem value="Final Warning" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Final Warning</SelectItem>
+                        <SelectItem value="Performance Plan" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Performance Improvement Plan</SelectItem>
+                        <SelectItem value="Suspension" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Suspension</SelectItem>
+                        <SelectItem value="Termination" className="text-sm py-2.5 px-3 focus:bg-gray-50 cursor-pointer">Termination</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -233,7 +242,7 @@ export default function NewIncidentForm() {
                     </label>
                     <input
                       type="date"
-                      className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
+                      className="flex h-[42px] w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50/50"
                       value={formData.followUpDate || ''}
                       onChange={(e) => setFormData({...formData, followUpDate: e.target.value})}
                     />
@@ -244,8 +253,7 @@ export default function NewIncidentForm() {
                       Follow-up Actions <span className="text-gray-500">(Optional)</span>
                     </label>
                     <textarea
-                      className="flex border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
-                      rows={3}
+                      className="min-h-[90px] flex w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50/50"
                       value={formData.followUpActions || ''}
                       onChange={(e) => setFormData({...formData, followUpActions: e.target.value})}
                       placeholder="Describe any follow-up actions needed..."
