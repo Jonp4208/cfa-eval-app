@@ -96,7 +96,7 @@ export default function NewIncidentForm() {
                       value={formData.employeeId}
                       onValueChange={(value) => setFormData({...formData, employeeId: value})}
                     >
-                      <SelectTrigger className="w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
+                      <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Employee" />
                       </SelectTrigger>
                       <SelectContent>
@@ -113,7 +113,7 @@ export default function NewIncidentForm() {
                     <label className="block text-sm font-medium mb-2">Incident Date</label>
                     <input
                       type="date"
-                      className="w-full h-[42px] px-3 border border-gray-200 rounded-md bg-white hover:bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
                       value={formData.date}
                       onChange={(e) => setFormData({...formData, date: e.target.value})}
                       required
@@ -126,7 +126,7 @@ export default function NewIncidentForm() {
                       value={formData.type}
                       onValueChange={(value) => setFormData({...formData, type: value})}
                     >
-                      <SelectTrigger className="w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
+                      <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -143,7 +143,7 @@ export default function NewIncidentForm() {
                       value={formData.severity}
                       onValueChange={(value) => setFormData({...formData, severity: value})}
                     >
-                      <SelectTrigger className="w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
+                      <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Severity" />
                       </SelectTrigger>
                       <SelectContent>
@@ -166,7 +166,7 @@ export default function NewIncidentForm() {
                   <div>
                     <label className="block text-sm font-medium mb-2">Description</label>
                     <textarea
-                      className="w-full p-3 border border-gray-200 rounded-md bg-white hover:bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      className="flex border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
                       rows={4}
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
@@ -179,7 +179,7 @@ export default function NewIncidentForm() {
                     <label className="block text-sm font-medium mb-2">Witnesses (if any)</label>
                     <input
                       type="text"
-                      className="w-full h-[42px] px-3 border border-gray-200 rounded-md bg-white hover:bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
                       value={formData.witnesses}
                       onChange={(e) => setFormData({...formData, witnesses: e.target.value})}
                       placeholder="List any witnesses to the incident"
@@ -213,7 +213,7 @@ export default function NewIncidentForm() {
                       value={formData.actionTaken}
                       onValueChange={(value) => setFormData({...formData, actionTaken: value})}
                     >
-                      <SelectTrigger className="w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
+                      <SelectTrigger className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50">
                         <SelectValue placeholder="Select Action" />
                       </SelectTrigger>
                       <SelectContent>
@@ -233,7 +233,7 @@ export default function NewIncidentForm() {
                     </label>
                     <input
                       type="date"
-                      className="w-full h-[42px] px-3 border border-gray-200 rounded-md bg-white hover:bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      className="flex items-center justify-between border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full h-[42px] rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
                       value={formData.followUpDate || ''}
                       onChange={(e) => setFormData({...formData, followUpDate: e.target.value})}
                     />
@@ -244,7 +244,7 @@ export default function NewIncidentForm() {
                       Follow-up Actions <span className="text-gray-500">(Optional)</span>
                     </label>
                     <textarea
-                      className="w-full p-3 border border-gray-200 rounded-md bg-white hover:bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      className="flex border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-full rounded-md bg-white border-gray-200 hover:bg-gray-50/50"
                       rows={3}
                       value={formData.followUpActions || ''}
                       onChange={(e) => setFormData({...formData, followUpActions: e.target.value})}
