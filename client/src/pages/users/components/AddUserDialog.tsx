@@ -102,9 +102,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
       } else {
         // Create new user
         await api.post('/api/users', {
-          ...formData,
-          position: formData.position.toLowerCase().replace(/\s+/g, '-'),
-          department: formData.department.toLowerCase()
+          ...formData
         });
         toast({
           title: "Success",
