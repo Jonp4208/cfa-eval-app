@@ -22,9 +22,10 @@ import { errorHandler } from './utils/errorHandler.js';
 
 dotenv.config();
 
-const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const app = express();
 
 // Middleware
 app.use(cors({
@@ -35,10 +36,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Serve static files from the React build
-app.use(express.static(path.join(__dirname, '../../client/dist')));
-
-// Routes
+// API Routes - Make sure these come BEFORE the static file serving
 app.use('/api/auth', authRoutes);
 app.use('/api/stores', storesRoutes);
 app.use('/api/templates', templateRoutes);
@@ -50,12 +48,15 @@ app.use('/api/disciplinary', disciplinaryRoutes);
 app.use('/api/goals', goalsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
+// Error handling middleware for API routes
+app.use('/api', errorHandler);
+
+// Serve static files from the React build
+app.use(express.static(path.join(__dirname, '../../client/dist')));
+
 // Serve React app for any other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
-
-// Error handling middleware
-app.use(errorHandler);
 
 export default app; 
