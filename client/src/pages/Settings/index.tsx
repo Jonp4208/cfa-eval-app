@@ -73,6 +73,9 @@ const SettingsPage = () => {
     mutationFn: settingsService.updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Failed to update settings');
     }
   });
 
@@ -80,6 +83,9 @@ const SettingsPage = () => {
     mutationFn: settingsService.updateStoreInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storeInfo'] });
+    },
+    onError: (error) => {
+      handleError(error, 'Failed to update store information');
     }
   });
 
@@ -89,17 +95,13 @@ const SettingsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
       toast({
-        title: "✓ Settings Reset",
-        description: "Settings have been reset to defaults.",
-        duration: 5000,
+        title: "Settings Reset",
+        description: "All settings have been restored to their default values.",
+        variant: "default",
       });
     },
-    onError: () => {
-      toast({
-        title: "✕ Reset Failed",
-        description: "Failed to reset settings. Please try again.",
-        duration: 5000,
-      });
+    onError: (error) => {
+      handleError(error, 'Failed to reset settings');
     }
   });
 
@@ -130,16 +132,12 @@ const SettingsPage = () => {
       });
 
       toast({
-        title: "✓ Settings Saved",
+        title: "Settings Saved",
         description: "Your changes have been saved successfully.",
-        duration: 5000,
+        variant: "default",
       });
     } catch (error) {
-      toast({
-        title: "✕ Error Saving Settings",
-        description: "There was a problem saving your changes. Please try again.",
-        duration: 5000,
-      });
+      handleError(error, 'Failed to save settings');
     }
   };
 
@@ -147,6 +145,10 @@ const SettingsPage = () => {
     updateSettingsMutation.mutate({
       [section]: {
         [setting]: value
+      }
+    }, {
+      onError: (error) => {
+        handleError(error, `Failed to update ${setting}`);
       }
     });
   };
