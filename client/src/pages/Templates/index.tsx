@@ -158,25 +158,27 @@ export default function Templates() {
         </Button>
       </div>
 
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>All Templates</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative w-64">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <div className="flex-1">
+              <CardTitle className="text-xl font-semibold">All Templates</CardTitle>
+            </div>
+            <div className="flex flex-1 md:flex-none items-center gap-4">
+              <div className="relative flex-1 md:w-80">
                 <input
                   type="text"
                   placeholder="Search templates..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50/50 border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                className="px-4 py-2 bg-gray-50/50 border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>

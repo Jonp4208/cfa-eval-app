@@ -147,13 +147,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-50">
         <div className="h-16 px-4 flex items-center justify-between">
           {/* Logo and Store Info */}
-          <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             <TrendingUp className="h-6 w-6 text-red-600" />
             <div className="flex flex-col">
               <span className="font-bold">Growth Hub</span>
               <span className="text-xs text-gray-500">#{user?.store?.storeNumber || '00000'}</span>
             </div>
-          </div>
+          </button>
 
           {/* Mobile Menu Button */}
           <button
@@ -171,13 +174,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Left Section: Logo and Store Info */}
           <div className="flex items-center gap-8">
             {/* Logo and Store Info */}
-            <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               <TrendingUp className="h-6 w-6 text-red-600" />
               <div className="flex flex-col">
                 <span className="font-bold">Growth Hub</span>
                 <span className="text-xs text-gray-500">#{user?.store?.storeNumber || '00000'}</span>
               </div>
-            </div>
+            </button>
 
             {/* Desktop Navigation Items */}
             <div className="hidden md:flex items-center gap-1">
