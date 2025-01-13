@@ -16,26 +16,13 @@ export const getSettings = async (req, res) => {
       console.log('No settings found, creating default settings');
       settings = await Settings.create({
         store: req.user.store,
-        general: {
-          darkMode: false
-        },
-        userAccess: {
-          allowRegistration: true,
-          requireEmailVerification: false,
-          autoAssignBasicRole: true
-        },
-        evaluations: {
-          enableSelfEvaluations: false,
-          requireComments: true,
-          allowDraftSaving: true,
-          defaultReviewPeriod: 90
-        },
-        notifications: {
-          emailNotifications: true,
-          evaluationReminders: true,
-          systemUpdates: true,
-          reminderLeadTime: 7
-        }
+        darkMode: false,
+        compactMode: false,
+        storeName: '',
+        storeNumber: '',
+        storeAddress: '',
+        storePhone: '',
+        storeEmail: ''
       });
     }
     
@@ -72,7 +59,16 @@ export const resetSettings = async (req, res) => {
     }
 
     await Settings.findOneAndDelete({ store: req.user.store });
-    const settings = await getSettings(req, res);
+    const settings = await Settings.create({
+      store: req.user.store,
+      darkMode: false,
+      compactMode: false,
+      storeName: '',
+      storeNumber: '',
+      storeAddress: '',
+      storePhone: '',
+      storeEmail: ''
+    });
     
     res.json(settings);
   } catch (error) {

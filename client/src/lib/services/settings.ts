@@ -2,40 +2,21 @@
 import api from '../axios';
 
 export interface StoreSettings {
-  general: {
-    darkMode: boolean;
-    storeName?: string;
-    storeNumber?: string;
-    location?: string;
-  };
-  userAccess: {
-    allowRegistration: boolean;
-    requireApproval: boolean;
-    requireEmailVerification: boolean;
-    autoAssignBasicRole: boolean;
-  };
-  evaluations: {
-    autoSave: boolean;
-    enableSelfEvaluations: boolean;
-    requireComments: boolean;
-    allowDraftSaving: boolean;
-    defaultReviewPeriod: number;
-  };
-  notifications: {
-    emailEnabled: boolean;
-    newEvaluationAlerts: boolean;
-    emailNotifications: boolean;
-    evaluationReminders: boolean;
-    systemUpdates: boolean;
-    reminderLeadTime: number;
-  };
+  darkMode: boolean;
+  compactMode: boolean;
+  storeName: string;
+  storeNumber: string;
+  storeAddress: string;
+  storePhone: string;
+  storeEmail: string;
 }
 
 export interface StoreInfo {
-  id: string;
   name: string;
   storeNumber: string;
-  location: string;
+  storeAddress: string;
+  storePhone: string;
+  storeEmail: string;
 }
 
 export const settingsService = {

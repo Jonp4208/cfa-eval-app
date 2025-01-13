@@ -7,65 +7,19 @@ const settingsSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  general: {
-    storeName: String,
-    storeNumber: String,
-    location: String,
-    darkMode: {
-      type: Boolean,
-      default: false
-    }
+  darkMode: {
+    type: Boolean,
+    default: false
   },
-  userAccess: {
-    allowRegistration: {
-      type: Boolean,
-      default: true
-    },
-    requireEmailVerification: {
-      type: Boolean,
-      default: false
-    },
-    autoAssignBasicRole: {
-      type: Boolean,
-      default: true
-    }
+  compactMode: {
+    type: Boolean,
+    default: false
   },
-  evaluations: {
-    enableSelfEvaluations: {
-      type: Boolean,
-      default: true
-    },
-    requireComments: {
-      type: Boolean,
-      default: true
-    },
-    allowDraftSaving: {
-      type: Boolean,
-      default: true
-    },
-    defaultReviewPeriod: {
-      type: Number,
-      default: 30
-    }
-  },
-  notifications: {
-    emailNotifications: {
-      type: Boolean,
-      default: true
-    },
-    evaluationReminders: {
-      type: Boolean,
-      default: true
-    },
-    systemUpdates: {
-      type: Boolean,
-      default: true
-    },
-    reminderLeadTime: {
-      type: Number,
-      default: 7
-    }
-  }
+  storeName: String,
+  storeNumber: String,
+  storeAddress: String,
+  storePhone: String,
+  storeEmail: String
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

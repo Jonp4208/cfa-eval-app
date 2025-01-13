@@ -1,5 +1,5 @@
 // File: src/pages/Settings/index.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,30 +22,57 @@ const SettingsPage = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
+  // State to track form changes
+  const [formState, setFormState] = useState({
+    storeName: '',
+    storeNumber: '',
+    storeAddress: '',
+    storePhone: '',
+    storeEmail: '',
+    darkMode: false,
+    compactMode: false
+  });
+
   // Fetch settings and store info
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
     queryKey: ['settings'],
     queryFn: settingsService.getSettings
   });
 
-  const { data: storeInfo, isLoading: isStoreLoading } = useQuery({
-    queryKey: ['storeInfo'],
-    queryFn: settingsService.getStoreInfo
-  });
+  // Update form state when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      setFormState({
+        storeName: settings.storeName || '',
+        storeNumber: settings.storeNumber || '',
+        storeAddress: settings.storeAddress || '',
+        storePhone: settings.storePhone || '',
+        storeEmail: settings.storeEmail || '',
+        darkMode: settings.darkMode || false,
+        compactMode: settings.compactMode || false
+      });
+    }
+  }, [settings]);
+
+  const handleSettingChange = (key: string, value: any) => {
+    setFormState(prev => ({
+      ...prev,
+      [key]: value
+    }));
+
+    // For toggle switches, update immediately
+    if (typeof value === 'boolean') {
+      updateSettingsMutation.mutate({
+        [key]: value
+      });
+    }
+  };
 
   // Update mutations
   const updateSettingsMutation = useMutation({
     mutationFn: settingsService.updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      toast({
-        title: "Settings updated",
-        description: "Your changes have been saved successfully.",
-        duration: 5000,
-      });
-    },
-    onError: (error) => {
-      handleError(error);
     }
   });
 
@@ -53,14 +80,6 @@ const SettingsPage = () => {
     mutationFn: settingsService.updateStoreInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storeInfo'] });
-      toast({
-        title: "Store information updated",
-        description: "Store details have been saved successfully.",
-        duration: 5000,
-      });
-    },
-    onError: (error) => {
-      handleError(error);
     }
   });
 
@@ -70,29 +89,58 @@ const SettingsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
       toast({
-        title: "Settings reset",
-        description: "Settings have been reset to defaults."
+        title: "✓ Settings Reset",
+        description: "Settings have been reset to defaults.",
+        duration: 5000,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "✕ Reset Failed",
+        description: "Failed to reset settings. Please try again.",
+        duration: 5000,
       });
     }
   });
 
-  const handleSaveGeneral = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveGeneral = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
     
-    if (isAdmin) {
-      updateStoreInfoMutation.mutate({
-        name: formData.get('storeName')?.toString(),
-        storeNumber: formData.get('storeNumber')?.toString(),
-        location: formData.get('location')?.toString()
+    try {
+      // Update store info if admin
+      if (isAdmin) {
+        await updateStoreInfoMutation.mutateAsync({
+          name: formState.storeName,
+          storeNumber: formState.storeNumber,
+          storeAddress: formState.storeAddress,
+          storePhone: formState.storePhone,
+          storeEmail: formState.storeEmail
+        });
+      }
+
+      // Update general settings
+      await updateSettingsMutation.mutateAsync({
+        darkMode: formState.darkMode,
+        compactMode: formState.compactMode,
+        storeName: formState.storeName,
+        storeNumber: formState.storeNumber,
+        storeAddress: formState.storeAddress,
+        storePhone: formState.storePhone,
+        storeEmail: formState.storeEmail
+      });
+
+      toast({
+        title: "✓ Settings Saved",
+        description: "Your changes have been saved successfully.",
+        duration: 5000,
+      });
+    } catch (error) {
+      toast({
+        title: "✕ Error Saving Settings",
+        description: "There was a problem saving your changes. Please try again.",
+        duration: 5000,
       });
     }
-
-    updateSettingsMutation.mutate({
-      general: {
-        darkMode: formData.get('darkMode') === 'on'
-      }
-    });
   };
 
   const handleToggleSetting = (section: string, setting: string, value: boolean) => {
@@ -103,7 +151,7 @@ const SettingsPage = () => {
     });
   };
 
-  if (isSettingsLoading || isStoreLoading) {
+  if (isSettingsLoading) {
     return <div>Loading settings...</div>;
   }
 
@@ -159,63 +207,69 @@ const SettingsPage = () => {
         </div>
 
         <TabsContent value="general" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Store Information</CardTitle>
-              <CardDescription>Update your store's basic information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="storeName" className="text-sm font-medium">Store Name</label>
-                  <Input
-                    id="storeName"
-                    value={settings?.storeName || ''}
-                    onChange={(e) => handleSettingChange('storeName', e.target.value)}
-                    placeholder="Enter store name"
-                  />
+          <form onSubmit={handleSaveGeneral}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Information</CardTitle>
+                <CardDescription>Update your store's basic information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="storeName" className="text-sm font-medium">Store Name</label>
+                    <Input
+                      id="storeName"
+                      name="storeName"
+                      value={formState.storeName}
+                      onChange={(e) => handleSettingChange('storeName', e.target.value)}
+                      placeholder="Enter store name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="storeNumber" className="text-sm font-medium">Store Number</label>
+                    <Input
+                      id="storeNumber"
+                      value={formState.storeNumber}
+                      onChange={(e) => handleSettingChange('storeNumber', e.target.value)}
+                      placeholder="Enter store number"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="storeNumber" className="text-sm font-medium">Store Number</label>
+                  <label htmlFor="storeAddress" className="text-sm font-medium">Store Address</label>
                   <Input
-                    id="storeNumber"
-                    value={settings?.storeNumber || ''}
-                    onChange={(e) => handleSettingChange('storeNumber', e.target.value)}
-                    placeholder="Enter store number"
+                    id="storeAddress"
+                    value={formState.storeAddress}
+                    onChange={(e) => handleSettingChange('storeAddress', e.target.value)}
+                    placeholder="Enter store address"
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="storeAddress" className="text-sm font-medium">Store Address</label>
-                <Input
-                  id="storeAddress"
-                  value={settings?.storeAddress || ''}
-                  onChange={(e) => handleSettingChange('storeAddress', e.target.value)}
-                  placeholder="Enter store address"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="storePhone" className="text-sm font-medium">Store Phone</label>
-                  <Input
-                    id="storePhone"
-                    value={settings?.storePhone || ''}
-                    onChange={(e) => handleSettingChange('storePhone', e.target.value)}
-                    placeholder="Enter store phone"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="storePhone" className="text-sm font-medium">Store Phone</label>
+                    <Input
+                      id="storePhone"
+                      value={formState.storePhone}
+                      onChange={(e) => handleSettingChange('storePhone', e.target.value)}
+                      placeholder="Enter store phone"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="storeEmail" className="text-sm font-medium">Store Email</label>
+                    <Input
+                      id="storeEmail"
+                      value={formState.storeEmail}
+                      onChange={(e) => handleSettingChange('storeEmail', e.target.value)}
+                      placeholder="Enter store email"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label htmlFor="storeEmail" className="text-sm font-medium">Store Email</label>
-                  <Input
-                    id="storeEmail"
-                    value={settings?.storeEmail || ''}
-                    onChange={(e) => handleSettingChange('storeEmail', e.target.value)}
-                    placeholder="Enter store email"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <Button type="submit" className="w-full sm:w-auto">
+                  Save Changes
+                </Button>
+              </CardContent>
+            </Card>
+          </form>
 
           <Card>
             <CardHeader>
@@ -230,7 +284,7 @@ const SettingsPage = () => {
                 </div>
                 <Switch
                   id="darkMode"
-                  checked={settings?.darkMode || false}
+                  checked={formState.darkMode}
                   onCheckedChange={(checked) => handleSettingChange('darkMode', checked)}
                 />
               </div>
@@ -241,7 +295,7 @@ const SettingsPage = () => {
                 </div>
                 <Switch
                   id="compactMode"
-                  checked={settings?.compactMode || false}
+                  checked={formState.compactMode}
                   onCheckedChange={(checked) => handleSettingChange('compactMode', checked)}
                 />
               </div>

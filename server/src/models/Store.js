@@ -10,9 +10,15 @@ const storeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  location: {
+  storeAddress: {
     type: String,
     required: true
+  },
+  storePhone: {
+    type: String
+  },
+  storeEmail: {
+    type: String
   },
   admins: [{
     type: mongoose.Schema.Types.ObjectId,
