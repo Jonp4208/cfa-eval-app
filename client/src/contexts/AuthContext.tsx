@@ -50,6 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
+    // Clear any existing auth state before attempting login
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+
     try {
       console.log('Attempting login for:', email);
       const response = await api.post('/api/auth/login', { email, password });
@@ -72,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: error
       });
       
-      // Clear any existing auth state on login error
+      // Ensure auth state is cleared on login error
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);

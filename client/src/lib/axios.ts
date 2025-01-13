@@ -69,6 +69,8 @@ api.interceptors.response.use(
             error: originalMessage // Include in both fields for compatibility
           };
         }
+        // Don't redirect on login failures
+        return Promise.reject(error);
       }
     }
 

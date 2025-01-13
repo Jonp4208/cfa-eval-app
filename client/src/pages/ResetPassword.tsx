@@ -35,15 +35,20 @@ export default function ResetPassword() {
       });
 
       toast({
-        title: 'Success',
-        description: 'Password reset successful. Please log in with your new password.',
+        title: '� Success',
+        description: 'Your password has been reset successfully. You can now log in with your new password.',
+        duration: 5000,
       });
-      navigate('/login');
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: '❌ Error',
         description: error.response?.data?.message || 'Failed to reset password',
         variant: 'destructive',
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
