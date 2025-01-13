@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -21,15 +23,20 @@ import { errorHandler } from './utils/errorHandler.js';
 dotenv.config();
 
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: [process.env.CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173', 'https://cfa-eval-7eb74e14c3a4.herokuapp.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Serve static files from the React build
+app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -42,6 +49,11 @@ app.use('/api/users', usersRoutes);
 app.use('/api/disciplinary', disciplinaryRoutes);
 app.use('/api/goals', goalsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Serve React app for any other routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+});
 
 // Error handling middleware
 app.use(errorHandler);
