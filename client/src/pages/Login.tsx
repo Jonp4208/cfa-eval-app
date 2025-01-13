@@ -26,29 +26,22 @@ export default function Login() {
       console.log('Login successful, navigating to dashboard');
       navigate('/');
     } catch (error: any) {
-      console.log('Login error details:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.response?.data?.message,
-        error: error.response?.data?.error,
-        originalError: error
-      });
-      
       // Clear password field on error
       setPassword('');
       
-      // Get the most appropriate error message
-      const errorMessage = error.response?.data?.message || 
-                         error.response?.data?.error || 
-                         (error.response?.status === 401 ? "Invalid email or password" : error.message) ||
-                         "Failed to sign in. Please check your credentials.";
-      
-      // Show error toast
+      // Log the full error object to see what we're receiving
+      console.log('Login error caught:', {
+        error,
+        responseData: error.response?.data,
+        responseStatus: error.response?.status,
+        message: error.message
+      });
+
+      // Show error toast to user
       toast({
-        title: "Login Failed",
-        description: errorMessage,
         variant: "destructive",
-        duration: 5000
+        title: "Login Failed",
+        description: error.message || "Failed to sign in. Please check your credentials and try again."
       });
     } finally {
       setIsLoading(false);
