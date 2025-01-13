@@ -212,41 +212,41 @@ export default function Templates() {
           filteredTemplates?.map((template: Template) => (
             <Card key={template.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-medium">{template.name}</h3>
+                      <h3 className="font-medium truncate">{template.name}</h3>
                       {template.isActive ? (
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1 flex-shrink-0">
                           <CheckCircle className="w-3 h-3" />
                           Active
                         </span>
                       ) : (
-                        <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full flex items-center gap-1 flex-shrink-0">
                           <XCircle className="w-3 h-3" />
                           Inactive
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 mb-4">{template.description}</p>
+                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">{template.description}</p>
                     
-                    <div className="flex items-center gap-6 text-sm text-gray-500">
+                    <div className="flex items-center gap-6 text-sm text-gray-500 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
+                        <FileText className="w-4 h-4 flex-shrink-0" />
                         {template.sectionsCount} {template.sectionsCount === 1 ? 'section' : 'sections'}
                       </div>
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
                         {template.criteriaCount} {template.criteriaCount === 1 ? 'question' : 'questions'}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-4 h-4 flex-shrink-0" />
                         Used {template.usageCount} {template.usageCount === 1 ? 'time' : 'times'}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
