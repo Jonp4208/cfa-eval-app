@@ -89,29 +89,40 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     try {
       if (user) {
         // Update existing user
-        await api.put(`/api/users/${user._id}`, formData);
+        await api.put(`/api/users/${user._id}`, {
+          ...formData,
+          position: formData.position.toLowerCase().replace(/\s+/g, '-'),
+          department: formData.department.toLowerCase()
+        });
         toast({
           title: "Success",
           description: "User updated successfully",
+          duration: 5000,
         });
       } else {
         // Create new user
-        await api.post('/api/users', formData);
+        await api.post('/api/users', {
+          ...formData,
+          position: formData.position.toLowerCase().replace(/\s+/g, '-'),
+          department: formData.department.toLowerCase()
+        });
         toast({
           title: "Success",
-          description: "User created successfully",
+          description: "User created successfully. An email with login credentials has been sent.",
+          duration: 5000,
         });
       }
 
       // Refresh users list
       queryClient.invalidateQueries({ queryKey: ['users'] });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving user:', error);
       toast({
         title: "Error",
-        description: user ? "Failed to update user" : "Failed to create user",
-        variant: "destructive"
+        description: error.response?.data?.message || (user ? "Failed to update user" : "Failed to create user"),
+        variant: "destructive",
+        duration: 5000,
       });
     }
   };

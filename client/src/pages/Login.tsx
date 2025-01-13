@@ -28,6 +28,7 @@ export default function Login() {
         title: 'Error',
         description: error.response?.data?.message || 'Failed to login',
         variant: 'destructive',
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
