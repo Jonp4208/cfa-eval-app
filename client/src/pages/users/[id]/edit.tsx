@@ -82,22 +82,55 @@ export default function EditUser() {
       // Transform department to match select options
       const transformDepartment = (dept: string) => {
         if (!dept) return '';
-        
-        // Keep the original case from the server
+        console.log('Transforming department:', dept);
         return dept;
+      };
+
+      // Transform position to match select options
+      const transformPosition = (pos: string) => {
+        if (!pos) return '';
+        console.log('Original position:', pos);
+        // Convert position to match the exact values in SelectItem
+        const positionMap: { [key: string]: string } = {
+          'DIRECTOR': 'Director',
+          'MANAGER': 'Manager',
+          'SHIFT LEADER': 'Shift Leader',
+          'TEAM LEADER': 'Team Leader',
+          'TRAINER': 'Trainer',
+          'TEAM MEMBER': 'Team Member'
+        };
+        const upperPos = pos.toUpperCase();
+        const transformed = positionMap[upperPos] || pos;
+        console.log('Transformed position:', transformed);
+        return transformed;
+      };
+
+      // Transform role to match select options
+      const transformRole = (role: string) => {
+        if (!role) return '';
+        console.log('Original role:', role);
+        const roleMap: { [key: string]: string } = {
+          'ADMIN': 'admin',
+          'EVALUATOR': 'evaluator',
+          'USER': 'user'
+        };
+        const upperRole = role.toUpperCase();
+        const transformed = roleMap[upperRole] || role.toLowerCase();
+        console.log('Transformed role:', transformed);
+        return transformed;
       };
 
       const transformedData = {
         name: user.name || '',
         email: user.email || '',
         department: transformDepartment(user.department),
-        position: user.position || '',
-        role: user.role?.toLowerCase() || '',
+        position: transformPosition(user.position),
+        role: transformRole(user.role),
         status: user.status || 'active',
         manager: user.manager?._id || 'none'
       };
       
-      console.log('Transformed form data:', transformedData);
+      console.log('Final transformed form data:', transformedData);
       setFormData(transformedData);
     }
   }, [user]);
@@ -107,22 +140,28 @@ export default function EditUser() {
     mutationFn: async (data: UserFormData) => {
       try {
         setError(null);
-        console.log('Original data:', data);
+        console.log('Original mutation data:', data);
         
         // Transform data to match server expectations
         const transformedData = {
           ...data,
-          manager: data.manager === 'none' ? null : data.manager
+          manager: data.manager === 'none' ? null : data.manager,
+          // Ensure role is in the correct format
+          role: data.role.toLowerCase()
         };
 
-        console.log('Transformed data:', transformedData);
+        console.log('Transformed mutation data:', transformedData);
         const response = await api.put(`/api/users/${id}`, transformedData);
         console.log('Server response:', response.data);
         return response.data;
       } catch (error: any) {
         const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error occurred';
         setError(errorMessage);
-        console.log('Error in mutation:', error);
+        console.error('Error in mutation:', {
+          error,
+          formData: data,
+          errorMessage
+        });
         throw error;
       }
     },
@@ -142,7 +181,11 @@ export default function EditUser() {
     onError: (error: any) => {
       const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error occurred';
       setError(errorMessage);
-      console.log('onError triggered with:', error);
+      console.error('Mutation error:', {
+        error,
+        message: errorMessage,
+        response: error.response?.data
+      });
       
       toast({
         title: "❌ Update Failed",
