@@ -56,10 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Login response:', response.data);
       
       if (!response.data.token || !response.data.user) {
-        console.error('Invalid login response:', response.data);
-        const error = new Error('Invalid login response from server');
-        error.response = { data: { message: 'Invalid login response from server' } };
-        throw error;
+        throw new Error('Invalid login response from server');
       }
 
       const { token, user } = response.data;
@@ -69,26 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       return response.data;
     } catch (error: any) {
-      console.error('Login error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-
       // Clear any existing auth state on login error
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
-      
-      // Ensure error has the correct structure
-      if (!error.response) {
-        error.response = { 
-          data: { 
-            message: error.message || 'Failed to login. Please try again.' 
-          } 
-        };
-      }
-      
       throw error;
     }
   };

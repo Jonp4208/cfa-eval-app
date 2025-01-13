@@ -42,43 +42,9 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
-    console.log('Response:', {
-      url: `${API_URL}${response.config.url}`,
-      status: response.status,
-      headers: response.headers,
-      data: response.data
-    });
     return response;
   },
   (error) => {
-    // Log the full error details
-    console.error('API Error Details:', {
-      url: `${API_URL}${error.config?.url}`,
-      method: error.config?.method,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      headers: {
-        request: error.config?.headers,
-        response: error.response?.headers
-      }
-    });
-
-    // Format the error response
-    const errorResponse = {
-      ...error,
-      response: {
-        ...error.response,
-        data: {
-          message: error.response?.data?.message || 
-                  error.response?.data?.error || 
-                  error.message || 
-                  'An unexpected error occurred'
-        }
-      }
-    };
-
     // Handle 401 Unauthorized errors, but not for login/register routes
     const isPublicRoute = PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
     if (error.response?.status === 401 && !isPublicRoute) {
@@ -87,7 +53,7 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
 
-    return Promise.reject(errorResponse);
+    return Promise.reject(error);
   }
 );
 

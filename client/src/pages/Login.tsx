@@ -30,24 +30,30 @@ export default function Login() {
       // Clear password field on error
       setPassword('');
       
-      // Get the error message from the response
-      const errorMessage = error.response?.data?.message || 
-                         error.response?.data?.error || 
-                         error.message || 
-                         'Failed to login. Please check your credentials and try again.';
+      // Get error message from server response
+      const serverMessage = error.response?.data?.message;
       
-      // Show error toast
+      // Format the error message for display
+      let displayMessage = 'Incorrect email or password';
+      if (serverMessage) {
+        if (serverMessage.includes('Email not found')) {
+          displayMessage = 'Email address not found';
+        } else if (serverMessage.includes('Incorrect password')) {
+          displayMessage = 'Incorrect password';
+        } else if (serverMessage.includes('Account is inactive')) {
+          displayMessage = 'Your account is inactive. Please contact your administrator.';
+        } else {
+          displayMessage = serverMessage;
+        }
+      }
+      
+      // Show error toast with formatted message
       toast({
         title: 'Login Failed',
-        description: errorMessage,
+        description: displayMessage,
         variant: 'destructive',
         duration: 5000,
       });
-
-      // Log additional error details for debugging
-      console.log('Full error object:', error);
-      console.log('Error response:', error.response);
-      console.log('Error message:', errorMessage);
     } finally {
       setIsLoading(false);
     }
