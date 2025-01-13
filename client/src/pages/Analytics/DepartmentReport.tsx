@@ -175,6 +175,29 @@ export function DepartmentReport() {
         >
           Back of House
         </Button>
+        <div className="ml-auto flex gap-2">
+          <Button
+            onClick={() => setTimeframe('month')}
+            variant={timeframe === 'month' ? 'default' : 'outline'}
+            size="sm"
+          >
+            Month
+          </Button>
+          <Button
+            onClick={() => setTimeframe('quarter')}
+            variant={timeframe === 'quarter' ? 'default' : 'outline'}
+            size="sm"
+          >
+            Quarter
+          </Button>
+          <Button
+            onClick={() => setTimeframe('year')}
+            variant={timeframe === 'year' ? 'default' : 'outline'}
+            size="sm"
+          >
+            Year
+          </Button>
+        </div>
       </div>
 
       {/* Performance Radar */}

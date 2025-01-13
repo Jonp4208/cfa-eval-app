@@ -1,7 +1,7 @@
 // client/src/pages/Analytics/HeartsAndHands.tsx
-import { useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Lightbulb, AlertCircle, Star, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import {  AlertCircle, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { useAuth } from '@/contexts/AuthContext';
@@ -212,7 +212,7 @@ const HeartsAndHands = () => {
                     </div>
 
                     {/* Team Member Markers */}
-                    {Object.entries(filteredMembers).map(([position, members]: [string, TeamMember[]]) => 
+                    {Object.entries(filteredMembers).map(([_, members]: [string, TeamMember[]]) => 
                       members.map((member: TeamMember, index: number) => {
                         if (!member.metrics?.heartsAndHands) return null;
                         const { x, y } = member.metrics.heartsAndHands;

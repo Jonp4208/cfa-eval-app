@@ -51,7 +51,7 @@ export default function ChangePasswordForm() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
+    } catch (error: any) {
       handleError(error);
     } finally {
       setIsLoading(false);

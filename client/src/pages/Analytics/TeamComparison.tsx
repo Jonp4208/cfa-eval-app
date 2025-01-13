@@ -44,10 +44,6 @@ export function TeamComparison() {
     }
   });
 
-  const calculateImprovement = (current: number, previous: number) => {
-    return ((current - previous) / previous * 100).toFixed(1);
-  };
-
   const hasData = data?.members?.length > 0;
 
   return (

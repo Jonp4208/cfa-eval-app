@@ -19,19 +19,19 @@ export function Toaster() {
             props.variant === 'destructive' 
               ? 'bg-red-50 border-red-100 text-red-600' 
               : 'bg-green-50 border-green-100 text-green-600'
-          } rounded-lg`}>
+          } rounded-lg shadow-lg`}>
             <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
+              {title && <ToastTitle className="text-sm font-semibold">{title}</ToastTitle>}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <ToastDescription className="text-sm opacity-90">{description}</ToastDescription>
               )}
             </div>
             {action}
-            <ToastClose />
+            <ToastClose className="opacity-70 hover:opacity-100 transition-opacity" />
           </Toast>
         )
       })}
-      <ToastViewport />
+      <ToastViewport className="fixed top-4 right-4 flex flex-col gap-2 w-full max-w-[420px] m-0 z-[100] outline-none" />
     </ToastProvider>
   )
 }
