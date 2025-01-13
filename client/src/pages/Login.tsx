@@ -25,12 +25,12 @@ export default function Login() {
     } catch (error: any) {
       setPassword('');
       
-      // Get error message from server response, or use a default message
+      // Get error message from response data
       const errorMessage = error.response?.data?.message || "Failed to sign in";
       
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Login Failed",
         description: errorMessage
       });
     } finally {
