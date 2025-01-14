@@ -1,6 +1,6 @@
 // client/src/pages/Templates/TemplateBuilder.tsx
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, GripVertical, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -69,6 +69,7 @@ interface TemplateFormData {
 
 export default function TemplateBuilder() {
   const navigate = useNavigate();
+  const { id } = useParams();  // Get template ID from URL if editing
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
   
@@ -81,6 +82,7 @@ export default function TemplateBuilder() {
   );
   
   const [hasCheckedStore, setHasCheckedStore] = useState(false);
+  const [isEditMode] = useState(!!id);  // Check if we're in edit mode
   const [formData, setFormData] = useState<TemplateFormData>({
     name: '',
     description: '',
@@ -109,6 +111,50 @@ export default function TemplateBuilder() {
   });
 
   const availableTags = ['FOH', 'BOH', 'Leadership', 'General'];
+
+  // Fetch template data if in edit mode
+  useEffect(() => {
+    const fetchTemplate = async () => {
+      if (id) {
+        try {
+          const response = await api.get(`/api/templates/${id}`);
+          const template = response.data.template;
+          
+          // Transform the data to match the form structure
+          setFormData({
+            name: template.name,
+            description: template.description || '',
+            tags: template.tags || ['General'],
+            sections: template.sections.map((section: any) => ({
+              id: section._id || Date.now().toString(),
+              title: section.title,
+              description: section.description || '',
+              order: section.order,
+              criteria: section.criteria.map((criterion: any) => ({
+                id: criterion._id || Date.now().toString(),
+                name: criterion.name,
+                description: criterion.description || '',
+                ratingScale: criterion.ratingScale || '1-5',
+                required: criterion.required
+              }))
+            })),
+            store: template.store || '',
+            isActive: template.isActive
+          });
+        } catch (error) {
+          console.error('Error fetching template:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load template data",
+            duration: 5000,
+          });
+          navigate('/templates');
+        }
+      }
+    };
+
+    fetchTemplate();
+  }, [id, navigate, toast]);
 
   useEffect(() => {
     console.log('Auth check effect running', { 
@@ -383,13 +429,21 @@ export default function TemplateBuilder() {
         }))
       };
 
-      await api.post<{ template: Template }>('/api/templates', templateData);
-      
-      toast({
-        title: "Success",
-        description: "Template saved successfully",
-        duration: 5000,
-      });
+      if (isEditMode) {
+        await api.put(`/api/templates/${id}`, templateData);
+        toast({
+          title: "Success",
+          description: "Template updated successfully",
+          duration: 5000,
+        });
+      } else {
+        await api.post('/api/templates', templateData);
+        toast({
+          title: "Success",
+          description: "Template created successfully",
+          duration: 5000,
+        });
+      }
       
       navigate('/templates');
     } catch (error: any) {
@@ -439,14 +493,14 @@ export default function TemplateBuilder() {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Header with Save Button */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Create Evaluation Template</h1>
+        <h1 className="text-2xl font-bold">{isEditMode ? 'Edit' : 'Create'} Evaluation Template</h1>
         <Button 
           onClick={handleSave}
           variant="default"
           className="bg-red-600 hover:bg-red-700"
         >
           <Save className="w-4 h-4 mr-2" />
-          Save Template
+          {isEditMode ? 'Update' : 'Save'} Template
         </Button>
       </div>
 
@@ -689,7 +743,7 @@ export default function TemplateBuilder() {
           className="bg-red-600 hover:bg-red-700"
         >
           <Save className="w-4 h-4 mr-2" />
-          Save Template
+          {isEditMode ? 'Update' : 'Save'} Template
         </Button>
       </div>
     </div>
