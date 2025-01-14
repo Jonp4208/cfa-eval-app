@@ -83,12 +83,12 @@ export default function EditUser() {
       const transformDepartment = (dept: string) => {
         if (!dept) return '';
         console.log('Transforming department:', dept);
-        // Handle both uppercase and regular case
+        // Map to match schema enum values
         const deptMap: { [key: string]: string } = {
-          'LEADERSHIP': 'LEADERSHIP',
+          'LEADERSHIP': 'Leadership',
           'FOH': 'FOH',
           'BOH': 'BOH',
-          'Leadership': 'LEADERSHIP',
+          'Leadership': 'Leadership',
           'Front of House': 'FOH',
           'Back of House': 'BOH'
         };
@@ -281,9 +281,9 @@ export default function EditUser() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="LEADERSHIP">Leadership</SelectItem>
-                      <SelectItem value="FOH">Front of House</SelectItem>
-                      <SelectItem value="BOH">Back of House</SelectItem>
+                      <SelectItem value="Leadership">Leadership</SelectItem>
+                      <SelectItem value="FOH">FOH</SelectItem>
+                      <SelectItem value="BOH">BOH</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
