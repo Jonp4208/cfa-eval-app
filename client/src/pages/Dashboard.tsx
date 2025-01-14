@@ -36,6 +36,7 @@ interface DashboardStats {
       severity: string;
       date: string;
     }>;
+    last30Days: number;
   };
   team?: {
     inTraining: number;
@@ -43,7 +44,9 @@ interface DashboardStats {
       foh: number;
       boh: number;
     };
+    newHiresLast30Days: number;
   };
+  completedReviewsLast30Days: number;
 }
 
 export default function Dashboard() {
@@ -154,6 +157,33 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Evaluations Column */}
           <div className="space-y-6">
+            {/* Last 30 Days Stats */}
+            <Card>
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Last 30 Days Overview</h2>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-gray-500">Completed Reviews</p>
+                      <p className="text-xl font-semibold text-red-600">{stats?.completedReviewsLast30Days || 0}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-gray-500">Disciplinary Actions</p>
+                      <p className="text-xl font-semibold text-red-600">{stats?.disciplinary?.last30Days || 0}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-gray-500">New Hires</p>
+                      <p className="text-xl font-semibold text-red-600">{stats?.team?.newHiresLast30Days || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             <Card className="h-[200px]">
               <div className="p-6 h-full flex flex-col">
                 <div className="flex justify-between items-center mb-4">
