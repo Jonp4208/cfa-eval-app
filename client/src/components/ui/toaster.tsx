@@ -19,7 +19,7 @@ export function Toaster() {
             props.variant === 'destructive' 
               ? 'bg-red-50 border-red-100 text-red-600' 
               : 'bg-green-50 border-green-100 text-green-600'
-          } rounded-lg shadow-lg`}>
+          } rounded-[8px] shadow-lg`}>
             <div className="grid gap-1">
               {title && <ToastTitle className="text-sm font-semibold">{title}</ToastTitle>}
               {description && (
