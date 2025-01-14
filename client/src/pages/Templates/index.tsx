@@ -20,7 +20,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  Copy
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -133,6 +134,25 @@ export default function Templates() {
     }
   });
 
+  // Add copy mutation
+  const copyMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      const response = await api.post(`/api/templates/${templateId}/duplicate`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
+      toast({
+        title: "Success",
+        description: "Template copied successfully",
+        duration: 5000,
+      });
+    },
+    onError: (error: any) => {
+      handleError(error);
+    }
+  });
+
   const handleDelete = (template: Template) => {
     setTemplateToDelete(template);
     setOpenMenuId(null);
@@ -141,6 +161,14 @@ export default function Templates() {
   const confirmDelete = () => {
     if (templateToDelete) {
       deleteMutation.mutate(templateToDelete.id);
+    }
+  };
+
+  const handleCopy = async (templateId: string) => {
+    try {
+      await copyMutation.mutateAsync(templateId);
+    } catch (error) {
+      console.error('Error copying template:', error);
     }
   };
 
@@ -277,6 +305,21 @@ export default function Templates() {
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>View Template</p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCopy(template.id)}
+                          >
+                            <Copy className="w-4 h-4 text-gray-500" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy Template</p>
                         </TooltipContent>
                       </Tooltip>
 
