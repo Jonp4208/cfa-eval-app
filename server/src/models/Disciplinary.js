@@ -79,12 +79,10 @@ const disciplinarySchema = new mongoose.Schema({
     required: true
   },
   followUpDate: {
-    type: Date,
-    required: true
+    type: Date
   },
   followUpActions: {
-    type: String,
-    required: true
+    type: String
   },
   previousIncidents: {
     type: Boolean,
