@@ -12,7 +12,9 @@ import {
   ClipboardList,
   ChevronRight,
   ChevronLeft,
-  Check
+  Check,
+  Search,
+  CheckCircle
 } from 'lucide-react';
 import api from '../../lib/axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -251,262 +253,349 @@ export default function NewEvaluation() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Create New Evaluation</h1>
+          <p className="text-gray-500">Follow the steps below to create a new evaluation</p>
+        </div>
+      </div>
+
       {/* Progress Steps */}
-      <div className="overflow-x-auto -mx-4 px-4 pb-4">
-        <nav aria-label="Progress" className="min-w-max">
-          <ol role="list" className="flex items-center gap-2">
+      <Card className="p-6">
+        <nav aria-label="Progress">
+          <ol role="list" className="flex items-center">
             {steps.map((step, stepIdx) => {
               const Icon = step.icon;
               return (
-                <li key={step.id} className={`relative ${stepIdx !== steps.length - 1 ? 'pr-8' : ''}`}>
+                <li key={step.id} className={`relative ${stepIdx !== steps.length - 1 ? 'flex-1' : ''}`}>
                   {stepIdx !== steps.length - 1 && (
-                    <div className="absolute top-4 right-0 w-6 h-0.5 bg-gray-200" />
+                    <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-gray-200" />
                   )}
-                  <div className={`flex items-center gap-2 ${currentStep === step.id ? 'text-red-600' : 'text-gray-500'}`}>
-                    <div className={`w-8 h-8 flex items-center justify-center rounded-full border-2 
+                  <div className="relative flex items-center justify-center group">
+                    <div className={`w-10 h-10 flex items-center justify-center rounded-full border-2 bg-white relative z-10
                       ${currentStep === step.id ? 'border-red-600 bg-red-50' : 'border-gray-300'}`}>
-                      <Icon className="w-4 h-4" />
+                      <Icon className={`w-5 h-5 ${currentStep === step.id ? 'text-red-600' : 'text-gray-500'}`} />
                     </div>
-                    <span className="text-sm font-medium hidden sm:inline">{step.name}</span>
+                    <span className={`absolute -bottom-8 text-sm font-medium whitespace-nowrap
+                      ${currentStep === step.id ? 'text-red-600' : 'text-gray-500'}`}>
+                      {step.name}
+                    </span>
                   </div>
                 </li>
               );
             })}
           </ol>
         </nav>
-      </div>
+      </Card>
 
       {/* Step Content */}
-      <div className="space-y-6">
-        {currentStep === 1 && (
-          <>
-            {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <input
-                type="text"
-                placeholder="Search employees..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="w-full rounded-xl">
-                  <SelectValue placeholder="Filter by department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DEPARTMENTS.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept === 'all' ? 'All Departments' : dept}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <Card className="p-6">
+        <CardContent className="space-y-6">
+          {currentStep === 1 && (
+            <>
+              {/* Filters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search employees..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                </div>
+                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                  <SelectTrigger className="w-full rounded-xl">
+                    <SelectValue placeholder="Filter by department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept === 'all' ? 'All Departments' : dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Employee List */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(groupedEmployees).map(([department, departmentEmployees]) => (
-                <div key={department}>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium">{department}</h3>
-                    {selectedCountByDepartment[department] > 0 && (
-                      <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
-                        {selectedCountByDepartment[department]} selected
-                      </Badge>
-                    )}
+              {/* Employee List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.keys(groupedEmployees).length === 0 ? (
+                  <div className="col-span-full">
+                    <Card className="p-8">
+                      <CardContent className="flex flex-col items-center text-center">
+                        <Users className="w-12 h-12 text-gray-400 mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No Team Members Found</h3>
+                        <p className="text-gray-500 mb-4">
+                          You don't have any team members assigned for evaluations. Please contact your administrator to assign team members to you.
+                        </p>
+                        <Button variant="outline" onClick={() => navigate('/evaluations')}>
+                          Back to Evaluations
+                        </Button>
+                      </CardContent>
+                    </Card>
                   </div>
-                  <div className="space-y-2">
-                    {departmentEmployees.map((employee) => (
+                ) : (
+                  Object.entries(groupedEmployees).map(([department, departmentEmployees]) => (
+                    <div key={department}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium">{department}</h3>
+                        {selectedCountByDepartment[department] > 0 && (
+                          <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
+                            {selectedCountByDepartment[department]} selected
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        {departmentEmployees.map((employee) => (
+                          <Card
+                            key={employee._id}
+                            className={`cursor-pointer transition-colors ${
+                              selectedEmployees.find(emp => emp._id === employee._id)
+                                ? 'bg-red-50 border-red-200'
+                                : employee.pendingEvaluation
+                                  ? 'opacity-50 cursor-not-allowed'
+                                  : 'hover:border-red-200'
+                            }`}
+                            onClick={(e) => handleEmployeeToggle(employee, e)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  {employee.imageUrl ? (
+                                    <img
+                                      src={employee.imageUrl}
+                                      alt={employee.name}
+                                      className="w-8 h-8 rounded-full"
+                                    />
+                                  ) : (
+                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                      <Users className="w-4 h-4 text-gray-400" />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className="font-medium">{employee.name}</p>
+                                    <p className="text-sm text-gray-500">{employee.position}</p>
+                                  </div>
+                                </div>
+                                {employee.pendingEvaluation ? (
+                                  <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
+                                    Pending
+                                  </Badge>
+                                ) : selectedEmployees.find(emp => emp._id === employee._id) ? (
+                                  <Check className="w-5 h-5 text-red-600" />
+                                ) : null}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Step 2: Choose Template */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="flex flex-col gap-4">
+                <h2 className="text-lg font-medium">Select a Template</h2>
+                <div className="overflow-x-auto -mx-4 px-4 pb-2">
+                  <div className="flex gap-2 mb-4 min-w-max">
+                    <Button
+                      variant={selectedTag === 'All' ? 'default' : 'outline'}
+                      onClick={() => setSelectedTag('All')}
+                      size="sm"
+                      className={selectedTag === 'All' ? 'bg-red-600 hover:bg-red-700' : ''}
+                    >
+                      All
+                    </Button>
+                    {['FOH', 'BOH', 'Leadership', 'General'].map((tag) => (
+                      <Button
+                        key={tag}
+                        variant={selectedTag === tag ? 'default' : 'outline'}
+                        onClick={() => setSelectedTag(tag)}
+                        size="sm"
+                        className={selectedTag === tag ? 'bg-red-600 hover:bg-red-700' : ''}
+                      >
+                        {tag}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {loadingTemplates ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(templates || [])
+                    .filter((template: Template) => 
+                      selectedTag === 'All' || (template.tags && template.tags.includes(selectedTag))
+                    )
+                    .map((template: Template) => (
                       <Card
-                        key={employee._id}
-                        className={`cursor-pointer transition-colors ${
-                          selectedEmployees.find(emp => emp._id === employee._id)
-                            ? 'bg-red-50 border-red-200'
-                            : employee.pendingEvaluation
-                              ? 'opacity-50 cursor-not-allowed'
-                              : 'hover:border-red-200'
-                        }`}
-                        onClick={(e) => handleEmployeeToggle(employee, e)}
+                        key={`template-${template._id || template.id}`}
+                        onClick={() => setSelectedTemplate(template)}
+                        className={`cursor-pointer transition-all hover:shadow-md
+                          ${selectedTemplate?.id === (template.id || template._id) ? 'ring-2 ring-red-600 bg-red-50' : ''}`}
                       >
                         <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {employee.imageUrl ? (
-                                <img
-                                  src={employee.imageUrl}
-                                  alt={employee.name}
-                                  className="w-8 h-8 rounded-full"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                  <Users className="w-4 h-4 text-gray-400" />
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium">{employee.name}</p>
-                                <p className="text-sm text-gray-500">{employee.position}</p>
-                              </div>
-                            </div>
-                            {employee.pendingEvaluation ? (
-                              <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
-                                Pending
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium">{template.name}</h3>
+                            <FileText className={`w-5 h-5 ${selectedTemplate?.id === (template.id || template._id) ? 'text-red-600' : 'text-gray-400'}`} />
+                          </div>
+                          <div className="flex gap-2 mb-3">
+                            {(template.tags || []).map(tag => (
+                              <Badge key={tag} variant="secondary" className="text-xs">
+                                {tag}
                               </Badge>
-                            ) : selectedEmployees.find(emp => emp._id === employee._id) ? (
-                              <Check className="w-5 h-5 text-red-600" />
-                            ) : null}
+                            ))}
+                          </div>
+                          <p className="text-sm text-gray-500">{template.description}</p>
+                          <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <FileText className="w-4 h-4" />
+                              {template.sectionsCount} {template.sectionsCount === 1 ? 'section' : 'sections'}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4" />
+                              {template.criteriaCount} {template.criteriaCount === 1 ? 'question' : 'questions'}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Schedule */}
+          {currentStep === 3 && (
+            <div className="max-w-md mx-auto space-y-6">
+              <div>
+                <h2 className="text-lg font-medium mb-4">Schedule the Evaluation</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Scheduled Date
+                    </label>
+                    <input
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className="w-full p-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Step 2: Choose Template */}
-        {currentStep === 2 && (
-          <div className="space-y-4">
-            {/* Template Filter */}
-            <div className="overflow-x-auto -mx-4 px-4 pb-2">
-              <div className="flex gap-2 mb-4 min-w-max">
-                <Button
-                  variant={selectedTag === 'All' ? 'default' : 'outline'}
-                  onClick={() => setSelectedTag('All')}
-                  size="sm"
-                >
-                  All
-                </Button>
-                {['FOH', 'BOH', 'Leadership', 'General'].map((tag) => (
-                  <Button
-                    key={tag}
-                    variant={selectedTag === tag ? 'default' : 'outline'}
-                    onClick={() => setSelectedTag(tag)}
-                    size="sm"
-                  >
-                    {tag}
-                  </Button>
-                ))}
               </div>
             </div>
+          )}
 
-            {loadingTemplates ? (
-              <div className="text-center py-4">Loading templates...</div>
-            ) : (
-              (templates || [])
-                .filter((template: Template) => 
-                  selectedTag === 'All' || (template.tags && template.tags.includes(selectedTag))
-                )
-                .map((template: Template) => (
-                  <div
-                    key={`template-${template._id || template.id}`}
-                    onClick={() => setSelectedTemplate(template)}
-                    className={`p-4 border rounded-lg cursor-pointer 
-                      ${selectedTemplate?.id === (template.id || template._id) ? 'border-red-600 bg-red-50' : 'hover:bg-gray-50'}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{template.name}</h3>
-                        <div className="flex gap-2 mt-1">
-                          {(template.tags || []).map(tag => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <FileText className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">{template.description}</p>
-                  </div>
-                ))
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Schedule */}
-        {currentStep === 3 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Scheduled Date
-              </label>
-              <input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full p-2 border rounded-md"
-                min={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Review */}
-        {currentStep === 4 && (
-          <div className="space-y-4">
-            <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-2">Selected Employees ({selectedEmployees.length})</h3>
-              <div className="space-y-4">
-                {selectedEmployees.length > 0 && Object.entries(
-                  selectedEmployees.reduce((acc: { [key: string]: Employee[] }, emp) => {
-                    const dept = emp.department || 'Uncategorized';
-                    if (!acc[dept]) acc[dept] = [];
-                    acc[dept].push(emp);
-                    return acc;
-                  }, {})
-                ).map(([department, employees]) => (
-                  <div key={`review-${department}`}>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      {department} ({employees.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {employees.map(employee => (
-                        <div key={`review-${employee._id}`} className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-gray-400" />
-                          <p>{employee.name}</p>
-                          <p className="text-sm text-gray-500">({employee.position})</p>
+          {/* Step 4: Review */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Selected Employees ({selectedEmployees.length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {selectedEmployees.length > 0 && Object.entries(
+                        selectedEmployees.reduce((acc: { [key: string]: Employee[] }, emp) => {
+                          const dept = emp.department || 'Uncategorized';
+                          if (!acc[dept]) acc[dept] = [];
+                          acc[dept].push(emp);
+                          return acc;
+                        }, {})
+                      ).map(([department, employees]) => (
+                        <div key={`review-${department}`}>
+                          <h4 className="font-medium text-gray-700 mb-2">
+                            {department} ({employees.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {employees.map(employee => (
+                              <div key={`review-${employee._id}`} className="flex items-center gap-2 text-sm">
+                                <Users className="w-4 h-4 text-gray-400" />
+                                <span>{employee.name}</span>
+                                <span className="text-gray-500">({employee.position})</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ))}
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Selected Template</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <h3 className="font-medium">{selectedTemplate?.name}</h3>
+                      <p className="text-sm text-gray-500 mt-2">{selectedTemplate?.description}</p>
+                      <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <FileText className="w-4 h-4" />
+                          {selectedTemplate?.sectionsCount} {selectedTemplate?.sectionsCount === 1 ? 'section' : 'sections'}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4" />
+                          {selectedTemplate?.criteriaCount} {selectedTemplate?.criteriaCount === 1 ? 'question' : 'questions'}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Scheduled Date</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span>{new Date(scheduledDate).toLocaleDateString()}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
-            <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-2">Template</h3>
-              <p>{selectedTemplate?.name}</p>
-              <p className="text-sm text-gray-500">{selectedTemplate?.description}</p>
-            </div>
-            <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-2">Scheduled Date</h3>
-              <p>{new Date(scheduledDate).toLocaleDateString()}</p>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-8">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className="flex items-center gap-2 px-4 py-2 border rounded-full hover:bg-gray-50 disabled:opacity-50"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={isNextDisabled()}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 disabled:opacity-50"
-          >
-            {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+          {/* Navigation */}
+          <div className="flex justify-between mt-8 pt-4 border-t">
+            <Button
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </Button>
+            <Button
+              onClick={handleNext}
+              disabled={isNextDisabled()}
+              className="flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
+            >
+              {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
