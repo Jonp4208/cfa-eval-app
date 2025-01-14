@@ -145,7 +145,7 @@ router.get('/:id', auth, async (req, res) => {
       name: user.name || 'Unknown',
       email: user.email,
       phone: user.phone,
-      department: user.department.toUpperCase(),
+      department: user.department,
       position: user.position.split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' '),
@@ -341,7 +341,7 @@ router.put('/:id', auth, async (req, res) => {
           name: updatedUser.name,
           email: updatedUser.email,
           role: updatedUser.role.toUpperCase(),
-          department: updatedUser.department.toUpperCase(),
+          department: updatedUser.department,
           position: updatedUser.position.split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' '),
