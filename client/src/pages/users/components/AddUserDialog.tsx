@@ -222,7 +222,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
           </div>
 
           <DialogFooter>
-            <Button type="submit" className="bg-red-600 hover:bg-red-700 text-white">
+            <Button type="submit" variant="red">
               {user ? 'Save Changes' : 'Add Team Member'}
             </Button>
           </DialogFooter>

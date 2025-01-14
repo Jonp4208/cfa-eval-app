@@ -290,7 +290,7 @@ export default function NewIncidentForm() {
               </Button>
               <Button
                 type="submit"
-                className="bg-red-600 hover:bg-red-700 flex items-center gap-2"
+                variant="red"
                 disabled={loading}
               >
                 {loading ? (

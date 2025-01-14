@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -122,13 +123,14 @@ export default function Register() {
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
+                variant="red"
+                className="w-full"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
               >
                 {isLoading ? 'Creating account...' : 'Create account'}
-              </button>
+              </Button>
 
               <div className="text-sm text-center">
                 <Link

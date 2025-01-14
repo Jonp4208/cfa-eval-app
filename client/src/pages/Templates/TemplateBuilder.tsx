@@ -496,8 +496,7 @@ export default function TemplateBuilder() {
         <h1 className="text-2xl font-bold">{isEditMode ? 'Edit' : 'Create'} Evaluation Template</h1>
         <Button 
           onClick={handleSave}
-          variant="default"
-          className="bg-red-600 hover:bg-red-700"
+          variant="red"
         >
           <Save className="w-4 h-4 mr-2" />
           {isEditMode ? 'Update' : 'Save'} Template
@@ -739,8 +738,7 @@ export default function TemplateBuilder() {
       <div className="flex justify-end mt-6">
         <Button 
           onClick={handleSave}
-          variant="default"
-          className="bg-red-600 hover:bg-red-700"
+          variant="red"
         >
           <Save className="w-4 h-4 mr-2" />
           {isEditMode ? 'Update' : 'Save'} Template

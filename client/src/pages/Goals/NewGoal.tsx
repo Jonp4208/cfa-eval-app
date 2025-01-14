@@ -123,7 +123,7 @@ export default function NewGoal() {
             </Button>
             <Button
               type="submit"
-              className="bg-red-600 hover:bg-red-700 text-white"
+              variant="red"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Creating...' : 'Create Goal'}

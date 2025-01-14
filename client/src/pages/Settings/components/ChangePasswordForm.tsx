@@ -106,7 +106,7 @@ export default function ChangePasswordForm() {
 
           <Button 
             type="submit" 
-            className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
+            variant="red"
             disabled={isLoading}
           >
             {isLoading ? 'Changing Password...' : 'Change Password'}
