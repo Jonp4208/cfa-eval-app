@@ -103,11 +103,20 @@ export default function Dashboard() {
           <Card className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate('/evaluations')}>
             <div className="p-6">
               <h3 className="text-lg font-bold text-red-600 mb-3 border-b pb-2">Evaluations</h3>
-              <div>
-                <p className="text-sm text-gray-500">Pending Reviews</p>
-                <div className="mt-1 flex items-baseline">
-                  <p className="text-2xl font-bold text-red-600">{stats?.pendingEvaluations || 0}</p>
-                  <p className="ml-2 text-sm text-gray-500">to complete</p>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500">Pending Reviews</p>
+                  <div className="mt-1 flex items-baseline">
+                    <p className="text-2xl font-bold text-red-600">{stats?.pendingEvaluations || 0}</p>
+                    <p className="ml-2 text-sm text-gray-500">to complete</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Completed Reviews (30 Days)</p>
+                  <div className="mt-1 flex items-baseline">
+                    <p className="text-2xl font-bold text-red-600">{stats?.completedReviewsLast30Days || 0}</p>
+                    <p className="ml-2 text-sm text-gray-500">completed</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -157,33 +166,6 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Evaluations Column */}
           <div className="space-y-6">
-            {/* Last 30 Days Stats */}
-            <Card>
-              <div className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Last 30 Days Overview</h2>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm text-gray-500">Completed Reviews</p>
-                      <p className="text-xl font-semibold text-red-600">{stats?.completedReviewsLast30Days || 0}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm text-gray-500">Disciplinary Actions</p>
-                      <p className="text-xl font-semibold text-red-600">{stats?.disciplinary?.last30Days || 0}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="text-sm text-gray-500">New Hires</p>
-                      <p className="text-xl font-semibold text-red-600">{stats?.team?.newHiresLast30Days || 0}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
             <Card className="h-[200px]">
               <div className="p-6 h-full flex flex-col">
                 <div className="flex justify-between items-center mb-4">

@@ -178,8 +178,7 @@ export default function Templates() {
         <h1 className="text-2xl font-bold">Evaluation Templates</h1>
         <Button 
           onClick={() => navigate('/templates/new')}
-          variant="default"
-          className="bg-red-600 hover:bg-red-700 rounded-xl"
+          variant="red"
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Template
@@ -231,10 +230,12 @@ export default function Templates() {
               <p className="text-gray-500 mb-4">Create your first evaluation template to get started.</p>
               <Link 
                 to="/templates/new"
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 inline-flex items-center gap-2"
+                className="inline-flex items-center gap-2"
               >
-                <Plus className="w-4 h-4" />
-                New Template
+                <Button variant="red">
+                  <Plus className="w-4 h-4" />
+                  New Template
+                </Button>
               </Link>
             </CardContent>
           </Card>
@@ -363,7 +364,7 @@ export default function Templates() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
+              variant="red"
             >
               Delete
             </AlertDialogAction>

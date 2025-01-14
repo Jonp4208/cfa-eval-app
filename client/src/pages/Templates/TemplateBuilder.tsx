@@ -715,7 +715,7 @@ export default function TemplateBuilder() {
               ))}
               <button
                 onClick={() => addCriterion(section.id)}
-                className="flex items-center gap-2 text-red-600"
+                className="flex items-center gap-2 text-red-600 hover:text-red-700"
               >
                 <Plus className="w-4 h-4" />
                 Add Question
@@ -728,7 +728,7 @@ export default function TemplateBuilder() {
       {/* Add Section Button */}
       <button
         onClick={addSection}
-        className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-red-600 hover:text-red-600 flex items-center justify-center gap-2"
+        className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-red-600 hover:text-red-600 flex items-center justify-center gap-2 transition-colors"
       >
         <Plus className="w-5 h-5" />
         Add New Section
