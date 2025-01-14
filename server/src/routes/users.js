@@ -309,9 +309,9 @@ router.put('/:id', auth, async (req, res) => {
     const updates = {
       name,
       email,
-      department,
-      position,
-      role: role.toLowerCase(),  // Convert role to lowercase to match enum values
+      department: department === 'LEADERSHIP' ? 'Leadership' : department,  // Transform department to match enum
+      position: position.toLowerCase(),  // Store position in lowercase
+      role: role.toLowerCase(),  // Store role in lowercase
       status,
       manager: manager || null
     };
@@ -334,22 +334,25 @@ router.put('/:id', auth, async (req, res) => {
 
       console.log('Updated user:', JSON.stringify(updatedUser, null, 2));
 
+      // Transform the response to match the expected format
+      const transformedUser = {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role.toUpperCase(),
+        department: updatedUser.department,  // Keep original case from DB
+        position: updatedUser.position.split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' '),
+        status: updatedUser.status,
+        quadrant: updatedUser.quadrant,
+        reportsTo: updatedUser.manager ? updatedUser.manager.name : 'No Manager Assigned',
+        manager: updatedUser.manager  // Include full manager object for reference
+      };
+
       res.json({ 
         message: 'User updated successfully',
-        user: {
-          id: updatedUser._id,
-          name: updatedUser.name,
-          email: updatedUser.email,
-          role: updatedUser.role.toUpperCase(),
-          department: updatedUser.department,
-          position: updatedUser.position.split('-')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' '),
-          status: updatedUser.status,
-          quadrant: updatedUser.quadrant,
-          reportsTo: updatedUser.manager ? updatedUser.manager.name : 'No Manager Assigned',
-          manager: updatedUser.manager  // Include full manager object for reference
-        }
+        user: transformedUser
       });
     } catch (updateError) {
       console.error('Error during findByIdAndUpdate:', updateError);
