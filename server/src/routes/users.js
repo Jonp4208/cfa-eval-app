@@ -310,10 +310,8 @@ router.put('/:id', auth, async (req, res) => {
       name,
       email,
       department,
-      position: position.split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' '),
-      role,
+      position,
+      role: role.toLowerCase(),  // Convert role to lowercase to match enum values
       status,
       manager: manager || null
     };

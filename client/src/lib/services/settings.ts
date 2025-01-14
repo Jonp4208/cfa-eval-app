@@ -2,6 +2,7 @@
 import api from '../axios';
 
 export interface StoreSettings {
+  darkMode: boolean;
   compactMode: boolean;
   storeName: string;
   storeNumber: string;

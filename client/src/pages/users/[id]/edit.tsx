@@ -107,16 +107,8 @@ export default function EditUser() {
       const transformRole = (role: string) => {
         if (!role) return '';
         console.log('Original role:', role);
-        // Handle both uppercase and regular case
-        const roleMap: { [key: string]: string } = {
-          'ADMIN': 'ADMIN',
-          'EVALUATOR': 'EVALUATOR',
-          'USER': 'USER',
-          'admin': 'ADMIN',
-          'evaluator': 'EVALUATOR',
-          'user': 'USER'
-        };
-        return roleMap[role] || role.toUpperCase();
+        // Convert to lowercase to match schema enum values
+        return role.toLowerCase();
       };
 
       const transformedData = {
@@ -145,8 +137,7 @@ export default function EditUser() {
         const transformedData = {
           ...data,
           manager: data.manager === 'none' ? null : data.manager,
-          // Keep the case as is since we're now handling it in the form
-          role: data.role,
+          role: data.role.toLowerCase(),
           department: data.department
         };
 
@@ -332,9 +323,9 @@ export default function EditUser() {
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="EVALUATOR">Evaluator</SelectItem>
-                      <SelectItem value="USER">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="evaluator">Evaluator</SelectItem>
+                      <SelectItem value="user">User</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
