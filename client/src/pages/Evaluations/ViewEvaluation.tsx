@@ -28,8 +28,10 @@ interface Evaluation {
     sections: Array<{
       title: string;
       questions: Array<{
+        id: string;
         text: string;
         type: 'rating' | 'text';
+        required?: boolean;
       }>;
     }>;
   };
@@ -46,6 +48,18 @@ interface Evaluation {
   };
 }
 
+interface Section {
+  title: string;
+  description?: string;
+  order?: number;
+  questions: Array<{
+    id: string;
+    text: string;
+    type: 'rating' | 'text';
+    required?: boolean;
+  }>;
+}
+
 export default function ViewEvaluation() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -59,13 +73,69 @@ export default function ViewEvaluation() {
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  const getRatingText = (rating: number | string): string => {
+    const ratingNum = Number(rating);
+    switch(ratingNum) {
+      case 1: return 'Poor';
+      case 2: return 'Fair';
+      case 3: return 'Good';
+      case 4: return 'Very Good';
+      case 5: return 'Excellent';
+      default: return 'No rating provided';
+    }
+  };
+
   // Fetch evaluation data
   const { data: evaluation, isLoading, refetch } = useQuery({
     queryKey: ['evaluation', id],
     queryFn: async () => {
+      console.log('Fetching evaluation data...');
       const response = await api.get(`/api/evaluations/${id}`);
-      return response.data.evaluation;
-    }
+      console.log('Full API Response:', response);
+      
+      const rawEvaluation = response.data.evaluation;
+      console.log('Raw Evaluation:', rawEvaluation);
+      
+      if (!rawEvaluation || !rawEvaluation.template || !rawEvaluation.template._doc) {
+        console.error('Invalid evaluation structure:', rawEvaluation);
+        throw new Error('Invalid evaluation data');
+      }
+      
+      // Create a clean version of the evaluation object that preserves the raw data
+      const transformedEvaluation = {
+        ...rawEvaluation,
+        template: {
+          ...rawEvaluation.template._doc,
+          sections: rawEvaluation.template._doc.sections.map((section: any) => ({
+            title: section.title,
+            description: section.description,
+            order: section.order,
+            questions: section.criteria.map((criterion: any) => ({
+              id: criterion._id,
+              text: criterion.name,
+              description: criterion.description,
+              type: 'rating',
+              required: criterion.required
+            }))
+          }))
+        },
+        // Convert Map data to plain objects if they exist
+        selfEvaluation: rawEvaluation.selfEvaluation instanceof Map 
+          ? Object.fromEntries(rawEvaluation.selfEvaluation)
+          : typeof rawEvaluation.selfEvaluation === 'object' 
+            ? rawEvaluation.selfEvaluation 
+            : {},
+        managerEvaluation: rawEvaluation.managerEvaluation instanceof Map
+          ? Object.fromEntries(rawEvaluation.managerEvaluation)
+          : typeof rawEvaluation.managerEvaluation === 'object'
+            ? rawEvaluation.managerEvaluation
+            : {}
+      };
+      
+      console.log('Transformed Evaluation:', transformedEvaluation);
+      return transformedEvaluation;
+    },
+    retry: false // Disable retries to better see errors
   });
 
   // Initialize answers when evaluation data is loaded
@@ -210,7 +280,7 @@ export default function ViewEvaluation() {
   const calculateProgress = () => {
     if (!evaluation) return 0;
     const totalQuestions = evaluation.template.sections.reduce(
-      (total, section) => total + section.questions.length,
+      (total: number, section: Section) => total + section.questions.length,
       0
     );
     const answeredQuestions = Object.keys(answers).length;
@@ -220,10 +290,10 @@ export default function ViewEvaluation() {
   // Validate answers
   const validateAnswers = () => {
     const errors: string[] = [];
-    evaluation?.template.sections.forEach((section, sectionIndex) => {
-      section.questions.forEach((question, questionIndex) => {
+    evaluation?.template.sections.forEach((section: Section, sectionIndex: number) => {
+      section.questions.forEach((question: { text: string; required?: boolean }, questionIndex: number) => {
         const answer = answers[`${sectionIndex}-${questionIndex}`];
-        if (!answer || answer.trim() === '') {
+        if (question.required && (!answer || answer.trim() === '')) {
           errors.push(`${section.title} - ${question.text}`);
         }
       });
@@ -248,53 +318,51 @@ export default function ViewEvaluation() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Back button and title */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(-1)}
-              className="h-10 px-0 text-[#27251F]/60 hover:text-[#27251F] hover:bg-transparent -ml-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                <path d="m15 18-6-6 6-6"/>
-              </svg>
-              Back to Evaluations
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-[#27251F]">{evaluation.template.name}</h1>
-              <p className="text-[#27251F]/60 text-base">Evaluation for {evaluation.employee.name}</p>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">{evaluation.template.name}</h1>
+                <div className="text-white/80 mt-2 space-y-1">
+                  <p className="text-lg">Evaluation for {evaluation.employee.name}</p>
+                  <p className="text-base">Evaluator: {evaluation.evaluator.name}</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}
+                className="h-12 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl border-0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+                Back to Evaluations
+              </Button>
             </div>
           </div>
-          {isManager && evaluation.status === 'pending_manager_review' && (
-            <Button 
-              onClick={() => setShowScheduleReview(true)}
-              className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl flex items-center gap-2 text-base font-medium w-full sm:w-auto justify-center"
-            >
-              Schedule Review Session
-            </Button>
-          )}
         </div>
 
         {/* Main Content */}
-        <Card className="bg-white rounded-[20px] shadow-md">
-          <CardContent className="p-6">
+        <Card className="bg-white rounded-[20px] shadow-md border-0">
+          <CardContent className="p-8">
             {/* Status and Info Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-1">Employee</h3>
-                  <p className="text-[#27251F]">{evaluation.employee.name}</p>
+                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Employee</h3>
+                  <p className="text-[#27251F] text-lg font-medium">{evaluation.employee.name}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-1">Position</h3>
-                  <p className="text-[#27251F]">{evaluation.employee.position}</p>
+                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Position</h3>
+                  <p className="text-[#27251F] text-lg font-medium">{evaluation.employee.position}</p>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-1">Status</h3>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Status</h3>
+                  <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
                     evaluation.status === 'completed' 
                       ? 'bg-green-100 text-green-800'
                       : evaluation.status === 'in_review_session'
@@ -303,17 +371,17 @@ export default function ViewEvaluation() {
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {evaluation.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {evaluation.status.replace(/_/g, ' ').replace(/\b\w/g, (letter: string) => letter.toUpperCase())}
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-1">Scheduled Date</h3>
-                  <p className="text-[#27251F]">{new Date(evaluation.scheduledDate).toLocaleDateString()}</p>
+                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Scheduled Date</h3>
+                  <p className="text-[#27251F] text-lg font-medium">{new Date(evaluation.scheduledDate).toLocaleDateString()}</p>
                 </div>
                 {evaluation.reviewSessionDate && (
                   <div>
-                    <h3 className="text-sm font-medium text-[#27251F]/60 mb-1">Review Session Date</h3>
-                    <p className="text-[#27251F]">{new Date(evaluation.reviewSessionDate).toLocaleDateString()}</p>
+                    <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Review Session Date</h3>
+                    <p className="text-[#27251F] text-lg font-medium">{new Date(evaluation.reviewSessionDate).toLocaleDateString()}</p>
                   </div>
                 )}
               </div>
@@ -321,25 +389,25 @@ export default function ViewEvaluation() {
 
             {/* Schedule Review Session Modal */}
             {showScheduleReview && (
-              <Card className="mb-6 border border-[#E51636]/20">
-                <CardHeader>
-                  <CardTitle className="text-lg text-[#27251F]">Schedule Review Session</CardTitle>
+              <Card className="mb-8 border border-[#E51636]/20 rounded-[20px]">
+                <CardHeader className="p-6 pb-0">
+                  <CardTitle className="text-xl text-[#27251F]">Schedule Review Session</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="p-6">
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-[#27251F]/60 mb-1">
+                      <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
                         Select Date and Time for Review Session
                       </label>
                       <input
                         type="datetime-local"
                         value={reviewSessionDate}
                         onChange={(e) => setReviewSessionDate(e.target.value)}
-                        className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                        className="w-full h-12 px-4 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
                         min={new Date().toISOString().slice(0, 16)}
                       />
                     </div>
-                    <div className="flex justify-end gap-3">
+                    <div className="flex justify-end gap-4">
                       <Button
                         variant="outline"
                         onClick={() => setShowScheduleReview(false)}
@@ -362,20 +430,26 @@ export default function ViewEvaluation() {
 
             {/* Show self-evaluation if viewing as manager */}
             {isManager && evaluation.selfEvaluation && (
-              <Card className="mb-6 border border-[#E51636]/20">
-                <CardHeader>
-                  <CardTitle className="text-lg text-[#27251F]">Employee Self-Evaluation</CardTitle>
+              <Card className="mb-8 border border-[#E51636]/20 rounded-[20px]">
+                <CardHeader className="p-6 pb-0">
+                  <CardTitle className="text-xl text-[#27251F]">Employee Self-Evaluation</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {evaluation.template.sections.map((section, sectionIndex) => (
-                    <div key={sectionIndex} className="mb-6">
-                      <h3 className="font-medium text-[#27251F] mb-3">{section.title}</h3>
-                      {section.questions.map((question, questionIndex) => (
-                        <div key={questionIndex} className="mb-4">
-                          <p className="text-sm text-[#27251F]/60 mb-2">{question.text}</p>
-                          <p className="bg-[#27251F]/5 p-4 rounded-xl text-[#27251F]">
-                            {evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`]}
-                          </p>
+                <CardContent className="p-6">
+                  {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
+                    <div key={sectionIndex} className="mb-8 last:mb-0">
+                      <h3 className="text-lg font-medium text-[#27251F] mb-4">{section.title}</h3>
+                      {section.questions.map((question: { text: string; type: 'rating' | 'text' }, questionIndex: number) => (
+                        <div key={questionIndex} className="mb-6 last:mb-0">
+                          <p className="text-sm font-medium text-[#27251F]/60 mb-2">{question.text}</p>
+                          <div className="bg-[#27251F]/5 p-4 rounded-2xl text-[#27251F]">
+                            {question.type === 'rating' ? (
+                              evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`] 
+                                ? `${evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`]} - ${getRatingText(evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`])}` 
+                                : 'No rating provided'
+                            ) : (
+                              evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`] || 'No response provided'
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -386,9 +460,9 @@ export default function ViewEvaluation() {
 
             {/* Manager Review Session Notice */}
             {isManager && evaluation.status === 'pending_manager_review' && !showScheduleReview && (
-              <Card className="mb-6 bg-yellow-50 border-yellow-200">
-                <CardContent className="p-4">
-                  <p className="text-center text-yellow-800">
+              <Card className="mb-8 bg-yellow-50 border-yellow-200 rounded-[20px]">
+                <CardContent className="p-6">
+                  <p className="text-center text-yellow-800 font-medium">
                     Please schedule a review session with the employee to complete the evaluation together.
                   </p>
                 </CardContent>
@@ -398,12 +472,16 @@ export default function ViewEvaluation() {
             {/* Current evaluation form */}
             {canEdit && (
               <>
-                <div className="mb-6">
+                <div className="mb-8">
                   <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-medium text-[#27251F]">Completion Progress</h3>
+                    <h3 className="text-lg font-medium text-[#27251F]">Completion Progress</h3>
                     <span className="text-sm text-[#27251F]/60">{calculateProgress()}%</span>
                   </div>
-                  <Progress value={calculateProgress()} className="h-2 bg-[#27251F]/10" indicatorClassName="bg-[#E51636]" />
+                  <Progress 
+                    value={calculateProgress()} 
+                    className="h-2 bg-[#27251F]/10 rounded-full"
+                    indicatorClassName="bg-[#E51636] rounded-full"
+                  />
                 </div>
 
                 <form onSubmit={(e) => {
@@ -423,10 +501,10 @@ export default function ViewEvaluation() {
                     </div>
                   )}
 
-                  {evaluation.template.sections.map((section, sectionIndex) => (
+                  {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
                     <div key={sectionIndex} className="mb-8">
                       <h3 className="font-medium text-[#27251F] mb-4">{section.title}</h3>
-                      {section.questions.map((question, questionIndex) => (
+                      {section.questions.map((question: { text: string; type: 'rating' | 'text' }, questionIndex: number) => (
                         <div key={questionIndex} className="mb-6">
                           <label className="block text-sm text-[#27251F]/60 mb-2">
                             {question.text}
@@ -544,60 +622,104 @@ export default function ViewEvaluation() {
             {/* Completed evaluation view */}
             {evaluation.status === 'completed' && (
               <div className="space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="font-medium text-[#27251F] mb-4">Self-Evaluation</h3>
-                    <ScrollArea className="h-[600px] rounded-xl border border-gray-200 p-6">
-                      {evaluation.template.sections.map((section, sectionIndex) => (
-                        <div key={sectionIndex} className="mb-8">
-                          <h4 className="font-medium text-[#27251F] mb-4">{section.title}</h4>
-                          {section.questions.map((question, questionIndex) => (
-                            <div key={questionIndex} className="mb-6">
-                              <p className="text-sm text-[#27251F]/60 mb-2">{question.text}</p>
-                              <p className="bg-[#27251F]/5 p-4 rounded-xl text-[#27251F]">
-                                {evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`]}
-                              </p>
+                {/* Side by side comparison */}
+                {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
+                  <Card key={sectionIndex} className="bg-white rounded-[20px] shadow-md">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-[#27251F]">{section.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        {section.questions.map((question: { text: string; type: 'rating' | 'text' }, questionIndex: number) => {
+                          const answerKey = `${sectionIndex}-${questionIndex}`;
+                          // Access the raw evaluation data directly
+                          const selfAnswer = evaluation.selfEvaluation[answerKey];
+                          const managerAnswer = evaluation.managerEvaluation[answerKey];
+                          
+                          console.log('Debug - Question:', question.text);
+                          console.log('Debug - Answer Key:', answerKey);
+                          console.log('Debug - Self Answer:', selfAnswer);
+                          console.log('Debug - Manager Answer:', managerAnswer);
+                          console.log('Debug - Raw Self Evaluation:', evaluation.selfEvaluation);
+                          console.log('Debug - Raw Manager Evaluation:', evaluation.managerEvaluation);
+                          
+                          const getRatingText = (rating: any) => {
+                            const ratingNum = Number(rating);
+                            console.log('Debug - Rating Number:', ratingNum, typeof ratingNum);
+                            switch(ratingNum) {
+                              case 1: return 'Poor';
+                              case 2: return 'Fair';
+                              case 3: return 'Good';
+                              case 4: return 'Very Good';
+                              case 5: return 'Excellent';
+                              default: return 'No rating provided';
+                            }
+                          };
+
+                          return (
+                            <div key={questionIndex} className="space-y-4">
+                              <h4 className="font-medium text-[#27251F]">{question.text}</h4>
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
+                                    Employee Response
+                                  </label>
+                                  <div className="bg-[#27251F]/5 p-4 rounded-xl text-[#27251F]">
+                                    {question.type === 'rating' ? (
+                                      selfAnswer ? `${selfAnswer} - ${getRatingText(selfAnswer)}` : 'No rating provided'
+                                    ) : (
+                                      selfAnswer || 'No response provided'
+                                    )}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
+                                    Manager Response
+                                  </label>
+                                  <div className="bg-[#E51636]/5 p-4 rounded-xl text-[#27251F]">
+                                    {question.type === 'rating' ? (
+                                      managerAnswer ? `${managerAnswer} - ${getRatingText(managerAnswer)}` : 'No rating provided'
+                                    ) : (
+                                      managerAnswer || 'No response provided'
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                          ))}
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Overall Comments and Development Plan */}
+                <Card className="bg-white rounded-[20px] shadow-md">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-[#27251F]">Final Review</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {evaluation.overallComments && (
+                      <div>
+                        <h3 className="font-medium text-[#27251F] mb-3">Overall Comments</h3>
+                        <div className="bg-[#E51636]/5 p-4 rounded-xl text-[#27251F]">
+                          {evaluation.overallComments}
                         </div>
-                      ))}
-                    </ScrollArea>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-[#27251F] mb-4">Manager's Evaluation</h3>
-                    <ScrollArea className="h-[600px] rounded-xl border border-gray-200 p-6">
-                      {evaluation.template.sections.map((section, sectionIndex) => (
-                        <div key={sectionIndex} className="mb-8">
-                          <h4 className="font-medium text-[#27251F] mb-4">{section.title}</h4>
-                          {section.questions.map((question, questionIndex) => (
-                            <div key={questionIndex} className="mb-6">
-                              <p className="text-sm text-[#27251F]/60 mb-2">{question.text}</p>
-                              <p className="bg-[#27251F]/5 p-4 rounded-xl text-[#27251F]">
-                                {evaluation.managerEvaluation[`${sectionIndex}-${questionIndex}`]}
-                              </p>
-                            </div>
-                          ))}
+                      </div>
+                    )}
+
+                    {evaluation.developmentPlan && (
+                      <div>
+                        <h3 className="font-medium text-[#27251F] mb-3">Development Plan</h3>
+                        <div className="bg-[#E51636]/5 p-4 rounded-xl text-[#27251F]">
+                          {evaluation.developmentPlan}
                         </div>
-                      ))}
-                    </ScrollArea>
-                  </div>
-                </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-                {evaluation.overallComments && (
-                  <div>
-                    <h3 className="font-medium text-[#27251F] mb-3">Overall Comments</h3>
-                    <p className="bg-[#27251F]/5 p-4 rounded-xl text-[#27251F]">{evaluation.overallComments}</p>
-                  </div>
-                )}
-
-                {evaluation.developmentPlan && (
-                  <div>
-                    <h3 className="font-medium text-[#27251F] mb-3">Development Plan</h3>
-                    <p className="bg-[#27251F]/5 p-4 rounded-xl text-[#27251F]">{evaluation.developmentPlan}</p>
-                  </div>
-                )}
-
-                {/* Acknowledgement button for employee */}
+                {/* Acknowledgement section */}
                 {isEmployee && !evaluation.acknowledgement?.acknowledged && (
                   <div className="flex justify-end pt-4 border-t border-gray-200">
                     <Button
