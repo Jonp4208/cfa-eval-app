@@ -150,13 +150,14 @@ export default function Users() {
   });
 
   if (error) {
-    console.error('Error fetching users:', error);
     return (
-      <Card>
-        <CardContent className="py-4 text-center text-red-500">
-          Error loading users. Please try again later.
-        </CardContent>
-      </Card>
+      <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6 text-center text-[#E51636]">
+            Error loading users. Please try again later.
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -274,303 +275,288 @@ export default function Users() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="text-center sm:text-left">
-          <h1 className="text-2xl font-bold">Team Members</h1>
-          <p className="text-gray-500">
-            {currentUser?.role === 'manager' 
-              ? 'Manage your team members and their evaluations'
-              : 'Manage your organization\'s team members'}
-          </p>
-        </div>
-        {currentUser?.role === 'admin' && (
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <Button
-              variant="ghost"
-              onClick={handleDownloadTemplate}
-              className="text-gray-500 hover:text-gray-700 w-full sm:w-auto"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download Template
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept=".csv"
-              className="hidden"
-            />
-            <Button 
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="border-red-200 hover:border-red-300 w-full sm:w-auto"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Bulk Upload
-            </Button>
-            <Button 
-              onClick={() => setShowAddDialog(true)}
-              className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Team Member
-            </Button>
-          </div>
-        )}
-        {currentUser?.role === 'manager' && (
-          <div className="flex justify-center sm:justify-start">
-            <Button 
-              onClick={() => setShowAddDialog(true)}
-              className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Team Member
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="Search team members..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex gap-2 sm:gap-4">
-            <Select
-              value={filterBy}
-              onValueChange={(value) => setFilterBy(value as 'all' | 'FOH' | 'BOH' | 'Leadership' | 'myTeam')}
-            >
-              <SelectTrigger className="w-full sm:w-[200px] rounded-full">
-                <SelectValue placeholder="Filter by..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Show All</SelectItem>
-                <SelectItem value="FOH">FOH Only</SelectItem>
-                <SelectItem value="BOH">BOH Only</SelectItem>
-                <SelectItem value="Leadership">Leadership Only</SelectItem>
-                {currentUser?.role === 'manager' && (
-                  <SelectItem value="myTeam">My Team Only</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <Select
-              value={sortBy}
-              onValueChange={(value) => setSortBy(value as 'name' | 'position' | 'department' | 'role' | 'manager')}
-            >
-              <SelectTrigger className="w-full sm:w-[200px] rounded-full">
-                <SelectValue placeholder="Sort by..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Sort by Name</SelectItem>
-                <SelectItem value="position">Sort by Position</SelectItem>
-                <SelectItem value="department">Sort by Department</SelectItem>
-                <SelectItem value="role">Sort by Role</SelectItem>
-                <SelectItem value="manager">Sort by Reports To</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Team Management</h1>
+                <p className="text-white/80 mt-2 text-lg">Manage your team members and their roles</p>
+              </div>
+              <div className="flex flex-row gap-3">
+                <Button
+                  variant="secondary"
+                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
+                  onClick={() => navigate('/users/assign-managers')}
+                >
+                  <User className="w-5 h-5 mr-2" />
+                  Assign Managers
+                </Button>
+                <Button
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 flex-1 md:flex-none"
+                  onClick={() => setShowAddDialog(true)}
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add User
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      <div className="grid gap-4">
-        {isLoading ? (
-          <Card>
-            <CardContent className="py-4">
-              Loading team members...
-            </CardContent>
-          </Card>
-        ) : !sortedUsers || sortedUsers.length === 0 ? (
-          <Card>
-            <CardContent className="py-4 text-center text-gray-500">
-              {searchQuery ? 'No team members found matching your search' : 'No team members found'}
-            </CardContent>
-          </Card>
-        ) : (
-          sortedUsers.map((user: UserType) => {
-            if (!user || !user.name) {
-              console.warn('Invalid user data:', user);
-              return null;
-            }
+        {/* Filters Section */}
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr,auto,auto] gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#27251F]/40 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
 
-            const canManageUser = 
-              currentUser?.role === 'admin' || 
-              (currentUser?.role === 'manager' && user.manager?._id === currentUser._id);
+              <Select value={filterBy} onValueChange={(value: any) => setFilterBy(value)}>
+                <SelectTrigger className="h-12 rounded-xl bg-white border-gray-200 hover:border-gray-300">
+                  <SelectValue placeholder="Filter by Department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  <SelectItem value="FOH">Front of House</SelectItem>
+                  <SelectItem value="BOH">Back of House</SelectItem>
+                  <SelectItem value="Leadership">Leadership</SelectItem>
+                  {currentUser?.role === 'manager' && (
+                    <SelectItem value="myTeam">My Team</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
 
-            return (
+              <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <SelectTrigger className="h-12 rounded-xl bg-white border-gray-200 hover:border-gray-300">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="position">Position</SelectItem>
+                  <SelectItem value="department">Department</SelectItem>
+                  <SelectItem value="role">Role</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Import/Export Section */}
+            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".csv"
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                className="h-12 px-6 rounded-xl"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="w-5 h-5 mr-2" />
+                Import Users
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 px-6 rounded-xl"
+                onClick={handleDownloadTemplate}
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download Template
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Users List */}
+        <div className="grid grid-cols-1 gap-4">
+          {isLoading ? (
+            // Loading skeleton
+            [...Array(3)].map((_, i) => (
+              <Card key={i} className="bg-white rounded-[20px] shadow-md animate-pulse">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-3">
+                      <div className="h-6 w-48 bg-gray-200 rounded-md" />
+                      <div className="h-4 w-32 bg-gray-200 rounded-md" />
+                    </div>
+                    <div className="h-10 w-24 bg-gray-200 rounded-md" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : sortedUsers?.length === 0 ? (
+            // Empty state
+            <Card className="bg-white rounded-[20px] shadow-md">
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center text-center">
+                  <div className="h-16 w-16 bg-[#E51636]/10 rounded-full flex items-center justify-center mb-4">
+                    <User className="w-8 h-8 text-[#E51636]" />
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2 text-[#27251F]">No Users Found</h2>
+                  <p className="text-[#27251F]/60 mb-6">No users match your current filters.</p>
+                  <Button onClick={() => setShowAddDialog(true)}>
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add New User
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            // User cards
+            sortedUsers?.map((user) => (
               <Card
                 key={user._id}
-                className={`${canManageUser ? 'cursor-pointer hover:border-red-200' : ''} transition-colors`}
-                onClick={(e) => {
-                  // Only navigate if clicking the card itself, not the action buttons
-                  const isButton = (e.target as HTMLElement).closest('button');
-                  if (!isButton && canManageUser) {
-                    navigate(`/users/${user._id}`);
-                  }
-                }}
+                className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300"
               >
-                <CardContent className="py-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-gray-500" />
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex gap-4">
+                      <div className="h-12 w-12 rounded-full bg-[#E51636]/10 flex items-center justify-center">
+                        <User className="w-6 h-6 text-[#E51636]" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{user.name}</h3>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                          {user.position && <span>{user.position}</span>}
-                          {user.department && (
-                            <>
-                              <span>•</span>
-                              <span>{user.department}</span>
-                            </>
+                        <h3 className="font-medium text-[#27251F]">{user.name}</h3>
+                        <p className="text-sm text-[#27251F]/60 mt-1">{user.email}</p>
+                        <div className="flex items-center gap-4 mt-2">
+                          {user.position && (
+                            <span className="text-sm text-[#27251F]/60">{user.position}</span>
                           )}
-                          {user.manager && (
-                            <>
-                              <span>•</span>
-                              <span>Reports to {user.manager.name}</span>
-                            </>
+                          {user.department && (
+                            <span className="text-sm text-[#27251F]/60">{user.department}</span>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-row justify-between sm:justify-end items-center gap-4 mt-2 sm:mt-0">
-                      <div className="text-sm">
-                        <div className={`px-2 py-1 rounded-full ${
-                          user.role === 'admin' 
-                            ? 'bg-purple-100 text-purple-800'
-                            : user.role === 'manager'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {user.role.toUpperCase()}
-                        </div>
-                      </div>
-                      {canManageUser && (
-                        <div className="flex items-center gap-1 sm:gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/users/${user._id}/edit`);
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4 text-gray-500" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Edit User</p>
-                              </TooltipContent>
-                            </Tooltip>
+                    <div className="flex items-center gap-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 text-[#27251F]/60 hover:text-[#E51636]"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowEmailResetDialog(true);
+                              }}
+                            >
+                              <Mail className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Send Password Reset</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedUser(user);
-                                    setShowEmailResetDialog(true);
-                                  }}
-                                >
-                                  <Mail className="w-4 h-4 text-gray-500" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Reset Password</p>
-                              </TooltipContent>
-                            </Tooltip>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 text-[#27251F]/60 hover:text-[#E51636]"
+                              onClick={() => navigate(`/users/${user._id}`)}
+                            >
+                              <Edit className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit User</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-600"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedUser(user);
-                                    setShowDeleteDialog(true);
-                                  }}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Delete User</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      )}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 text-[#27251F]/60 hover:text-[#E51636]"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Delete User</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            );
-          })
-        )}
+            ))
+          )}
+        </div>
       </div>
 
-      {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
-        <AddUserDialog 
-          open={showAddDialog} 
-          onOpenChange={setShowAddDialog}
-        />
-      )}
+      {/* Add User Dialog */}
+      <AddUserDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['users'] });
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white rounded-[20px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {selectedUser?.name}'s account and all associated data.
-              This action cannot be undone.
+              Are you sure you want to delete {selectedUser?.name}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
+            <AlertDialogCancel className="h-12 px-6 rounded-xl">Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              className="h-12 px-6 rounded-xl"
               onClick={() => selectedUser && deleteUserMutation.mutate(selectedUser._id)}
             >
-              Delete
-            </AlertDialogAction>
+              {deleteUserMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Password Reset Confirmation Dialog */}
       <AlertDialog open={showEmailResetDialog} onOpenChange={setShowEmailResetDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white rounded-[20px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Reset Password?</AlertDialogTitle>
+            <AlertDialogTitle>Send Password Reset</AlertDialogTitle>
             <AlertDialogDescription>
-              This will send password reset instructions to {selectedUser?.name}'s email address.
+              Send password reset instructions to {selectedUser?.email}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel className="h-12 px-6 rounded-xl">Cancel</AlertDialogCancel>
+            <Button
+              className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6 rounded-xl"
               onClick={() => selectedUser && resetPasswordMutation.mutate(selectedUser._id)}
             >
-              Send Instructions
-            </AlertDialogAction>
+              {resetPasswordMutation.isPending ? "Sending..." : "Send Reset Link"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
