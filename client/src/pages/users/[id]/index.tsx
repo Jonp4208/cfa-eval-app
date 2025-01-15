@@ -343,7 +343,7 @@ export default function UserProfile() {
               <h1 className="text-3xl md:text-4xl font-semibold text-white mb-2">{profile.name}</h1>
               <p className="text-white/60">View and manage user profile details</p>
             </div>
-            <Button
+            <Button 
               variant="outline"
               onClick={() => navigate(currentUser?._id === profile._id ? '/' : '/users')}
               className="w-fit bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white flex items-center gap-2"
@@ -374,7 +374,7 @@ export default function UserProfile() {
               </div>
               <div className="mt-4 md:mt-0 flex items-center gap-4">
                 {isAdmin && (
-                  <div className="min-w-[200px]">
+                  <div className="min-w-[200px] relative">
                     <label className="text-sm font-medium text-[#27251F]/60 block mb-1">Manager</label>
                     <select
                       value={selectedManagerId}
@@ -382,8 +382,9 @@ export default function UserProfile() {
                         setSelectedManagerId(e.target.value);
                         updateManager.mutate(e.target.value);
                       }}
-                      className="w-full h-12 px-4 rounded-xl border border-[#27251F]/10 focus:outline-none focus:ring-2 focus:ring-[#E51636]/20 focus:border-[#E51636]"
+                      className="w-full h-12 px-4 rounded-xl border border-[#27251F]/10 focus:outline-none focus:ring-2 focus:ring-[#E51636]/20 focus:border-[#E51636] bg-white"
                       disabled={loadingManagers || updateManager.isPending}
+                      style={{ transform: 'none' }}
                     >
                       <option value="">No Manager Assigned</option>
                       {potentialManagers?.map((manager: any) => (
@@ -394,16 +395,18 @@ export default function UserProfile() {
                     </select>
                   </div>
                 )}
-                <span className={`px-4 py-2 rounded-xl text-sm font-medium ${
-                  profile.status === 'active' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {profile.status}
-                </span>
+                <div>
+                  <label className="text-sm font-medium text-[#27251F]/60 block mb-1">Status</label>
+                  <span className={`inline-block px-4 py-2 rounded-xl text-sm font-medium ${
+                    profile.status === 'active' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {profile.status}
+                  </span>
+                </div>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-[#E51636]/10 flex items-center justify-center">
@@ -678,10 +681,20 @@ export default function UserProfile() {
                           </div>
 
                           <div className="mt-4 pt-4 border-t border-[#27251F]/10">
-                            <div className="flex flex-wrap gap-2 text-sm text-[#27251F]/60">
-                              <span>Issued by: {incident.createdBy.name}</span>
-                              <span>•</span>
-                              <span>Manager: {incident.supervisor.name}</span>
+                            <div className="flex justify-between items-center">
+                              <div className="flex flex-wrap gap-2 text-sm text-[#27251F]/60">
+                                <span>Issued by: {incident.createdBy.name}</span>
+                                <span>•</span>
+                                <span>Manager: {incident.supervisor.name}</span>
+                              </div>
+                              <Button
+                                variant="outline"
+                                className="flex items-center gap-2 text-[#E51636] hover:bg-[#E51636]/10"
+                                onClick={() => navigate(`/disciplinary/${incident._id}`)}
+                              >
+                                <FileText className="w-4 h-4" />
+                                View Write-up
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
