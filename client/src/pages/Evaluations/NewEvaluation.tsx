@@ -253,349 +253,434 @@ export default function NewEvaluation() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Create New Evaluation</h1>
-          <p className="text-gray-500">Follow the steps below to create a new evaluation</p>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header with gradient background */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-6 md:p-8 shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              <div className="flex-1">
+                <h1 className="text-3xl md:text-[40px] font-bold text-white leading-tight">New Evaluation</h1>
+                <p className="text-white/80 mt-2 text-base md:text-lg">Create and schedule team evaluations</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Progress Steps */}
-      <Card className="p-6">
-        <nav aria-label="Progress">
-          <ol role="list" className="flex items-center">
-            {steps.map((step, stepIdx) => {
-              const Icon = step.icon;
-              return (
-                <li key={step.id} className={`relative ${stepIdx !== steps.length - 1 ? 'flex-1' : ''}`}>
-                  {stepIdx !== steps.length - 1 && (
-                    <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-gray-200" />
-                  )}
-                  <div className="relative flex items-center justify-center group">
-                    <div className={`w-10 h-10 flex items-center justify-center rounded-full border-2 bg-white relative z-10
-                      ${currentStep === step.id ? 'border-red-600 bg-red-50' : 'border-gray-300'}`}>
-                      <Icon className={`w-5 h-5 ${currentStep === step.id ? 'text-red-600' : 'text-gray-500'}`} />
-                    </div>
-                    <span className={`absolute -bottom-8 text-sm font-medium whitespace-nowrap
-                      ${currentStep === step.id ? 'text-red-600' : 'text-gray-500'}`}>
-                      {step.name}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
-      </Card>
-
-      {/* Step Content */}
-      <Card className="p-6">
-        <CardContent className="space-y-6">
-          {currentStep === 1 && (
-            <>
-              {/* Filters */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search employees..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-red-500"
-                  />
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                </div>
-                <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                  <SelectTrigger className="w-full rounded-xl">
-                    <SelectValue placeholder="Filter by department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DEPARTMENTS.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept === 'all' ? 'All Departments' : dept}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Employee List */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.keys(groupedEmployees).length === 0 ? (
-                  <div className="col-span-full">
-                    <Card className="p-8">
-                      <CardContent className="flex flex-col items-center text-center">
-                        <Users className="w-12 h-12 text-gray-400 mb-4" />
-                        <h3 className="text-lg font-medium mb-2">No Team Members Found</h3>
-                        <p className="text-gray-500 mb-4">
-                          You don't have any team members assigned for evaluations. Please contact your administrator to assign team members to you.
-                        </p>
-                        <Button variant="outline" onClick={() => navigate('/evaluations')}>
-                          Back to Evaluations
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ) : (
-                  Object.entries(groupedEmployees).map(([department, departmentEmployees]) => (
-                    <div key={department}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium">{department}</h3>
-                        {selectedCountByDepartment[department] > 0 && (
-                          <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">
-                            {selectedCountByDepartment[department]} selected
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        {departmentEmployees.map((employee) => (
-                          <Card
-                            key={employee._id}
-                            className={`cursor-pointer transition-colors ${
-                              selectedEmployees.find(emp => emp._id === employee._id)
-                                ? 'bg-red-50 border-red-200'
-                                : employee.pendingEvaluation
-                                  ? 'opacity-50 cursor-not-allowed'
-                                  : 'hover:border-red-200'
-                            }`}
-                            onClick={(e) => handleEmployeeToggle(employee, e)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  {employee.imageUrl ? (
-                                    <img
-                                      src={employee.imageUrl}
-                                      alt={employee.name}
-                                      className="w-8 h-8 rounded-full"
-                                    />
-                                  ) : (
-                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                      <Users className="w-4 h-4 text-gray-400" />
-                                    </div>
-                                  )}
-                                  <div>
-                                    <p className="font-medium">{employee.name}</p>
-                                    <p className="text-sm text-gray-500">{employee.position}</p>
-                                  </div>
-                                </div>
-                                {employee.pendingEvaluation ? (
-                                  <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
-                                    Pending
-                                  </Badge>
-                                ) : selectedEmployees.find(emp => emp._id === employee._id) ? (
-                                  <Check className="w-5 h-5 text-red-600" />
-                                ) : null}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Step 2: Choose Template */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4">
-                <h2 className="text-lg font-medium">Select a Template</h2>
-                <div className="overflow-x-auto -mx-4 px-4 pb-2">
-                  <div className="flex gap-2 mb-4 min-w-max">
-                    <Button
-                      variant={selectedTag === 'All' ? 'default' : 'outline'}
-                      onClick={() => setSelectedTag('All')}
-                      size="sm"
-                      className={selectedTag === 'All' ? 'bg-red-600 hover:bg-red-700' : ''}
-                    >
-                      All
-                    </Button>
-                    {['FOH', 'BOH', 'Leadership', 'General'].map((tag) => (
-                      <Button
-                        key={tag}
-                        variant={selectedTag === tag ? 'default' : 'outline'}
-                        onClick={() => setSelectedTag(tag)}
-                        size="sm"
-                        className={selectedTag === tag ? 'bg-red-600 hover:bg-red-700' : ''}
-                      >
-                        {tag}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {loadingTemplates ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(templates || [])
-                    .filter((template: Template) => 
-                      selectedTag === 'All' || (template.tags && template.tags.includes(selectedTag))
-                    )
-                    .map((template: Template) => (
-                      <Card
-                        key={`template-${template._id || template.id}`}
-                        onClick={() => setSelectedTemplate(template)}
-                        className={`cursor-pointer transition-all hover:shadow-md
-                          ${selectedTemplate?.id === (template.id || template._id) ? 'ring-2 ring-red-600 bg-red-50' : ''}`}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium">{template.name}</h3>
-                            <FileText className={`w-5 h-5 ${selectedTemplate?.id === (template.id || template._id) ? 'text-red-600' : 'text-gray-400'}`} />
-                          </div>
-                          <div className="flex gap-2 mb-3">
-                            {(template.tags || []).map(tag => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                          <p className="text-sm text-gray-500">{template.description}</p>
-                          <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <FileText className="w-4 h-4" />
-                              {template.sectionsCount} {template.sectionsCount === 1 ? 'section' : 'sections'}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <CheckCircle className="w-4 h-4" />
-                              {template.criteriaCount} {template.criteriaCount === 1 ? 'question' : 'questions'}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Schedule */}
-          {currentStep === 3 && (
-            <div className="max-w-md mx-auto space-y-6">
-              <div>
-                <h2 className="text-lg font-medium mb-4">Schedule the Evaluation</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Scheduled Date
-                    </label>
-                    <input
-                      type="date"
-                      value={scheduledDate}
-                      onChange={(e) => setScheduledDate(e.target.value)}
-                      className="w-full p-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
-                      min={new Date().toISOString().split('T')[0]}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Review */}
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Selected Employees ({selectedEmployees.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {selectedEmployees.length > 0 && Object.entries(
-                        selectedEmployees.reduce((acc: { [key: string]: Employee[] }, emp) => {
-                          const dept = emp.department || 'Uncategorized';
-                          if (!acc[dept]) acc[dept] = [];
-                          acc[dept].push(emp);
-                          return acc;
-                        }, {})
-                      ).map(([department, employees]) => (
-                        <div key={`review-${department}`}>
-                          <h4 className="font-medium text-gray-700 mb-2">
-                            {department} ({employees.length})
-                          </h4>
-                          <div className="space-y-2">
-                            {employees.map(employee => (
-                              <div key={`review-${employee._id}`} className="flex items-center gap-2 text-sm">
-                                <Users className="w-4 h-4 text-gray-400" />
-                                <span>{employee.name}</span>
-                                <span className="text-gray-500">({employee.position})</span>
-                              </div>
-                            ))}
-                          </div>
+        {/* Progress Steps */}
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6">
+            <nav aria-label="Progress">
+              <ol role="list" className="flex items-center justify-between px-4">
+                {steps.map((step, stepIdx) => {
+                  const Icon = step.icon;
+                  return (
+                    <li key={step.id} className="relative">
+                      <div className="relative flex flex-col items-center group">
+                        <div className={`w-10 h-10 flex items-center justify-center rounded-full border-2 bg-white
+                          ${currentStep === step.id ? 'border-[#E51636] bg-[#E51636]/10' : 'border-gray-300'}`}>
+                          <Icon className={`w-5 h-5 ${currentStep === step.id ? 'text-[#E51636]' : 'text-gray-500'}`} />
                         </div>
-                      ))}
+                        <span className={`mt-4 text-sm font-medium whitespace-nowrap
+                          ${currentStep === step.id ? 'text-[#E51636]' : 'text-[#27251F]/60'}`}>
+                          {step.name}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+          </CardContent>
+        </Card>
+
+        {/* Step Content */}
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6 space-y-6">
+            {currentStep === 1 && (
+              <>
+                {/* Filters */}
+                <Card className="bg-white rounded-[20px] shadow-md">
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search employees..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent text-base bg-white"
+                        />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#27251F]/40 w-5 h-5" />
+                      </div>
+                      <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                        <SelectTrigger className="w-full rounded-xl border-gray-200 py-3 text-base bg-white">
+                          <SelectValue placeholder="All Departments" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DEPARTMENTS.map((dept) => (
+                            <SelectItem key={dept} value={dept}>
+                              {dept === 'all' ? 'All Departments' : dept}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </CardContent>
                 </Card>
 
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Selected Template</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <h3 className="font-medium">{selectedTemplate?.name}</h3>
-                      <p className="text-sm text-gray-500 mt-2">{selectedTemplate?.description}</p>
-                      <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <FileText className="w-4 h-4" />
-                          {selectedTemplate?.sectionsCount} {selectedTemplate?.sectionsCount === 1 ? 'section' : 'sections'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="w-4 h-4" />
-                          {selectedTemplate?.criteriaCount} {selectedTemplate?.criteriaCount === 1 ? 'question' : 'questions'}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                {/* Search Results */}
+                <div className="mt-6">
+                  {/* Headers */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-lg font-medium text-[#27251F]">Available for Evaluation</h2>
+                      {Object.values(selectedCountByDepartment).some(count => count > 0) && (
+                        <Badge variant="outline" className="bg-[#E51636]/10 text-[#E51636] border-[#E51636]/20">
+                          {Object.values(selectedCountByDepartment).reduce((a, b) => a + b, 0)} selected
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Scheduled Date</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        <span>{new Date(scheduledDate).toLocaleDateString()}</span>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Available Employees */}
+                    <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {Object.entries(groupedEmployees)
+                          .filter(([_, employees]) => employees.some(emp => !emp.pendingEvaluation))
+                          .map(([department, departmentEmployees]) => {
+                            const availableEmployees = departmentEmployees.filter(emp => !emp.pendingEvaluation);
+                            if (availableEmployees.length === 0) return null;
+                            
+                            return (
+                              <div key={department}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium text-[#27251F]">{department}</h3>
+                                  {selectedCountByDepartment[department] > 0 && (
+                                    <Badge variant="outline" className="bg-[#E51636]/10 text-[#E51636] border-[#E51636]/20">
+                                      {selectedCountByDepartment[department]} selected
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="space-y-2">
+                                  {availableEmployees.map((employee) => (
+                                    <Card
+                                      key={employee._id}
+                                      className={`cursor-pointer transition-all rounded-[20px] ${
+                                        selectedEmployees.find(emp => emp._id === employee._id)
+                                          ? 'bg-[#E51636]/10 border-[#E51636]/20'
+                                          : 'hover:border-[#E51636]/20'
+                                      }`}
+                                      onClick={(e) => handleEmployeeToggle(employee, e)}
+                                    >
+                                      <CardContent className="p-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            {employee.imageUrl ? (
+                                              <img
+                                                src={employee.imageUrl}
+                                                alt={employee.name}
+                                                className="w-10 h-10 rounded-full"
+                                              />
+                                            ) : (
+                                              <div className="w-10 h-10 rounded-full bg-[#E51636]/10 flex items-center justify-center">
+                                                <Users className="w-5 h-5 text-[#E51636]" />
+                                              </div>
+                                            )}
+                                            <div>
+                                              <p className="font-medium text-[#27251F]">{employee.name}</p>
+                                              <p className="text-sm text-[#27251F]/60">{employee.position}</p>
+                                            </div>
+                                          </div>
+                                          {selectedEmployees.find(emp => emp._id === employee._id) && (
+                                            <Check className="w-5 h-5 text-[#E51636]" />
+                                          )}
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+
+                    {/* Pending Evaluations */}
+                    <div>
+                      <h2 className="text-lg font-medium text-[#27251F] mb-4">Pending Evaluations</h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {Object.entries(groupedEmployees)
+                          .filter(([_, employees]) => employees.some(emp => emp.pendingEvaluation))
+                          .map(([department, departmentEmployees]) => {
+                            const pendingEmployees = departmentEmployees.filter(emp => emp.pendingEvaluation);
+                            if (pendingEmployees.length === 0) return null;
+                            
+                            return (
+                              <div key={department}>
+                                <h3 className="font-medium text-[#27251F] mb-2">{department}</h3>
+                                <div className="space-y-2">
+                                  {pendingEmployees.map((employee) => (
+                                    <Card
+                                      key={employee._id}
+                                      className="rounded-[20px] opacity-50 cursor-not-allowed"
+                                    >
+                                      <CardContent className="p-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            {employee.imageUrl ? (
+                                              <img
+                                                src={employee.imageUrl}
+                                                alt={employee.name}
+                                                className="w-10 h-10 rounded-full"
+                                              />
+                                            ) : (
+                                              <div className="w-10 h-10 rounded-full bg-[#E51636]/10 flex items-center justify-center">
+                                                <Users className="w-5 h-5 text-[#E51636]" />
+                                              </div>
+                                            )}
+                                            <div>
+                                              <p className="font-medium text-[#27251F]">{employee.name}</p>
+                                              <p className="text-sm text-[#27251F]/60">{employee.position}</p>
+                                            </div>
+                                          </div>
+                                          <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
+                                            Pending
+                                          </Badge>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Step 2: Choose Template */}
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-lg font-medium text-[#27251F]">Select a Template</h2>
+                  <div className="overflow-x-auto -mx-4 px-4 pb-2">
+                    <div className="flex gap-2 mb-4 min-w-max">
+                      <Button
+                        variant={selectedTag === 'All' ? 'default' : 'outline'}
+                        onClick={() => setSelectedTag('All')}
+                        size="sm"
+                        className={`rounded-full px-4 ${
+                          selectedTag === 'All' 
+                            ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                            : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
+                        }`}
+                      >
+                        All
+                      </Button>
+                      {['FOH', 'BOH', 'Leadership', 'General'].map((tag) => (
+                        <Button
+                          key={tag}
+                          variant={selectedTag === tag ? 'default' : 'outline'}
+                          onClick={() => setSelectedTag(tag)}
+                          size="sm"
+                          className={`rounded-full px-4 ${
+                            selectedTag === tag 
+                              ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                              : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
+                          }`}
+                        >
+                          {tag}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {loadingTemplates ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636] mx-auto"></div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(templates || [])
+                      .filter((template: Template) => 
+                        selectedTag === 'All' || (template.tags && template.tags.includes(selectedTag))
+                      )
+                      .map((template: Template) => (
+                        <Card
+                          key={`template-${template._id || template.id}`}
+                          onClick={() => setSelectedTemplate(template)}
+                          className={`cursor-pointer transition-all rounded-[20px] hover:shadow-md
+                            ${selectedTemplate?.id === (template.id || template._id) 
+                              ? 'ring-2 ring-[#E51636] bg-[#E51636]/10' 
+                              : 'hover:border-[#E51636]/20'
+                            }`}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium text-[#27251F]">{template.name}</h3>
+                              <FileText className={`w-5 h-5 ${
+                                selectedTemplate?.id === (template.id || template._id) 
+                                  ? 'text-[#E51636]' 
+                                  : 'text-[#27251F]/40'
+                              }`} />
+                            </div>
+                            <div className="flex gap-2 mb-3">
+                              {(template.tags || []).map(tag => (
+                                <Badge 
+                                  key={tag} 
+                                  variant="secondary" 
+                                  className="text-xs bg-[#27251F]/10 text-[#27251F]/60"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                            <p className="text-sm text-[#27251F]/60">{template.description}</p>
+                            <div className="flex items-center gap-4 mt-4 text-sm text-[#27251F]/60">
+                              <div className="flex items-center gap-1">
+                                <FileText className="w-4 h-4" />
+                                {template.sectionsCount} {template.sectionsCount === 1 ? 'section' : 'sections'}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <CheckCircle className="w-4 h-4" />
+                                {template.criteriaCount} {template.criteriaCount === 1 ? 'question' : 'questions'}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 3: Schedule */}
+            {currentStep === 3 && (
+              <div className="max-w-md mx-auto space-y-6">
+                <div>
+                  <h2 className="text-lg font-medium text-[#27251F] mb-4">Schedule the Evaluation</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#27251F]/60 mb-1">
+                        Scheduled Date
+                      </label>
+                      <input
+                        type="date"
+                        value={scheduledDate}
+                        onChange={(e) => setScheduledDate(e.target.value)}
+                        className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Navigation */}
-          <div className="flex justify-between mt-8 pt-4 border-t">
-            <Button
-              onClick={handleBack}
-              disabled={currentStep === 1}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </Button>
-            <Button
-              onClick={handleNext}
-              disabled={isNextDisabled()}
-              className="flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
-            >
-              {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Step 4: Review */}
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="bg-white rounded-[20px] shadow-md">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-[#27251F]">Selected Employees ({selectedEmployees.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {selectedEmployees.length > 0 && Object.entries(
+                          selectedEmployees.reduce((acc: { [key: string]: Employee[] }, emp) => {
+                            const dept = emp.department || 'Uncategorized';
+                            if (!acc[dept]) acc[dept] = [];
+                            acc[dept].push(emp);
+                            return acc;
+                          }, {})
+                        ).map(([department, employees]) => (
+                          <div key={`review-${department}`}>
+                            <h4 className="font-medium text-[#27251F] mb-2">
+                              {department} ({employees.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {employees.map(employee => (
+                                <div key={`review-${employee._id}`} className="flex items-center gap-2 text-sm">
+                                  <Users className="w-4 h-4 text-[#27251F]/40" />
+                                  <span className="text-[#27251F]">{employee.name}</span>
+                                  <span className="text-[#27251F]/60">({employee.position})</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="space-y-4">
+                    <Card className="bg-white rounded-[20px] shadow-md">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-[#27251F]">Selected Template</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <h3 className="font-medium text-[#27251F]">{selectedTemplate?.name}</h3>
+                        <p className="text-sm text-[#27251F]/60 mt-2">{selectedTemplate?.description}</p>
+                        <div className="flex items-center gap-4 mt-4 text-sm text-[#27251F]/60">
+                          <div className="flex items-center gap-1">
+                            <FileText className="w-4 h-4" />
+                            {selectedTemplate?.sectionsCount} {selectedTemplate?.sectionsCount === 1 ? 'section' : 'sections'}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" />
+                            {selectedTemplate?.criteriaCount} {selectedTemplate?.criteriaCount === 1 ? 'question' : 'questions'}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-white rounded-[20px] shadow-md">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-[#27251F]">Scheduled Date</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-2 text-[#27251F]/60">
+                          <Calendar className="w-4 h-4" />
+                          <span>{new Date(scheduledDate).toLocaleDateString()}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex justify-between mt-8 pt-4 border-t border-gray-200">
+              <Button
+                onClick={handleBack}
+                disabled={currentStep === 1}
+                variant="outline"
+                className="flex items-center gap-2 h-12 px-6 rounded-2xl"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </Button>
+              <Button
+                onClick={handleNext}
+                disabled={isNextDisabled()}
+                className="flex items-center gap-2 h-12 px-6 rounded-2xl bg-[#E51636] text-white hover:bg-[#E51636]/90"
+              >
+                {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
