@@ -4,9 +4,22 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, Users, FileText, Calendar, AlertCircle } from 'lucide-react';
+import { 
+  ClipboardList, 
+  Users, 
+  FileText, 
+  Calendar, 
+  AlertCircle, 
+  TrendingUp, 
+  ChevronRight,
+  Clock,
+  Target,
+  Award
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import TeamMemberDashboard from './TeamMemberDashboard';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { Progress } from '@/components/ui/progress';
 import api from '../lib/axios';
 
 interface DashboardStats {
@@ -53,12 +66,10 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // If user is a regular team member, show the team member dashboard
   if (user?.role === 'user') {
     return <TeamMemberDashboard />;
   }
 
-  // Admin/Manager Dashboard
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
@@ -70,273 +81,351 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636]" />
       </div>
     );
   }
 
+  // Mock data for the area chart
+  const performanceData = [
+    { name: 'Week 1', FOH: 85, BOH: 78 },
+    { name: 'Week 2', FOH: 88, BOH: 82 },
+    { name: 'Week 3', FOH: 87, BOH: 85 },
+    { name: 'Week 4', FOH: 92, BOH: 88 },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header with Quick Actions */}
-        <Card className="mb-6">
-          <div className="p-6">
-            <div className="flex flex-col items-center">
-              <div className="text-center mb-4">
-                <h1 className="text-2xl font-bold">Welcome, {user?.name}</h1>
-                <p className="text-gray-500">CFA Store #{user?.store?.storeNumber}</p>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Welcome Header */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Welcome back, {user?.name}</h1>
+                <p className="text-white/80 mt-2 text-lg">CFA Store #{user?.store?.storeNumber}</p>
               </div>
-              <div className="flex gap-2 w-full sm:w-auto justify-center">
-                <Button variant="outline" className="flex-1 sm:flex-initial whitespace-nowrap" onClick={() => navigate('/evaluations/new')}>
+              <div className="flex gap-4">
+                <Button 
+                  variant="secondary" 
+                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6"
+                  onClick={() => navigate('/evaluations/new')}
+                >
+                  <ClipboardList className="w-5 h-5 mr-2" />
                   New Evaluation
                 </Button>
-                <Button className="flex-1 sm:flex-initial bg-red-600 hover:bg-red-700 text-white whitespace-nowrap" onClick={() => navigate('/disciplinary/new')}>
+                <Button 
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6"
+                  onClick={() => navigate('/disciplinary/new')}
+                >
+                  <AlertCircle className="w-5 h-5 mr-2" />
                   New Incident
                 </Button>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* Quick Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate('/evaluations')}>
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-red-600 mb-3 border-b pb-2">Evaluations</h3>
-              <div className="space-y-4">
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-8">
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending Reviews</p>
-                  <div className="mt-1 flex items-baseline">
-                    <p className="text-2xl font-bold text-red-600">{stats?.pendingEvaluations || 0}</p>
-                    <p className="ml-2 text-sm text-gray-500">to complete</p>
+                  <p className="text-[#27251F]/60 font-medium">Pending Reviews</p>
+                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{stats?.pendingEvaluations || 0}</h3>
+                  <p className="text-[#27251F]/60 mt-1">
+                    {stats?.completedReviewsLast30Days || 0} completed in 30 days
+                  </p>
+                </div>
+                <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                  <ClipboardList className="h-7 w-7 text-[#E51636]" />
+                </div>
+              </div>
+              <div className="mt-6">
+                <Progress 
+                  value={stats?.completedReviewsLast30Days ? (stats.completedReviewsLast30Days / (stats.completedReviewsLast30Days + stats.pendingEvaluations)) * 100 : 0} 
+                  className="h-2 bg-[#E51636]/10" 
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-8">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">Active Incidents</p>
+                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{stats?.disciplinary?.active || 0}</h3>
+                  <p className="text-[#27251F]/60 mt-1">
+                    {stats?.disciplinary?.followUps || 0} follow-ups needed
+                  </p>
+                </div>
+                <div className="h-14 w-14 bg-orange-100 rounded-2xl flex items-center justify-center">
+                  <AlertCircle className="h-7 w-7 text-orange-600" />
+                </div>
+              </div>
+              <div className="mt-6">
+                <Progress 
+                  value={stats?.disciplinary?.last30Days ? (stats.disciplinary.last30Days / 30) * 100 : 0} 
+                  className="h-2 bg-orange-100" 
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-8">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">Team Size</p>
+                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{stats?.totalEmployees || 0}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex -space-x-2">
+                      {[1,2,3].map((i) => (
+                        <div key={i} className="h-6 w-6 rounded-full bg-[#E51636]/10 border-2 border-white flex items-center justify-center">
+                          <Users className="h-3 w-3 text-[#E51636]" />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[#27251F]/60">+{(stats?.totalEmployees || 0) - 3} more</p>
                   </div>
                 </div>
+                <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                  <Users className="h-7 w-7 text-[#E51636]" />
+                </div>
+              </div>
+              <div className="mt-6">
+                <Progress 
+                  value={stats?.team?.inTraining ? (stats.team.inTraining / stats.totalEmployees) * 100 : 0} 
+                  className="h-2 bg-[#E51636]/10" 
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-8">
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Completed Reviews (30 Days)</p>
-                  <div className="mt-1 flex items-baseline">
-                    <p className="text-2xl font-bold text-red-600">{stats?.completedReviewsLast30Days || 0}</p>
-                    <p className="ml-2 text-sm text-gray-500">completed</p>
+                  <p className="text-[#27251F]/60 font-medium">Overall Performance</p>
+                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">
+                    {stats?.team?.performance ? 
+                      Math.round((stats.team.performance.foh + stats.team.performance.boh) / 2) : 0}%
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1 text-green-600">
+                    <TrendingUp className="h-4 w-4" />
+                    <p className="text-sm font-medium">+2.5% from last month</p>
                   </div>
                 </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate('/disciplinary')}>
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-red-600 mb-3 border-b pb-2">Disciplinary</h3>
-              <div>
-                <p className="text-sm text-gray-500">Active Incidents</p>
-                <div className="mt-1 flex items-baseline">
-                  <p className="text-2xl font-bold text-red-600">{stats?.disciplinary?.active || 0}</p>
-                  <p className="ml-2 text-sm text-gray-500">open</p>
+                <div className="h-14 w-14 bg-green-100 rounded-2xl flex items-center justify-center">
+                  <Award className="h-7 w-7 text-green-600" />
                 </div>
               </div>
-            </div>
-          </Card>
-
-          <Card className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate('/disciplinary?filter=followup')}>
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-red-600 mb-3 border-b pb-2">Follow-ups</h3>
-              <div>
-                <p className="text-sm text-gray-500">Due for Review</p>
-                <div className="mt-1 flex items-baseline">
-                  <p className="text-2xl font-bold text-red-600">{stats?.disciplinary?.followUps || 0}</p>
-                  <p className="ml-2 text-sm text-gray-500">this week</p>
-                </div>
+              <div className="mt-6">
+                <Progress 
+                  value={stats?.team?.performance ? 
+                    (stats.team.performance.foh + stats.team.performance.boh) / 2 : 0} 
+                  className="h-2 bg-green-100" 
+                />
               </div>
-            </div>
-          </Card>
-
-          <Card className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate('/users')}>
-            <div className="p-6">
-              <h3 className="text-lg font-bold text-red-600 mb-3 border-b pb-2">Team</h3>
-              <div>
-                <p className="text-sm text-gray-500">Team Members</p>
-                <div className="mt-1 flex items-baseline">
-                  <p className="text-2xl font-bold text-red-600">{stats?.totalEmployees || 0}</p>
-                  <p className="ml-2 text-sm text-gray-500">total</p>
-                </div>
-              </div>
-            </div>
+            </CardContent>
           </Card>
         </div>
 
-        {/* Main Content Grid */}
+        {/* Charts and Lists Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Evaluations Column */}
-          <div className="space-y-6">
-            <Card className="h-[200px]">
-              <div className="p-6 h-full flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold">Evaluations</h2>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/evaluations')}>
-                    View All →
-                  </Button>
+          {/* Performance Chart */}
+          <Card className="bg-white rounded-[20px] lg:col-span-2 hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between p-8">
+              <div>
+                <CardTitle className="text-xl font-bold text-[#27251F]">Performance Trends</CardTitle>
+                <p className="text-[#27251F]/60 mt-1">FOH vs BOH performance over time</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-[#E51636]" />
+                  <span className="text-sm text-[#27251F]/60">FOH</span>
                 </div>
-                <div className="space-y-4 flex-1 overflow-auto">
-                  {stats?.upcomingEvaluations?.map((evaluation) => (
-                    <div key={evaluation.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{evaluation.employeeName}</p>
-                          <p className="text-sm text-gray-500">
-                            {evaluation.templateName} • Due {new Date(evaluation.scheduledDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => navigate(`/evaluations/${evaluation.id}`)}
-                        >
-                          Start
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  {!stats?.upcomingEvaluations?.length && (
-                    <p className="text-gray-500 text-center py-4">No upcoming evaluations</p>
-                  )}
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-[#DD0031]" />
+                  <span className="text-sm text-[#27251F]/60">BOH</span>
                 </div>
               </div>
-            </Card>
-          </div>
+            </CardHeader>
+            <CardContent className="p-8 pt-0">
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={performanceData}>
+                    <defs>
+                      <linearGradient id="FOHGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#E51636" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#E51636" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="BOHGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#DD0031" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#DD0031" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" stroke="#27251F" />
+                    <YAxis stroke="#27251F" />
+                    <Tooltip />
+                    <Area 
+                      type="monotone" 
+                      dataKey="FOH" 
+                      stroke="#E51636" 
+                      fillOpacity={1}
+                      fill="url(#FOHGradient)"
+                      strokeWidth={2}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="BOH" 
+                      stroke="#DD0031" 
+                      fillOpacity={1}
+                      fill="url(#BOHGradient)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Disciplinary Column */}
-          <div className="space-y-6">
-            <Card className="h-[200px]">
-              <div className="p-6 h-full flex flex-col">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold">Active Incidents</h2>
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/disciplinary')}>
-                    View All →
-                  </Button>
-                </div>
-                <div className="space-y-4 flex-1 overflow-auto">
-                  {stats?.disciplinary?.recent?.map((incident) => (
-                    <div key={incident.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{incident.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {incident.type} • {new Date(incident.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-sm ${
-                          incident.severity === 'Minor' 
-                            ? 'bg-yellow-100 text-yellow-800' 
-                            : 'bg-orange-100 text-orange-800'
-                        }`}>
-                          {incident.severity}
-                        </span>
+          {/* Quick Actions */}
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300">
+            <CardHeader className="p-8">
+              <CardTitle className="text-xl font-bold text-[#27251F]">Quick Actions</CardTitle>
+              <p className="text-[#27251F]/60 mt-1">Frequently used actions</p>
+            </CardHeader>
+            <CardContent className="p-8 pt-0">
+              <div className="space-y-4">
+                {[
+                  { icon: Clock, label: 'Schedule Evaluation', path: '/evaluations/new', color: 'text-blue-600 bg-blue-100' },
+                  { icon: Target, label: 'Set Team Goals', path: '/goals', color: 'text-purple-600 bg-purple-100' },
+                  { icon: Users, label: 'View Team', path: '/users', color: 'text-[#E51636] bg-[#E51636]/10' },
+                  { icon: FileText, label: 'Training Materials', path: '/future', color: 'text-green-600 bg-green-100' },
+                ].map((action, index) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => navigate(action.path)}
+                      className="w-full p-4 rounded-xl bg-[#F4F4F4] hover:bg-[#F4F4F4]/80 transition-colors flex items-center gap-4"
+                    >
+                      <div className={`h-10 w-10 rounded-lg ${action.color} flex items-center justify-center`}>
+                        <Icon className="h-5 w-5" />
                       </div>
-                    </div>
-                  ))}
-                  {!stats?.disciplinary?.recent?.length && (
-                    <p className="text-gray-500 text-center py-4">No active incidents</p>
-                  )}
-                </div>
+                      <span className="font-medium text-[#27251F]">{action.label}</span>
+                      <ChevronRight className="h-5 w-5 text-[#27251F]/40 ml-auto" />
+                    </button>
+                  );
+                })}
               </div>
-            </Card>
-          </div>
-
-          {/* Team Performance Column */}
-          <div className="space-y-6">
-            {/* Performance Metrics */}
-            <Card className="h-[200px]">
-              <div className="p-6 h-full flex flex-col">
-                <h2 className="text-lg font-semibold mb-4">Team Performance</h2>
-                <div className="space-y-4 flex-1">
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-500">FOH Performance</span>
-                      <span className="font-medium">{stats?.team?.performance?.foh || 0}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-red-600 h-2 rounded-full" 
-                        style={{ width: `${stats?.team?.performance?.foh || 0}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm text-gray-500">BOH Performance</span>
-                      <span className="font-medium">{stats?.team?.performance?.boh || 0}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-red-600 h-2 rounded-full" 
-                        style={{ width: `${stats?.team?.performance?.boh || 0}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Additional Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-6">
-          <Card className="hover:bg-gray-50 transition-colors">
-            <Link to="/templates" className="block p-6">
-              <div className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-red-600" />
-                <div>
-                  <h3 className="font-medium">Evaluation Templates</h3>
-                  <p className="text-sm text-gray-500">Manage evaluation forms</p>
-                </div>
+        {/* Lists Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Evaluations Section */}
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between p-8">
+              <div>
+                <CardTitle className="text-xl font-bold text-[#27251F]">Upcoming Evaluations</CardTitle>
+                <p className="text-[#27251F]/60 mt-1">Next 7 days</p>
               </div>
-            </Link>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/evaluations')}>
+                View All
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-8 pt-0">
+              <div className="space-y-4">
+                {stats?.upcomingEvaluations?.map((evaluation) => (
+                  <div 
+                    key={evaluation.id} 
+                    className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/evaluations/${evaluation.id}`)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-3">
+                        <div className="h-10 w-10 rounded-full bg-[#E51636]/10 flex items-center justify-center">
+                          <Users className="h-5 w-5 text-[#E51636]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[#27251F]">{evaluation.employeeName}</p>
+                          <p className="text-sm text-[#27251F]/60 mt-1">
+                            {evaluation.templateName}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-[#27251F]">
+                          {new Date(evaluation.scheduledDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {!stats?.upcomingEvaluations?.length && (
+                  <div className="text-center py-6">
+                    <p className="text-[#27251F]/60">No upcoming evaluations</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
           </Card>
 
-          <Card className="hover:bg-gray-50 transition-colors">
-            <Link to="/users" className="block p-6">
-              <div className="flex items-center gap-3">
-                <Users className="h-6 w-6 text-red-600" />
-                <div>
-                  <h3 className="font-medium">Team Members</h3>
-                  <p className="text-sm text-gray-500">Manage employees and roles</p>
-                </div>
+          {/* Incidents Section */}
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between p-8">
+              <div>
+                <CardTitle className="text-xl font-bold text-[#27251F]">Recent Incidents</CardTitle>
+                <p className="text-[#27251F]/60 mt-1">Last 7 days</p>
               </div>
-            </Link>
-          </Card>
-
-          <Card className="hover:bg-gray-50 transition-colors">
-            <Link to="/evaluations/new" className="block p-6">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-6 w-6 text-red-600" />
-                <div>
-                  <h3 className="font-medium">Schedule Reviews</h3>
-                  <p className="text-sm text-gray-500">Plan upcoming evaluations</p>
-                </div>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/disciplinary')}>
+                View All
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-8 pt-0">
+              <div className="space-y-4">
+                {stats?.disciplinary?.recent?.map((incident) => (
+                  <div 
+                    key={incident.id} 
+                    className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/disciplinary/${incident.id}`)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-3">
+                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
+                          <AlertCircle className="h-5 w-5 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[#27251F]">{incident.name}</p>
+                          <p className="text-sm text-[#27251F]/60 mt-1">{incident.type}</p>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        incident.severity === 'Minor' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {incident.severity}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {!stats?.disciplinary?.recent?.length && (
+                  <div className="text-center py-6">
+                    <p className="text-[#27251F]/60">No active incidents</p>
+                  </div>
+                )}
               </div>
-            </Link>
-          </Card>
-
-          <Card className="hover:bg-gray-50 transition-colors">
-            <Link to="/future" className="block p-6">
-              <div className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-red-600" />
-                <div>
-                  <h3 className="font-medium">Documents</h3>
-                  <p className="text-sm text-gray-500">Access important files</p>
-                </div>
-              </div>
-            </Link>
-          </Card>
-
-          <Card className="hover:bg-gray-50 transition-colors">
-            <Link to="/future" className="block p-6">
-              <div className="flex items-center gap-3">
-                <ClipboardList className="h-6 w-6 text-red-600" />
-                <div>
-                  <h3 className="font-medium">Training</h3>
-                  <p className="text-sm text-gray-500">Manage training materials</p>
-                </div>
-              </div>
-            </Link>
+            </CardContent>
           </Card>
         </div>
       </div>
