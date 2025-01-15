@@ -35,53 +35,56 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F4F4F4] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <TrendingUp className="h-8 w-8 text-red-600" />
-            <h1 className="text-3xl font-bold text-gray-900">
-              Growth Hub
-              <span className="text-red-600 ml-2 bg-red-50 px-2 rounded text-3xl">CFA</span>
-            </h1>
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden mb-8">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <TrendingUp className="h-8 w-8" />
+              <h1 className="text-3xl md:text-4xl font-bold">
+                Growth Hub
+                <span className="bg-white/10 ml-2 px-2 rounded-lg">CFA</span>
+              </h1>
+            </div>
+            <p className="text-white/80 text-center text-lg">Empowering Team Member Development</p>
           </div>
-          <p className="text-gray-500 text-sm">Empowering Team Member Development</p>
         </div>
         
-        <Card>
+        <Card className="bg-white rounded-[20px] shadow-md">
           <CardHeader>
-            <CardTitle className="text-center">Sign in to your account</CardTitle>
+            <CardTitle className="text-[#27251F] text-xl text-center">Sign in to your account</CardTitle>
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+              <div className="mb-6 p-4 bg-[#E51636]/10 border border-[#E51636]/20 text-[#E51636] rounded-xl text-sm">
                 {error}
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="block text-sm font-medium text-[#27251F]/60">
                   Email address
                 </label>
                 <input
                   id="email"
                   type="email"
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                  className="mt-2 block w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-[#27251F]/60">
                   Password
                 </label>
                 <input
                   id="password"
                   type="password"
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+                  className="mt-2 block w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -89,23 +92,22 @@ export default function Login() {
 
               <Button
                 type="submit"
-                variant="red"
-                className="w-full"
+                className="w-full bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
 
-              <div className="flex flex-col items-center gap-2 text-sm">
+              <div className="flex flex-col items-center gap-3 text-sm">
                 <Link
                   to="/register"
-                  className="font-medium text-red-600 hover:text-red-500"
+                  className="font-medium text-[#E51636] hover:text-[#E51636]/90"
                 >
                   Don't have an account? Register
                 </Link>
                 <Link
                   to="/forgot-password"
-                  className="font-medium text-red-600 hover:text-red-500"
+                  className="font-medium text-[#E51636] hover:text-[#E51636]/90"
                 >
                   Forgot password?
                 </Link>
