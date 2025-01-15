@@ -176,48 +176,48 @@ export default function Templates() {
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header with gradient background */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-6 md:p-8 shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
           <div className="relative">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-[40px] font-bold text-white leading-tight">Evaluation Templates</h1>
-                <p className="text-white/80 mt-2 text-lg">Create and manage evaluation forms</p>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+              <div className="flex-1">
+                <h1 className="text-3xl md:text-[40px] font-bold text-white leading-tight">Evaluation Templates</h1>
+                <p className="text-white/80 mt-2 text-base md:text-lg">Create and manage evaluation forms</p>
               </div>
               <Button 
                 onClick={() => navigate('/templates/new')}
-                className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 rounded-2xl flex items-center gap-2 text-base font-medium"
+                className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-4 sm:px-6 rounded-2xl flex items-center gap-2 text-base font-medium w-full sm:w-auto justify-center"
               >
-                <span className="text-xl font-medium">+</span>
+                <Plus className="w-5 h-5" />
                 Create Template
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-6">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-6 md:py-8 space-y-4 md:space-y-6">
           {/* Filters Section */}
           <Card className="bg-white rounded-[20px] shadow-md">
-            <CardContent className="p-6">
+            <CardContent className="p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <div className="flex-1">
-                  <CardTitle className="text-xl font-medium">All Templates</CardTitle>
+                  <CardTitle className="text-lg md:text-xl font-medium">All Templates</CardTitle>
                 </div>
-                <div className="flex flex-1 md:flex-none items-center gap-4">
-                  <div className="relative flex-1 md:w-80">
+                <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
+                  <div className="relative flex-1">
                     <input
                       type="text"
                       placeholder="Search templates..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent text-base"
                     />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   </div>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E51636]"
+                    className="px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E51636] text-base w-full sm:w-auto"
                   >
                     <option value="all">All Status</option>
                     <option value="active">Active</option>
@@ -236,7 +236,7 @@ export default function Templates() {
               </div>
             ) : filteredTemplates?.length === 0 ? (
               <Card className="bg-white rounded-[20px] shadow-md">
-                <CardContent className="p-8 text-center">
+                <CardContent className="p-6 md:p-8 text-center">
                   <div className="h-16 w-16 bg-[#E51636]/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <FileText className="w-8 h-8 text-[#E51636]" />
                   </div>
@@ -246,8 +246,8 @@ export default function Templates() {
                     to="/templates/new"
                     className="inline-flex items-center gap-2"
                   >
-                    <Button className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl flex items-center gap-2 text-base font-medium">
-                      <span className="text-xl font-medium">+</span>
+                    <Button className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl flex items-center gap-2 text-base font-medium w-full sm:w-auto justify-center">
+                      <Plus className="w-5 h-5" />
                       Create Template
                     </Button>
                   </Link>
@@ -259,8 +259,8 @@ export default function Templates() {
                   key={template.id} 
                   className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 cursor-pointer"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start gap-4">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex flex-col gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-medium text-[#27251F] truncate">{template.name}</h3>
@@ -278,7 +278,7 @@ export default function Templates() {
                         </div>
                         <p className="text-sm text-[#27251F]/60 mb-4 line-clamp-2">{template.description}</p>
                         
-                        <div className="flex items-center gap-6 text-sm text-[#27251F]/60 flex-wrap">
+                        <div className="flex items-center gap-4 md:gap-6 text-sm text-[#27251F]/60 flex-wrap">
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 flex-shrink-0" />
                             {template.sectionsCount} {template.sectionsCount === 1 ? 'section' : 'sections'}
@@ -294,7 +294,7 @@ export default function Templates() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center justify-between md:justify-end gap-3 pt-4 md:pt-0 border-t md:border-0">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -302,9 +302,9 @@ export default function Templates() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => navigate(`/templates/${template.id}/edit`)}
-                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636] h-10 w-10"
                               >
-                                <Edit className="w-4 h-4 text-[#27251F]/60" />
+                                <Edit className="w-5 h-5 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -318,9 +318,9 @@ export default function Templates() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => navigate(`/templates/${template.id}`)}
-                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636] h-10 w-10"
                               >
-                                <FileText className="w-4 h-4 text-[#27251F]/60" />
+                                <FileText className="w-5 h-5 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -334,9 +334,9 @@ export default function Templates() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleCopy(template.id)}
-                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636] h-10 w-10"
                               >
-                                <Copy className="w-4 h-4 text-[#27251F]/60" />
+                                <Copy className="w-5 h-5 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -350,9 +350,9 @@ export default function Templates() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleDelete(template)}
-                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636] h-10 w-10"
                               >
-                                <Trash2 className="w-4 h-4 text-[#27251F]/60" />
+                                <Trash2 className="w-5 h-5 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
