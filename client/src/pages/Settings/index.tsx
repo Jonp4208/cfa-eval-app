@@ -156,182 +156,214 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-      
-      {success && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
-          {success}
-        </div>
-      )}
-
-      <Tabs defaultValue="general" className="space-y-4">
-        <div className="overflow-x-auto -mx-4 px-4 pb-4">
-          <TabsList className="w-full border-b justify-start min-w-max">
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <SettingsIcon className="h-4 w-4" />
-              <span className="whitespace-nowrap">General</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span className="whitespace-nowrap">User Access</span>
-            </TabsTrigger>
-            <TabsTrigger value="evaluations" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="whitespace-nowrap">Evaluations</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              <span className="whitespace-nowrap">Notifications</span>
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <BarChart className="h-4 w-4" />
-              <span className="whitespace-nowrap">Reports</span>
-            </TabsTrigger>
-          </TabsList>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-[#27251F]">Settings</h1>
+          <p className="text-[#27251F]/60">Manage your store and application preferences</p>
         </div>
 
-        <TabsContent value="general" className="space-y-4">
-          <form onSubmit={handleSaveGeneral}>
-            <Card>
+        {/* Alerts */}
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl text-sm">
+            {success}
+          </div>
+        )}
+
+        <Tabs defaultValue="general" className="space-y-6">
+          <div className="bg-white rounded-[20px] shadow-md p-4">
+            <TabsList className="w-full border-b justify-start gap-2">
+              <TabsTrigger value="general" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+                <SettingsIcon className="h-4 w-4" />
+                <span className="whitespace-nowrap">General</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+                <Users className="h-4 w-4" />
+                <span className="whitespace-nowrap">User Access</span>
+              </TabsTrigger>
+              <TabsTrigger value="evaluations" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+                <FileText className="h-4 w-4" />
+                <span className="whitespace-nowrap">Evaluations</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+                <Bell className="h-4 w-4" />
+                <span className="whitespace-nowrap">Notifications</span>
+              </TabsTrigger>
+              <TabsTrigger value="reports" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+                <BarChart className="h-4 w-4" />
+                <span className="whitespace-nowrap">Reports</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="general" className="space-y-6 mt-0">
+            <form onSubmit={handleSaveGeneral}>
+              <Card className="bg-white rounded-[20px] shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-lg text-[#27251F]">Store Information</CardTitle>
+                  <CardDescription className="text-[#27251F]/60">Update your store's basic information</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label htmlFor="storeName" className="text-sm font-medium text-[#27251F]/60">Store Name</label>
+                      <Input
+                        id="storeName"
+                        name="storeName"
+                        value={formState.storeName}
+                        onChange={(e) => handleSettingChange('storeName', e.target.value)}
+                        placeholder="Enter store name"
+                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="storeNumber" className="text-sm font-medium text-[#27251F]/60">Store Number</label>
+                      <Input
+                        id="storeNumber"
+                        value={formState.storeNumber}
+                        onChange={(e) => handleSettingChange('storeNumber', e.target.value)}
+                        placeholder="Enter store number"
+                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="storeAddress" className="text-sm font-medium text-[#27251F]/60">Store Address</label>
+                    <Input
+                      id="storeAddress"
+                      value={formState.storeAddress}
+                      onChange={(e) => handleSettingChange('storeAddress', e.target.value)}
+                      placeholder="Enter store address"
+                      className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label htmlFor="storePhone" className="text-sm font-medium text-[#27251F]/60">Store Phone</label>
+                      <Input
+                        id="storePhone"
+                        value={formState.storePhone}
+                        onChange={(e) => handleSettingChange('storePhone', e.target.value)}
+                        placeholder="Enter store phone"
+                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="storeEmail" className="text-sm font-medium text-[#27251F]/60">Store Email</label>
+                      <Input
+                        id="storeEmail"
+                        value={formState.storeEmail}
+                        onChange={(e) => handleSettingChange('storeEmail', e.target.value)}
+                        placeholder="Enter store email"
+                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button 
+                      type="submit" 
+                      className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl flex items-center gap-2"
+                    >
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </form>
+
+            <Card className="bg-white rounded-[20px] shadow-md">
               <CardHeader>
-                <CardTitle>Store Information</CardTitle>
-                <CardDescription>Update your store's basic information</CardDescription>
+                <CardTitle className="text-lg text-[#27251F]">Appearance</CardTitle>
+                <CardDescription className="text-[#27251F]/60">Customize how the application looks</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="storeName" className="text-sm font-medium">Store Name</label>
-                    <Input
-                      id="storeName"
-                      name="storeName"
-                      value={formState.storeName}
-                      onChange={(e) => handleSettingChange('storeName', e.target.value)}
-                      placeholder="Enter store name"
-                    />
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <label htmlFor="darkMode" className="text-sm font-medium text-[#27251F]">Dark Mode</label>
+                    <p className="text-sm text-[#27251F]/60">Enable dark mode for the application</p>
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="storeNumber" className="text-sm font-medium">Store Number</label>
-                    <Input
-                      id="storeNumber"
-                      value={formState.storeNumber}
-                      onChange={(e) => handleSettingChange('storeNumber', e.target.value)}
-                      placeholder="Enter store number"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="storeAddress" className="text-sm font-medium">Store Address</label>
-                  <Input
-                    id="storeAddress"
-                    value={formState.storeAddress}
-                    onChange={(e) => handleSettingChange('storeAddress', e.target.value)}
-                    placeholder="Enter store address"
+                  <Switch
+                    id="darkMode"
+                    checked={formState.darkMode}
+                    onCheckedChange={(checked) => handleSettingChange('darkMode', checked)}
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="storePhone" className="text-sm font-medium">Store Phone</label>
-                    <Input
-                      id="storePhone"
-                      value={formState.storePhone}
-                      onChange={(e) => handleSettingChange('storePhone', e.target.value)}
-                      placeholder="Enter store phone"
-                    />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <label htmlFor="compactMode" className="text-sm font-medium text-[#27251F]">Compact Mode</label>
+                    <p className="text-sm text-[#27251F]/60">Make the interface more compact</p>
                   </div>
-                  <div className="space-y-2">
-                    <label htmlFor="storeEmail" className="text-sm font-medium">Store Email</label>
-                    <Input
-                      id="storeEmail"
-                      value={formState.storeEmail}
-                      onChange={(e) => handleSettingChange('storeEmail', e.target.value)}
-                      placeholder="Enter store email"
-                    />
-                  </div>
+                  <Switch
+                    id="compactMode"
+                    checked={formState.compactMode}
+                    onCheckedChange={(checked) => handleSettingChange('compactMode', checked)}
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
                 </div>
-                <Button type="submit" className="w-full sm:w-auto">
-                  Save Changes
-                </Button>
               </CardContent>
             </Card>
-          </form>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Customize how the application looks</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label htmlFor="darkMode" className="text-sm font-medium">Dark Mode</label>
-                  <p className="text-sm text-gray-500">Enable dark mode for the application</p>
-                </div>
-                <Switch
-                  id="darkMode"
-                  checked={formState.darkMode}
-                  onCheckedChange={(checked) => handleSettingChange('darkMode', checked)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label htmlFor="compactMode" className="text-sm font-medium">Compact Mode</label>
-                  <p className="text-sm text-gray-500">Make the interface more compact</p>
-                </div>
-                <Switch
-                  id="compactMode"
-                  checked={formState.compactMode}
-                  onCheckedChange={(checked) => handleSettingChange('compactMode', checked)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="bg-white rounded-[20px] shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg text-[#27251F]">Security</CardTitle>
+                <CardDescription className="text-[#27251F]/60">Update your security settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChangePasswordForm />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Security</CardTitle>
-              <CardDescription>Update your security settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChangePasswordForm />
-            </CardContent>
-          </Card>
-        </TabsContent>
+          <TabsContent value="users">
+            <UserAccessSettings 
+              settings={settings?.userAccess}
+              onUpdate={(data) => updateSettingsMutation.mutate({ userAccess: data })}
+              isUpdating={updateSettingsMutation.isPending}
+            />
+          </TabsContent>
 
-        <TabsContent value="users">
-          <UserAccessSettings 
-            settings={settings?.userAccess}
-            onUpdate={(data) => updateSettingsMutation.mutate({ userAccess: data })}
-            isUpdating={updateSettingsMutation.isPending}
-          />
-        </TabsContent>
+          <TabsContent value="evaluations">
+            <EvaluationSettings 
+              settings={settings?.evaluations}
+              onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
+              isUpdating={updateSettingsMutation.isPending}
+            />
+          </TabsContent>
 
-        <TabsContent value="evaluations">
-          <EvaluationSettings 
-            settings={settings?.evaluations}
-            onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
-            isUpdating={updateSettingsMutation.isPending}
-          />
-        </TabsContent>
+          <TabsContent value="notifications">
+            <Card className="bg-white rounded-[20px] shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg text-[#27251F]">Notification Preferences</CardTitle>
+                <CardDescription className="text-[#27251F]/60">Choose how you want to be notified</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Notification settings content */}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Choose how you want to be notified</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Notification settings content */}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="reports">
+            <Card className="bg-white rounded-[20px] shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg text-[#27251F]">Report Settings</CardTitle>
+                <CardDescription className="text-[#27251F]/60">Configure your reporting preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Report settings content */}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

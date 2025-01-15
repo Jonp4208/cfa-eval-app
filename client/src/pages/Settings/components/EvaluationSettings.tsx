@@ -14,80 +14,56 @@ interface EvaluationSettingsProps {
 
 const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettingsProps) => {
   return (
-    <Card>
+    <Card className="bg-white rounded-[20px] shadow-md">
       <CardHeader>
-        <CardTitle>Evaluation Settings</CardTitle>
-        <CardDescription>Configure evaluation schedules and requirements</CardDescription>
+        <CardTitle className="text-lg text-[#27251F]">Evaluation Settings</CardTitle>
+        <CardDescription className="text-[#27251F]/60">Configure evaluation process and requirements</CardDescription>
       </CardHeader>
       <CardContent>
-        <Accordion type="single" collapsible className="w-full">
-          {/* Schedule Configuration */}
-          <AccordionItem value="schedule">
-            <AccordionTrigger>Schedule Configuration</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          {/* Scheduling */}
+          <AccordionItem value="scheduling" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">Scheduling</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure evaluation scheduling settings</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Leadership Evaluation Frequency</label>
-                    <p className="text-sm text-gray-500">For team lead positions and above</p>
+                    <label className="text-sm font-medium text-[#27251F]">Automatic Scheduling</label>
+                    <p className="text-sm text-[#27251F]/60">Enable automatic evaluation scheduling</p>
                   </div>
-                  <Select 
-                    defaultValue={settings?.evaluations?.schedule?.leadershipFrequency?.toString()}
-                    onValueChange={(value) => 
-                      onUpdate('schedule', { leadershipFrequency: parseInt(value) })
+                  <Switch 
+                    checked={settings?.evaluations?.scheduling?.autoSchedule}
+                    onCheckedChange={(checked) => 
+                      onUpdate('scheduling', { autoSchedule: checked })
                     }
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 days</SelectItem>
-                      <SelectItem value="60">60 days</SelectItem>
-                      <SelectItem value="90">90 days</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Team Member Evaluation Frequency</label>
-                    <p className="text-sm text-gray-500">For regular team members</p>
+                    <label className="text-sm font-medium text-[#27251F]">Evaluation Frequency</label>
+                    <p className="text-sm text-[#27251F]/60">Set default evaluation frequency</p>
                   </div>
                   <Select 
-                    defaultValue={settings?.evaluations?.schedule?.teamMemberFrequency?.toString()}
+                    defaultValue={settings?.evaluations?.scheduling?.frequency?.toString()}
                     onValueChange={(value) => 
-                      onUpdate('schedule', { teamMemberFrequency: parseInt(value) })
+                      onUpdate('scheduling', { frequency: parseInt(value) })
                     }
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
                       <SelectValue placeholder="Select frequency" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="60">60 days</SelectItem>
-                      <SelectItem value="90">90 days</SelectItem>
-                      <SelectItem value="120">120 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <label className="text-sm font-medium">Probation Period Reviews</label>
-                    <p className="text-sm text-gray-500">More frequent reviews for new team members</p>
-                  </div>
-                  <Select 
-                    defaultValue={settings?.evaluations?.schedule?.probationFrequency?.toString()}
-                    onValueChange={(value) => 
-                      onUpdate('schedule', { probationFrequency: parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="14">14 days</SelectItem>
-                      <SelectItem value="30">30 days</SelectItem>
-                      <SelectItem value="45">45 days</SelectItem>
+                      <SelectItem value="30">Monthly</SelectItem>
+                      <SelectItem value="90">Quarterly</SelectItem>
+                      <SelectItem value="180">Semi-Annually</SelectItem>
+                      <SelectItem value="365">Annually</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -95,56 +71,82 @@ const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettin
             </AccordionContent>
           </AccordionItem>
 
-          {/* Performance Metrics */}
-          <AccordionItem value="metrics">
-            <AccordionTrigger>Performance Metrics</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
+          {/* Review Process */}
+          <AccordionItem value="review" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">Review Process</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure review process settings</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Rating Scale</label>
-                    <p className="text-sm text-gray-500">Choose evaluation rating scale</p>
+                    <label className="text-sm font-medium text-[#27251F]">Self-Evaluation Required</label>
+                    <p className="text-sm text-[#27251F]/60">Require employee self-evaluation</p>
                   </div>
-                  <Select 
-                    defaultValue={settings?.evaluations?.metrics?.ratingScale?.toString()}
-                    onValueChange={(value) => 
-                      onUpdate('metrics', { ratingScale: value })
+                  <Switch 
+                    checked={settings?.evaluations?.review?.requireSelfEvaluation}
+                    onCheckedChange={(checked) => 
+                      onUpdate('review', { requireSelfEvaluation: checked })
                     }
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select scale" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1-3">1-3 Scale</SelectItem>
-                      <SelectItem value="1-5">1-5 Scale</SelectItem>
-                      <SelectItem value="1-10">1-10 Scale</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Role-Specific Criteria</label>
-                    <p className="text-sm text-gray-500">Enable position-based evaluation criteria</p>
+                    <label className="text-sm font-medium text-[#27251F]">Review Session Required</label>
+                    <p className="text-sm text-[#27251F]/60">Require in-person review session</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.evaluations?.review?.requireReviewSession}
+                    onCheckedChange={(checked) => 
+                      onUpdate('review', { requireReviewSession: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Performance Metrics */}
+          <AccordionItem value="metrics" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">Performance Metrics</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure performance measurement settings</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Role-Specific Criteria</label>
+                    <p className="text-sm text-[#27251F]/60">Enable position-based evaluation criteria</p>
                   </div>
                   <Switch 
                     checked={settings?.evaluations?.metrics?.roleSpecificCriteria}
                     onCheckedChange={(checked) => 
                       onUpdate('metrics', { roleSpecificCriteria: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Department Benchmarks</label>
-                    <p className="text-sm text-gray-500">Enable department-specific performance benchmarks</p>
+                    <label className="text-sm font-medium text-[#27251F]">Department Benchmarks</label>
+                    <p className="text-sm text-[#27251F]/60">Enable department-specific performance benchmarks</p>
                   </div>
                   <Switch 
                     checked={settings?.evaluations?.metrics?.departmentBenchmarks}
                     onCheckedChange={(checked) => 
                       onUpdate('metrics', { departmentBenchmarks: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
               </div>
@@ -152,89 +154,54 @@ const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettin
           </AccordionItem>
 
           {/* Development Planning */}
-          <AccordionItem value="development">
-            <AccordionTrigger>Development Planning</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
+          <AccordionItem value="development" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">Development Planning</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure development and training settings</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Required Goal Setting</label>
-                    <p className="text-sm text-gray-500">Mandate development goals in evaluations</p>
+                    <label className="text-sm font-medium text-[#27251F]">Required Goal Setting</label>
+                    <p className="text-sm text-[#27251F]/60">Mandate development goals in evaluations</p>
                   </div>
                   <Switch 
                     checked={settings?.evaluations?.development?.requireGoals}
                     onCheckedChange={(checked) => 
                       onUpdate('development', { requireGoals: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Training Recommendations</label>
-                    <p className="text-sm text-gray-500">Enable automatic training suggestions</p>
+                    <label className="text-sm font-medium text-[#27251F]">Training Recommendations</label>
+                    <p className="text-sm text-[#27251F]/60">Enable automatic training suggestions</p>
                   </div>
                   <Switch 
                     checked={settings?.evaluations?.development?.trainingRecommendations}
                     onCheckedChange={(checked) => 
                       onUpdate('development', { trainingRecommendations: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Skill Gap Analysis</label>
-                    <p className="text-sm text-gray-500">Enable skill gap identification</p>
+                    <label className="text-sm font-medium text-[#27251F]">Skill Gap Analysis</label>
+                    <p className="text-sm text-[#27251F]/60">Enable skill gap identification</p>
                   </div>
                   <Switch 
                     checked={settings?.evaluations?.development?.skillGapAnalysis}
                     onCheckedChange={(checked) => 
                       onUpdate('development', { skillGapAnalysis: checked })
                     }
-                  />
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Approval Process */}
-          <AccordionItem value="approval">
-            <AccordionTrigger>Approval Process</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <label className="text-sm font-medium">Required Approvers</label>
-                    <p className="text-sm text-gray-500">Number of required approval levels</p>
-                  </div>
-                  <Select 
-                    defaultValue={settings?.evaluations?.approval?.requiredApprovers?.toString()}
-                    onValueChange={(value) => 
-                      onUpdate('approval', { requiredApprovers: parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select approvers" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 Level</SelectItem>
-                      <SelectItem value="2">2 Levels</SelectItem>
-                      <SelectItem value="3">3 Levels</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <label className="text-sm font-medium">Allow Appeals</label>
-                    <p className="text-sm text-gray-500">Enable evaluation appeals process</p>
-                  </div>
-                  <Switch 
-                    checked={settings?.evaluations?.approval?.allowAppeals}
-                    onCheckedChange={(checked) => 
-                      onUpdate('approval', { allowAppeals: checked })
-                    }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
               </div>

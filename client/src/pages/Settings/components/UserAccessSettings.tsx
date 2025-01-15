@@ -15,22 +15,27 @@ interface UserAccessSettingsProps {
 
 const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettingsProps) => {
   return (
-    <Card>
+    <Card className="bg-white rounded-[20px] shadow-md">
       <CardHeader>
-        <CardTitle>User Access Settings</CardTitle>
-        <CardDescription>Configure security and access control settings</CardDescription>
+        <CardTitle className="text-lg text-[#27251F]">User Access Settings</CardTitle>
+        <CardDescription className="text-[#27251F]/60">Configure security and access control settings</CardDescription>
       </CardHeader>
       <CardContent>
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion type="single" collapsible className="w-full space-y-4">
           {/* Password Policy */}
-          <AccordionItem value="password">
-            <AccordionTrigger>Password Policy</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
+          <AccordionItem value="password" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">Password Policy</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure password requirements</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Minimum Password Length</label>
-                    <p className="text-sm text-gray-500">Set minimum characters required</p>
+                    <label className="text-sm font-medium text-[#27251F]">Minimum Password Length</label>
+                    <p className="text-sm text-[#27251F]/60">Set minimum characters required</p>
                   </div>
                   <Select 
                     defaultValue={settings?.userAccess?.passwordPolicy?.minLength?.toString()}
@@ -38,7 +43,7 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
                       onUpdate('passwordPolicy', { minLength: parseInt(value) })
                     }
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
                       <SelectValue placeholder="Select length" />
                     </SelectTrigger>
                     <SelectContent>
@@ -53,27 +58,29 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Require Numbers</label>
-                    <p className="text-sm text-gray-500">Must include at least one number</p>
+                    <label className="text-sm font-medium text-[#27251F]">Require Numbers</label>
+                    <p className="text-sm text-[#27251F]/60">Must include at least one number</p>
                   </div>
                   <Switch 
                     checked={settings?.userAccess?.passwordPolicy?.requireNumbers}
                     onCheckedChange={(checked) => 
                       onUpdate('passwordPolicy', { requireNumbers: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Require Special Characters</label>
-                    <p className="text-sm text-gray-500">Must include special characters</p>
+                    <label className="text-sm font-medium text-[#27251F]">Require Special Characters</label>
+                    <p className="text-sm text-[#27251F]/60">Must include special characters</p>
                   </div>
                   <Switch 
                     checked={settings?.userAccess?.passwordPolicy?.requireSpecialChars}
                     onCheckedChange={(checked) => 
                       onUpdate('passwordPolicy', { requireSpecialChars: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
               </div>
@@ -81,14 +88,19 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
           </AccordionItem>
 
           {/* Account Security */}
-          <AccordionItem value="security">
-            <AccordionTrigger>Account Security</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
+          <AccordionItem value="security" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">Account Security</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure account security settings</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Session Timeout</label>
-                    <p className="text-sm text-gray-500">Auto logout after inactivity</p>
+                    <label className="text-sm font-medium text-[#27251F]">Session Timeout</label>
+                    <p className="text-sm text-[#27251F]/60">Auto logout after inactivity</p>
                   </div>
                   <Select 
                     defaultValue={settings?.userAccess?.accountSecurity?.sessionTimeout?.toString()}
@@ -96,7 +108,7 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
                       onUpdate('accountSecurity', { sessionTimeout: parseInt(value) })
                     }
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
                       <SelectValue placeholder="Select timeout" />
                     </SelectTrigger>
                     <SelectContent>
@@ -110,8 +122,8 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Maximum Login Attempts</label>
-                    <p className="text-sm text-gray-500">Before account lockout</p>
+                    <label className="text-sm font-medium text-[#27251F]">Maximum Login Attempts</label>
+                    <p className="text-sm text-[#27251F]/60">Before account lockout</p>
                   </div>
                   <Select 
                     defaultValue={settings?.userAccess?.accountSecurity?.maxLoginAttempts?.toString()}
@@ -119,7 +131,7 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
                       onUpdate('accountSecurity', { maxLoginAttempts: parseInt(value) })
                     }
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
                       <SelectValue placeholder="Select attempts" />
                     </SelectTrigger>
                     <SelectContent>
@@ -134,33 +146,40 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
           </AccordionItem>
 
           {/* Role Management */}
-          <AccordionItem value="roles">
-            <AccordionTrigger>Role Management</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
+          <AccordionItem value="roles" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">Role Management</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure role-based access control</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Custom Roles</label>
-                    <p className="text-sm text-gray-500">Allow creation of custom roles</p>
+                    <label className="text-sm font-medium text-[#27251F]">Custom Roles</label>
+                    <p className="text-sm text-[#27251F]/60">Allow creation of custom roles</p>
                   </div>
                   <Switch 
                     checked={settings?.userAccess?.roleManagement?.allowCustomRoles}
                     onCheckedChange={(checked) => 
                       onUpdate('roleManagement', { allowCustomRoles: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Department-Specific Roles</label>
-                    <p className="text-sm text-gray-500">Enable department-level role management</p>
+                    <label className="text-sm font-medium text-[#27251F]">Department-Specific Roles</label>
+                    <p className="text-sm text-[#27251F]/60">Enable department-level role management</p>
                   </div>
                   <Switch 
                     checked={settings?.userAccess?.roleManagement?.departmentSpecificRoles}
                     onCheckedChange={(checked) => 
                       onUpdate('roleManagement', { departmentSpecificRoles: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
               </div>
@@ -168,33 +187,40 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
           </AccordionItem>
 
           {/* User Lifecycle */}
-          <AccordionItem value="lifecycle">
-            <AccordionTrigger>User Lifecycle</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4 p-4">
+          <AccordionItem value="lifecycle" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
+              <div className="flex flex-col items-start gap-1">
+                <span className="font-medium">User Lifecycle</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure user lifecycle settings</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-6">
+              <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Training Tracking</label>
-                    <p className="text-sm text-gray-500">Enable required training tracking</p>
+                    <label className="text-sm font-medium text-[#27251F]">Training Tracking</label>
+                    <p className="text-sm text-[#27251F]/60">Enable required training tracking</p>
                   </div>
                   <Switch 
                     checked={settings?.userAccess?.userLifecycle?.requireTrainingTracking}
                     onCheckedChange={(checked) => 
                       onUpdate('userLifecycle', { requireTrainingTracking: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium">Certification Alerts</label>
-                    <p className="text-sm text-gray-500">Enable certification expiration alerts</p>
+                    <label className="text-sm font-medium text-[#27251F]">Certification Alerts</label>
+                    <p className="text-sm text-[#27251F]/60">Enable certification expiration alerts</p>
                   </div>
                   <Switch 
                     checked={settings?.userAccess?.userLifecycle?.certificationAlerts}
                     onCheckedChange={(checked) => 
                       onUpdate('userLifecycle', { certificationAlerts: checked })
                     }
+                    className="data-[state=checked]:bg-[#E51636]"
                   />
                 </div>
               </div>
