@@ -422,7 +422,7 @@ export default function Users() {
                 className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300"
               >
                 <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col md:flex-row items-start justify-between">
                     <div className="flex gap-4">
                       <div className="h-12 w-12 rounded-full bg-[#E51636]/10 flex items-center justify-center">
                         <User className="w-6 h-6 text-[#E51636]" />
@@ -440,7 +440,7 @@ export default function Users() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-4 md:mt-0">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -487,7 +487,10 @@ export default function Users() {
                               variant="ghost"
                               size="icon"
                               className="h-10 w-10 text-[#27251F]/60 hover:text-[#E51636]"
-                              onClick={() => navigate(`/users/${user._id}`)}
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowAddDialog(true);
+                              }}
                             >
                               <Edit className="w-5 h-5" />
                             </Button>
@@ -530,10 +533,11 @@ export default function Users() {
       {/* Add User Dialog */}
       <AddUserDialog
         open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['users'] });
+        onOpenChange={(open) => {
+          setShowAddDialog(open);
+          if (!open) setSelectedUser(null);
         }}
+        user={selectedUser}
       />
 
       {/* Delete Confirmation Dialog */}

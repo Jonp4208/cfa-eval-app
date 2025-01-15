@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
     enum: ['Team Member', 'Trainer', 'Team Leader', 'Shift Leader', 'Manager', 'Director'],
     required: true
   },
+  evaluator: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   status: {
     type: String,
     enum: ['active', 'inactive'],

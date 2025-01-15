@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import { parse } from 'csv-parse';
 import { Readable } from 'stream';
-import { updateUserMetrics } from '../controllers/users.js';
+import { updateUserMetrics, updateUser } from '../controllers/users.js';
 
 dotenv.config();
 
@@ -280,95 +280,15 @@ router.post('/', auth, async (req, res) => {
 // Update user
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, email, department, position, role, status, quadrant, manager } = req.body;
-
-    console.log('Updating user:', {
-      id,
-      currentRequest: { name, email, department, position, role, status, quadrant, manager }
-    });
-
-    const user = await User.findById(id);
-    if (!user) {
-      console.log('User not found:', id);
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    console.log('Current user state:', JSON.stringify(user, null, 2));
-
-    // Ensure user belongs to the same store
-    if (user.store.toString() !== req.user.store._id.toString()) {
-      console.log('Store mismatch:', {
-        userStore: user.store.toString(),
-        requestUserStore: req.user.store._id.toString()
-      });
+    // Check if user has permission to update
+    if (req.user.role !== 'admin' && req.user._id.toString() !== req.params.id) {
       return res.status(403).json({ message: 'Not authorized to update this user' });
     }
 
-    // Update user
-    const updates = {
-      name,
-      email,
-      department: department === 'LEADERSHIP' ? 'Leadership' : department,  // Transform department to match enum
-      position,  // Keep original case to match enum values
-      role: role.toLowerCase(),  // Store role in lowercase
-      status,
-      manager: manager || null
-    };
-
-    console.log('Updates to apply:', JSON.stringify(updates, null, 2));
-
-    // Only update quadrant if it's provided and different
-    if (quadrant && user.quadrant !== quadrant) {
-      console.log(`Updating quadrant from ${user.quadrant} to ${quadrant}`);
-      updates.quadrant = quadrant;
-    }
-
-    try {
-      // Use findByIdAndUpdate to get the updated document
-      const updatedUser = await User.findByIdAndUpdate(
-        id,
-        updates,
-        { new: true, runValidators: true }
-      ).populate('manager', 'name _id');  // Populate manager details
-
-      console.log('Updated user:', JSON.stringify(updatedUser, null, 2));
-
-      // Transform the response to match the expected format
-      const transformedUser = {
-        id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role.toUpperCase(),
-        department: updatedUser.department,  // Keep original case from DB
-        position: updatedUser.position.split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' '),
-        status: updatedUser.status,
-        quadrant: updatedUser.quadrant,
-        reportsTo: updatedUser.manager ? updatedUser.manager.name : 'No Manager Assigned',
-        manager: updatedUser.manager  // Include full manager object for reference
-      };
-
-      res.json({ 
-        message: 'User updated successfully',
-        user: transformedUser
-      });
-    } catch (updateError) {
-      console.error('Error during findByIdAndUpdate:', updateError);
-      res.status(500).json({ 
-        message: 'Failed to update user', 
-        error: updateError.message,
-        validationErrors: updateError.errors
-      });
-    }
+    await updateUser(req, res);
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).json({ 
-      message: 'Failed to update user', 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ message: 'Failed to update user' });
   }
 });
 

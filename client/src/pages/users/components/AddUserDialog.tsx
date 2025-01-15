@@ -1,6 +1,6 @@
 // client/src/pages/users/components/AddUserDialog.tsx
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,7 @@ interface User {
   department: string;
   position: string;
   role: string;
+  evaluator?: string;
 }
 
 interface AddUserDialogProps {
@@ -43,9 +44,21 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     email: '',
     department: '',
     position: '',
-    role: ''
+    role: '',
+    evaluator: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch evaluators
+  const { data: evaluators } = useQuery({
+    queryKey: ['evaluators'],
+    queryFn: async () => {
+      const response = await api.get('/api/users', {
+        params: { role: 'evaluator' }
+      });
+      return response.data.users;
+    }
+  });
 
   // Reset form when dialog opens/closes or user changes
   useEffect(() => {
@@ -55,7 +68,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         email: user.email,
         department: user.department,
         position: user.position,
-        role: user.role
+        role: user.role,
+        evaluator: user.evaluator || ''
       });
     } else if (!open) {
       setFormData({
@@ -63,7 +77,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         email: '',
         department: '',
         position: '',
-        role: ''
+        role: '',
+        evaluator: ''
       });
     }
     setErrors({});
@@ -87,13 +102,20 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     }
 
     try {
+      const dataToSend = {
+        name: formData.name,
+        email: formData.email,
+        department: formData.department.toLowerCase(),
+        position: formData.position.toLowerCase().replace(/\s+/g, '-'),
+        role: formData.role,
+        evaluator: formData.evaluator === 'none' ? null : formData.evaluator || null
+      };
+
+      console.log('Sending data:', dataToSend);
+
       if (user) {
         // Update existing user
-        await api.put(`/api/users/${user._id}`, {
-          ...formData,
-          position: formData.position.toLowerCase().replace(/\s+/g, '-'),
-          department: formData.department.toLowerCase()
-        });
+        await api.put(`/api/users/${user._id}`, dataToSend);
         toast({
           title: "Success",
           description: "User updated successfully",
@@ -101,9 +123,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         });
       } else {
         // Create new user
-        await api.post('/api/users', {
-          ...formData
-        });
+        await api.post('/api/users', dataToSend);
         toast({
           title: "Success",
           description: "User created successfully. An email with login credentials has been sent.",
@@ -129,8 +149,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{user ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-bold text-[#27251F]">{user ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle>
+          <DialogDescription className="text-[#27251F]/60">
             {user 
               ? 'Edit the team member\'s information below.' 
               : 'Add a new team member to your organization.'}
@@ -140,36 +160,36 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <label htmlFor="name" className="text-sm font-medium text-gray-700">Name</label>
+              <label htmlFor="name" className="text-sm font-medium text-[#27251F]">Name</label>
               <input
                 id="name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E51636] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
-              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+              {errors.name && <p className="text-sm text-[#E51636]">{errors.name}</p>}
             </div>
 
             <div className="grid gap-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
+              <label htmlFor="email" className="text-sm font-medium text-[#27251F]">Email</label>
               <input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E51636] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
-              {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+              {errors.email && <p className="text-sm text-[#E51636]">{errors.email}</p>}
             </div>
 
             <div className="grid gap-2">
-              <label htmlFor="department" className="text-sm font-medium text-gray-700">Department</label>
+              <label htmlFor="department" className="text-sm font-medium text-[#27251F]">Department</label>
               <Select
                 value={formData.department}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
               >
-                <SelectTrigger id="department" className="bg-white border-gray-200 text-gray-900">
+                <SelectTrigger id="department" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -178,16 +198,16 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                   <SelectItem value="Leadership">Leadership</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.department && <p className="text-sm text-red-500">{errors.department}</p>}
+              {errors.department && <p className="text-sm text-[#E51636]">{errors.department}</p>}
             </div>
 
             <div className="grid gap-2">
-              <label htmlFor="position" className="text-sm font-medium text-gray-700">Position</label>
+              <label htmlFor="position" className="text-sm font-medium text-[#27251F]">Position</label>
               <Select
                 value={formData.position}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
               >
-                <SelectTrigger id="position" className="bg-white border-gray-200 text-gray-900">
+                <SelectTrigger id="position" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
                   <SelectValue placeholder="Select position" />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,16 +219,16 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                   <SelectItem value="Director">Director</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.position && <p className="text-sm text-red-500">{errors.position}</p>}
+              {errors.position && <p className="text-sm text-[#E51636]">{errors.position}</p>}
             </div>
 
             <div className="grid gap-2">
-              <label htmlFor="role" className="text-sm font-medium text-gray-700">Role</label>
+              <label htmlFor="role" className="text-sm font-medium text-[#27251F]">Role</label>
               <Select
                 value={formData.role}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}
               >
-                <SelectTrigger id="role" className="bg-white border-gray-200 text-gray-900">
+                <SelectTrigger id="role" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -217,12 +237,43 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                   <SelectItem value="admin">Administrator</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.role && <p className="text-sm text-red-500">{errors.role}</p>}
+              {errors.role && <p className="text-sm text-[#E51636]">{errors.role}</p>}
+            </div>
+
+            <div className="grid gap-2">
+              <label htmlFor="evaluator" className="text-sm font-medium text-[#27251F]">Evaluator</label>
+              <Select
+                value={formData.evaluator || 'none'}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, evaluator: value === 'none' ? '' : value }))}
+              >
+                <SelectTrigger id="evaluator" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
+                  <SelectValue placeholder="Select evaluator" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Evaluator</SelectItem>
+                  {evaluators?.map((evaluator: any) => (
+                    <SelectItem key={evaluator._id} value={evaluator._id}>
+                      {evaluator.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="submit" variant="red">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="border-[#E51636] text-[#E51636] hover:bg-[#E51636]/10"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit"
+              className="bg-[#E51636] text-white hover:bg-[#E51636]/90"
+            >
               {user ? 'Save Changes' : 'Add Team Member'}
             </Button>
           </DialogFooter>
