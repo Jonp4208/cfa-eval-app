@@ -384,7 +384,7 @@ export default function Templates() {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={confirmDelete}
-                  variant="red"
+                  className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                 >
                   Delete
                 </AlertDialogAction>
