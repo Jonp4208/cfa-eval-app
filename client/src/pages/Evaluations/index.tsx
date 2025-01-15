@@ -1,12 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, FileText, Users, Trash2, Calendar, ArrowUpDown, Filter, AlertTriangle } from 'lucide-react';
+import { 
+  Plus, 
+  FileText, 
+  Users, 
+  Trash2, 
+  Calendar, 
+  ArrowUpDown, 
+  Filter, 
+  AlertTriangle,
+  Search,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ChevronRight
+} from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Progress } from '@/components/ui/progress';
 import api from '@/lib/axios';
 import { handleError } from '@/lib/utils/error-handler';
 
@@ -51,6 +66,7 @@ export default function Evaluations() {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch evaluations
   const { data: evaluations, isLoading, error, refetch } = useQuery({
@@ -189,21 +205,43 @@ export default function Evaluations() {
     return { text: `Due in ${diffDays} days`, class: 'text-gray-500' };
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending_self_evaluation':
+        return Clock;
+      case 'pending_manager_review':
+        return AlertCircle;
+      case 'in_review_session':
+        return Users;
+      case 'completed':
+        return CheckCircle2;
+      default:
+        return AlertTriangle;
+    }
+  };
+
   // Handle error state in the UI
   if (error instanceof Error) {
-    handleError({ message: error.message });
     return (
       <div className="p-6">
         <div className="max-w-2xl mx-auto">
-          <Card className="p-6">
-            <div className="flex flex-col items-center text-center">
-              <AlertTriangle className="w-12 h-12 text-red-600 mb-4" />
-              <h1 className="text-xl font-semibold mb-2">Error Loading Evaluations</h1>
-              <p className="text-gray-600 mb-4">There was a problem loading the evaluations. Please try again later.</p>
-              <Button onClick={() => refetch()} variant="outline">
-                Try Again
-              </Button>
-            </div>
+          <Card className="rounded-[20px] bg-white shadow-xl">
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center text-center">
+                <div className="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                  <AlertTriangle className="w-8 h-8 text-[#E51636]" />
+                </div>
+                <h1 className="text-xl font-semibold mb-2 text-[#27251F]">Error Loading Evaluations</h1>
+                <p className="text-[#27251F]/60 mb-6">There was a problem loading the evaluations. Please try again later.</p>
+                <Button 
+                  onClick={() => refetch()} 
+                  variant="outline"
+                  className="min-w-[120px]"
+                >
+                  Try Again
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       </div>
@@ -211,201 +249,208 @@ export default function Evaluations() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Evaluations</h1>
-          <p className="text-gray-500">Manage and track evaluations</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {user?.role === 'admin' && (
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/templates')}
-              className="border-red-200 hover:bg-red-50"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Manage Templates
-            </Button>
-          )}
-          <Button onClick={() => navigate('/evaluations/new')}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Evaluation
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <div className="flex gap-2">
-          <Button
-            variant={view === 'all' ? 'default' : 'outline'}
-            onClick={() => setView('all')}
-            className="flex-1"
-          >
-            All
-          </Button>
-          <Button
-            variant={view === 'pending' ? 'default' : 'outline'}
-            onClick={() => setView('pending')}
-            className="flex-1"
-          >
-            Pending
-          </Button>
-          <Button
-            variant={view === 'completed' ? 'default' : 'outline'}
-            onClick={() => setView('completed')}
-            className="flex-1"
-          >
-            Completed
-          </Button>
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full">
-              <Filter className="w-4 h-4 mr-2" />
-              {departmentFilter === 'all' ? 'All Departments' : departmentFilter}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setDepartmentFilter('all')}>
-              All Departments
-            </DropdownMenuItem>
-            {departments.map(dept => (
-              <DropdownMenuItem 
-                key={dept.value} 
-                onClick={() => setDepartmentFilter(dept.value)}
-              >
-                {dept.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full">
-              <ArrowUpDown className="w-4 h-4 mr-2" />
-              Sort by {sortField}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => {
-              setSortField('date');
-              setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-            }}>
-              Date {sortField === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              setSortField('name');
-              setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-            }}>
-              Name {sortField === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => {
-              setSortField('status');
-              setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-            }}>
-              Status {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="grid gap-4">
-        {isLoading ? (
-          <Card>
-            <CardContent className="py-4 flex justify-center items-center">
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
-                <span>Loading evaluations...</span>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Evaluations</h1>
+                <p className="text-white/80 mt-2 text-lg">Manage and track team performance</p>
               </div>
-            </CardContent>
-          </Card>
-        ) : error ? (
-          <Card>
-            <CardContent className="py-4 text-center text-red-600">
-              <p>Error loading evaluations</p>
-              <Button 
-                variant="outline" 
-                onClick={() => refetch()} 
-                className="mt-2"
-              >
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        ) : filteredEvaluations?.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-              {view === 'pending' ? (
-                <p>No pending evaluations found</p>
-              ) : view === 'completed' ? (
-                <p>No completed evaluations found</p>
-              ) : (
-                <p>No evaluations found</p>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          filteredEvaluations?.map((evaluation: Evaluation) => (
-            <Card
-              key={evaluation._id}
-              className="cursor-pointer hover:border-red-200 transition-colors"
-              onClick={() => navigate(`/evaluations/${evaluation._id}`)}
-            >
-              <CardContent className="py-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-gray-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">
-                        {evaluation.template?.name || 'Template Deleted'}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Users className="w-4 h-4" />
-                        <span>{evaluation.employee?.name || 'Unknown Employee'}</span>
-                        <span>•</span>
-                        <span>{evaluation.employee?.position || 'Unknown Position'}</span>
-                      </div>
-                    </div>
+              <div className="flex flex-wrap gap-3">
+                {user?.role === 'admin' && (
+                  <Button 
+                    variant="secondary"
+                    className="bg-[#E83752]/20 hover:bg-[#E83752]/30 text-white h-[52px] px-8 rounded-2xl flex items-center gap-3 text-lg font-medium"
+                    onClick={() => navigate('/templates')}
+                  >
+                    <FileText className="w-6 h-6" />
+                    Manage Templates
+                  </Button>
+                )}
+                <Button 
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-[52px] px-8 rounded-2xl flex items-center gap-3 text-lg font-medium"
+                  onClick={() => navigate('/evaluations/new')}
+                >
+                  <Plus className="w-6 h-6" />
+                  New Evaluation
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters Section */}
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search evaluations..."
+                  className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={view === 'all' ? 'default' : 'outline'}
+                  onClick={() => setView('all')}
+                  className={`h-[52px] px-8 rounded-2xl text-lg font-medium ${
+                    view === 'all' 
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
+                      : 'bg-white hover:bg-gray-50 text-[#27251F]'
+                  }`}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={view === 'pending' ? 'default' : 'outline'}
+                  onClick={() => setView('pending')}
+                  className={`h-[52px] px-8 rounded-2xl text-lg font-medium ${
+                    view === 'pending' 
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
+                      : 'bg-white hover:bg-gray-50 text-[#27251F]'
+                  }`}
+                >
+                  Pending
+                </Button>
+                <Button
+                  variant={view === 'completed' ? 'default' : 'outline'}
+                  onClick={() => setView('completed')}
+                  className={`h-[52px] px-8 rounded-2xl text-lg font-medium ${
+                    view === 'completed' 
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
+                      : 'bg-white hover:bg-gray-50 text-[#27251F]'
+                  }`}
+                >
+                  Completed
+                </Button>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="h-[52px] px-8 rounded-2xl text-lg font-medium bg-white hover:bg-gray-50 text-[#27251F] flex items-center gap-3"
+                  >
+                    <Filter className="w-6 h-6" />
+                    Filter
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="p-2">
+                    <h3 className="font-medium text-sm mb-2">Department</h3>
+                    <select
+                      className="w-full p-2 rounded-lg border border-gray-200"
+                      value={departmentFilter}
+                      onChange={(e) => setDepartmentFilter(e.target.value)}
+                    >
+                      <option value="all">All Departments</option>
+                      {departments.map((dept) => (
+                        <option key={dept.value} value={dept.value}>
+                          {dept.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="text-sm">
-                      <div className={`px-2 py-1 rounded-full ${getStatusBadgeColor(evaluation.status)}`}>
-                        {getStatusDisplay(evaluation)}
-                      </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Evaluations Grid */}
+        <div className="grid grid-cols-1 gap-4">
+          {isLoading ? (
+            // Loading skeleton
+            [...Array(3)].map((_, i) => (
+              <Card key={i} className="bg-white rounded-[20px] shadow-md animate-pulse">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-3">
+                      <div className="h-6 w-48 bg-gray-200 rounded-md" />
+                      <div className="h-4 w-32 bg-gray-200 rounded-md" />
                     </div>
-                    <div className="flex flex-col items-end text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span className={getDueStatus(evaluation.scheduledDate).class}>
-                          {getDueStatus(evaluation.scheduledDate).text}
-                        </span>
-                      </div>
-                      {evaluation.reviewSessionDate && (
-                        <span className="text-gray-500">
-                          Review on {new Date(evaluation.reviewSessionDate).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                    {user?.role === 'admin' && (
-                      <button
-                        onClick={(e) => handleDelete(e, evaluation._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-full"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    <div className="h-10 w-24 bg-gray-200 rounded-md" />
                   </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : filteredEvaluations?.length === 0 ? (
+            // Empty state
+            <Card className="bg-white rounded-[20px] shadow-md">
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center text-center">
+                  <div className="h-16 w-16 bg-[#E51636]/10 rounded-full flex items-center justify-center mb-4">
+                    <FileText className="w-8 h-8 text-[#E51636]" />
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2 text-[#27251F]">No Evaluations Found</h2>
+                  <p className="text-[#27251F]/60 mb-6">No evaluations match your current filters.</p>
+                  <Button onClick={() => navigate('/evaluations/new')}>
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create New Evaluation
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
+          ) : (
+            // Evaluation cards
+            filteredEvaluations?.map((evaluation: Evaluation) => {
+              const StatusIcon = getStatusIcon(evaluation.status);
+              const dueStatus = getDueStatus(evaluation.scheduledDate);
+              return (
+                <Card 
+                  key={evaluation._id}
+                  className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  onClick={() => navigate(`/evaluations/${evaluation._id}`)}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                          evaluation.status === 'completed' 
+                            ? 'bg-green-100' 
+                            : evaluation.status === 'in_review_session'
+                            ? 'bg-purple-100'
+                            : 'bg-[#E51636]/10'
+                        }`}>
+                          <StatusIcon className={`w-6 h-6 ${
+                            evaluation.status === 'completed'
+                              ? 'text-green-600'
+                              : evaluation.status === 'in_review_session'
+                              ? 'text-purple-600'
+                              : 'text-[#E51636]'
+                          }`} />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
+                          <p className="text-sm text-[#27251F]/60 mt-1">{evaluation.template.name}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Calendar className="w-4 h-4 text-[#27251F]/40" />
+                            <span className={`text-sm ${dueStatus.class}`}>
+                              {dueStatus.text}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusBadgeColor(evaluation.status)}`}>
+                          {getStatusDisplay(evaluation)}
+                        </span>
+                        <ChevronRight className="w-5 h-5 text-[#27251F]/40" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );

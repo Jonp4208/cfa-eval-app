@@ -129,7 +129,10 @@ export default function Dashboard() {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <Card 
+            className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => navigate('/evaluations')}
+          >
             <CardContent className="p-8">
               <div className="flex items-start justify-between">
                 <div>
@@ -152,7 +155,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <Card 
+            className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => navigate('/disciplinary')}
+          >
             <CardContent className="p-8">
               <div className="flex items-start justify-between">
                 <div>
@@ -175,7 +181,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <Card 
+            className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => navigate('/users')}
+          >
             <CardContent className="p-8">
               <div className="flex items-start justify-between">
                 <div>
@@ -205,7 +214,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <Card 
+            className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => navigate('/analytics')}
+          >
             <CardContent className="p-8">
               <div className="flex items-start justify-between">
                 <div>
