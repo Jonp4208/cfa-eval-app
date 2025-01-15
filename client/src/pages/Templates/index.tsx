@@ -196,8 +196,9 @@ export default function Templates() {
         </div>
 
         <div className="max-w-[1440px] mx-auto px-6 py-8 space-y-6">
-          <Card className="shadow-sm border-0">
-            <CardHeader>
+          {/* Filters Section */}
+          <Card className="bg-white rounded-[20px] shadow-md">
+            <CardContent className="p-6">
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <div className="flex-1">
                   <CardTitle className="text-xl font-medium">All Templates</CardTitle>
@@ -209,14 +210,14 @@ export default function Templates() {
                       placeholder="Search templates..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
                     />
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   </div>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E51636]"
                   >
                     <option value="all">All Status</option>
                     <option value="active">Active</option>
@@ -224,21 +225,23 @@ export default function Templates() {
                   </select>
                 </div>
               </div>
-            </CardHeader>
+            </CardContent>
           </Card>
 
           {/* Templates List */}
           <div className="grid grid-cols-1 gap-4">
             {isLoading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636] mx-auto"></div>
               </div>
             ) : filteredTemplates?.length === 0 ? (
-              <Card className="border-0">
+              <Card className="bg-white rounded-[20px] shadow-md">
                 <CardContent className="p-8 text-center">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No templates found</h3>
-                  <p className="text-gray-500 mb-4">Create your first evaluation template to get started.</p>
+                  <div className="h-16 w-16 bg-[#E51636]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-8 h-8 text-[#E51636]" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2 text-[#27251F]">No templates found</h3>
+                  <p className="text-[#27251F]/60 mb-6">Create your first evaluation template to get started.</p>
                   <Link 
                     to="/templates/new"
                     className="inline-flex items-center gap-2"
@@ -252,12 +255,15 @@ export default function Templates() {
               </Card>
             ) : (
               filteredTemplates?.map((template: Template) => (
-                <Card key={template.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+                <Card 
+                  key={template.id} 
+                  className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 cursor-pointer"
+                >
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-medium truncate">{template.name}</h3>
+                          <h3 className="font-medium text-[#27251F] truncate">{template.name}</h3>
                           {template.isActive ? (
                             <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center gap-1 flex-shrink-0">
                               <CheckCircle className="w-3 h-3" />
@@ -270,9 +276,9 @@ export default function Templates() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mb-4 line-clamp-2">{template.description}</p>
+                        <p className="text-sm text-[#27251F]/60 mb-4 line-clamp-2">{template.description}</p>
                         
-                        <div className="flex items-center gap-6 text-sm text-gray-500 flex-wrap">
+                        <div className="flex items-center gap-6 text-sm text-[#27251F]/60 flex-wrap">
                           <div className="flex items-center gap-2">
                             <FileText className="w-4 h-4 flex-shrink-0" />
                             {template.sectionsCount} {template.sectionsCount === 1 ? 'section' : 'sections'}
@@ -296,9 +302,9 @@ export default function Templates() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => navigate(`/templates/${template.id}/edit`)}
-                                className="hover:bg-red-50 hover:text-red-600"
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
                               >
-                                <Edit className="w-4 h-4 text-gray-500" />
+                                <Edit className="w-4 h-4 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -312,9 +318,9 @@ export default function Templates() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => navigate(`/templates/${template.id}`)}
-                                className="hover:bg-red-50 hover:text-red-600"
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
                               >
-                                <FileText className="w-4 h-4 text-gray-500" />
+                                <FileText className="w-4 h-4 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -328,9 +334,9 @@ export default function Templates() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleCopy(template.id)}
-                                className="hover:bg-red-50 hover:text-red-600"
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
                               >
-                                <Copy className="w-4 h-4 text-gray-500" />
+                                <Copy className="w-4 h-4 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -343,10 +349,10 @@ export default function Templates() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="hover:bg-red-50 text-red-600"
                                 onClick={() => handleDelete(template)}
+                                className="hover:bg-[#E51636]/10 hover:text-[#E51636]"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4 text-[#27251F]/60" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
