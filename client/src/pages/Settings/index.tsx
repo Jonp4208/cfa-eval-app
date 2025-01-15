@@ -179,26 +179,26 @@ const SettingsPage = () => {
 
         <Tabs defaultValue="general" className="space-y-6">
           <div className="bg-white rounded-[20px] shadow-md p-4">
-            <TabsList className="w-full border-b justify-start gap-2">
-              <TabsTrigger value="general" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+            <TabsList className="w-full border-b justify-start gap-2 overflow-x-auto flex-nowrap pb-1">
+              <TabsTrigger value="general" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
                 <SettingsIcon className="h-4 w-4" />
-                <span className="whitespace-nowrap">General</span>
+                <span>General</span>
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+              <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
                 <Users className="h-4 w-4" />
-                <span className="whitespace-nowrap">User Access</span>
+                <span>User Access</span>
               </TabsTrigger>
-              <TabsTrigger value="evaluations" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+              <TabsTrigger value="evaluations" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
                 <FileText className="h-4 w-4" />
-                <span className="whitespace-nowrap">Evaluations</span>
+                <span>Evaluations</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+              <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
                 <Bell className="h-4 w-4" />
-                <span className="whitespace-nowrap">Notifications</span>
+                <span>Notifications</span>
               </TabsTrigger>
-              <TabsTrigger value="reports" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636]">
+              <TabsTrigger value="reports" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
                 <BarChart className="h-4 w-4" />
-                <span className="whitespace-nowrap">Reports</span>
+                <span>Reports</span>
               </TabsTrigger>
             </TabsList>
           </div>
