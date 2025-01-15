@@ -260,11 +260,11 @@ export default function Evaluations() {
                 <h1 className="text-3xl md:text-4xl font-bold">Evaluations</h1>
                 <p className="text-white/80 mt-2 text-lg">Manage and track team performance</p>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-row gap-3">
                 {user?.role === 'admin' && (
                   <Button 
                     variant="secondary"
-                    className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6"
+                    className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
                     onClick={() => navigate('/templates')}
                   >
                     <FileText className="w-5 h-5" />
@@ -272,7 +272,7 @@ export default function Evaluations() {
                   </Button>
                 )}
                 <Button 
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6"
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 flex-1 md:flex-none"
                   onClick={() => navigate('/evaluations/new')}
                 >
                   <Plus className="w-5 h-5" />
@@ -301,7 +301,7 @@ export default function Evaluations() {
                 <Button
                   variant={view === 'all' ? 'default' : 'outline'}
                   onClick={() => setView('all')}
-                  className={`h-10 px-8 rounded-2xl text-lg font-medium ${
+                  className={`h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium ${
                     view === 'all' 
                       ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
                       : 'bg-white hover:bg-gray-50 text-[#27251F]'
@@ -312,7 +312,7 @@ export default function Evaluations() {
                 <Button
                   variant={view === 'pending' ? 'default' : 'outline'}
                   onClick={() => setView('pending')}
-                  className={`h-10 px-8 rounded-2xl text-lg font-medium ${
+                  className={`h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium ${
                     view === 'pending' 
                       ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
                       : 'bg-white hover:bg-gray-50 text-[#27251F]'
@@ -323,7 +323,7 @@ export default function Evaluations() {
                 <Button
                   variant={view === 'completed' ? 'default' : 'outline'}
                   onClick={() => setView('completed')}
-                  className={`h-10 px-8 rounded-2xl text-lg font-medium ${
+                  className={`h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium ${
                     view === 'completed' 
                       ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
                       : 'bg-white hover:bg-gray-50 text-[#27251F]'
@@ -336,9 +336,9 @@ export default function Evaluations() {
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="h-10 px-8 rounded-2xl text-lg font-medium bg-white hover:bg-gray-50 text-[#27251F] flex items-center gap-3"
+                    className="h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium bg-white hover:bg-gray-50 text-[#27251F] flex items-center gap-2"
                   >
-                    <Filter className="w-6 h-6" />
+                    <Filter className="w-5 h-5" />
                     Filter
                   </Button>
                 </DropdownMenuTrigger>
