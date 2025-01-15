@@ -179,4 +179,17 @@ export const deleteIncident = handleAsync(async (req, res) => {
   }
 
   res.status(204).send();
+});
+
+// Get all disciplinary incidents for a specific employee
+export const getEmployeeIncidents = handleAsync(async (req, res) => {
+  console.log('Getting incidents for employee:', req.params.employeeId);
+  const incidents = await Disciplinary.find({ employee: req.params.employeeId })
+    .populate('employee', 'name position department')
+    .populate('supervisor', 'name')
+    .populate('createdBy', 'name')
+    .sort('-createdAt');
+  
+  console.log('Found incidents:', incidents);
+  res.json(incidents);
 }); 

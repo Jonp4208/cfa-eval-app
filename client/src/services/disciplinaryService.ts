@@ -76,6 +76,12 @@ const disciplinaryService = {
     return response.data;
   },
 
+  // Get employee incidents
+  getEmployeeIncidents: async (employeeId: string): Promise<DisciplinaryIncident[]> => {
+    const response = await api.get(`/api/disciplinary/employee/${employeeId}`);
+    return response.data;
+  },
+
   // Get incident by ID
   getIncidentById: async (id: string): Promise<DisciplinaryIncident> => {
     const response = await api.get(`/api/disciplinary/${id}`);

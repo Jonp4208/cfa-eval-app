@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { getAuthHeader } from '@/utils/auth';
+import api from '@/lib/axios';
 
 export interface User {
   _id: string;
@@ -15,17 +14,14 @@ export interface User {
 const userService = {
   // Get all users
   getAllUsers: async (): Promise<User[]> => {
-    const response = await axios.get(`/api/users`, {
-      headers: getAuthHeader()
-    });
+    const response = await api.get(`/api/users`);
+    console.log('Raw API Response:', response);
     return response.data.users;
   },
 
   // Get user by ID
   getUserById: async (id: string): Promise<User> => {
-    const response = await axios.get(`/api/users/${id}`, {
-      headers: getAuthHeader()
-    });
+    const response = await api.get(`/api/users/${id}`);
     return response.data;
   }
 };

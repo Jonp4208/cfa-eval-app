@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import api from '@/lib/axios';
 import Draggable from 'react-draggable';
+import disciplinaryService from '@/services/disciplinaryService';
 
 interface Evaluation {
   id?: string;
@@ -84,6 +85,22 @@ interface UserProfile {
   metrics?: Metrics;
 }
 
+interface DisciplinaryIncident {
+  _id: string;
+  date: string;
+  type: string;
+  severity: string;
+  status: string;
+  description: string;
+  actionTaken: string;
+  createdBy: {
+    name: string;
+  };
+  supervisor: {
+    name: string;
+  };
+}
+
 export default function UserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -98,6 +115,7 @@ export default function UserProfile() {
     x: 50,
     y: 50
   });
+  const [disciplinaryIncidents, setDisciplinaryIncidents] = useState<DisciplinaryIncident[]>([]);
 
   // Fetch user data
   const { data: profile, isLoading, refetch } = useQuery({
@@ -266,6 +284,24 @@ export default function UserProfile() {
     }
   }, [profile]);
 
+  // Add this new effect to fetch disciplinary incidents
+  useEffect(() => {
+    const fetchDisciplinaryIncidents = async () => {
+      try {
+        console.log('Fetching disciplinary incidents for user:', id);
+        const data = await disciplinaryService.getEmployeeIncidents(id as string);
+        console.log('Disciplinary incidents data:', data);
+        setDisciplinaryIncidents(data);
+      } catch (error) {
+        console.error('Error fetching disciplinary incidents:', error);
+      }
+    };
+
+    if (id) {
+      fetchDisciplinaryIncidents();
+    }
+  }, [id]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -297,455 +333,530 @@ export default function UserProfile() {
   const isAdmin = currentUser?.role === 'admin';
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Back Button */}
-      <Button
-        variant="outline"
-        onClick={() => navigate(currentUser?._id === profile._id ? '/' : '/users')}
-        className="flex items-center gap-2"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        {currentUser?._id === profile._id ? 'Back to Dashboard' : 'Back to Users'}
-      </Button>
-
-      {/* Header with Basic Info */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+    <div className="bg-[#F4F4F4] min-h-screen">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] p-8 rounded-[20px] shadow-xl relative overflow-hidden mx-6 mt-6">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-10" />
+        <div className="relative flex flex-col gap-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-2xl font-semibold mb-1">{profile.name}</h1>
-              <p className="text-gray-500">
-                <span className="uppercase">{profile.position} • {profile.department}</span>
-                {profile.manager && (
-                  <>
-                    <span className="mx-2">|</span>
-                    <span>Manager: {profile.manager.name}</span>
-                  </>
-                )}
-              </p>
+              <h1 className="text-3xl md:text-4xl font-semibold text-white mb-2">{profile.name}</h1>
+              <p className="text-white/60">View and manage user profile details</p>
             </div>
-            <div className="mt-4 md:mt-0 flex items-center gap-4">
-              {isAdmin && (
-                <div className="min-w-[200px]">
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Manager</label>
-                  <select
-                    value={selectedManagerId}
-                    onChange={(e) => {
-                      setSelectedManagerId(e.target.value);
-                      updateManager.mutate(e.target.value);
-                    }}
-                    className="w-full p-2 border rounded-md"
-                    disabled={loadingManagers || updateManager.isPending}
-                  >
-                    <option value="">No Manager Assigned</option>
-                    {potentialManagers?.map((manager: any) => (
-                      <option key={manager._id} value={manager._id}>
-                        {manager.name} ({manager.role})
-                      </option>
-                    ))}
-                  </select>
+            <Button
+              variant="outline"
+              onClick={() => navigate(currentUser?._id === profile._id ? '/' : '/users')}
+              className="w-fit bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {currentUser?._id === profile._id ? 'Back to Dashboard' : 'Back to Users'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="p-6 space-y-6">
+        {/* Basic Info Card */}
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+              <div>
+                <p className="text-[#27251F]/60 uppercase">
+                  {profile.position} • {profile.department}
+                  {profile.manager && (
+                    <>
+                      <span className="mx-2">|</span>
+                      <span>Manager: {profile.manager.name}</span>
+                    </>
+                  )}
+                </p>
+              </div>
+              <div className="mt-4 md:mt-0 flex items-center gap-4">
+                {isAdmin && (
+                  <div className="min-w-[200px]">
+                    <label className="text-sm font-medium text-[#27251F]/60 block mb-1">Manager</label>
+                    <select
+                      value={selectedManagerId}
+                      onChange={(e) => {
+                        setSelectedManagerId(e.target.value);
+                        updateManager.mutate(e.target.value);
+                      }}
+                      className="w-full h-12 px-4 rounded-xl border border-[#27251F]/10 focus:outline-none focus:ring-2 focus:ring-[#E51636]/20 focus:border-[#E51636]"
+                      disabled={loadingManagers || updateManager.isPending}
+                    >
+                      <option value="">No Manager Assigned</option>
+                      {potentialManagers?.map((manager: any) => (
+                        <option key={manager._id} value={manager._id}>
+                          {manager.name} ({manager.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <span className={`px-4 py-2 rounded-xl text-sm font-medium ${
+                  profile.status === 'active' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {profile.status}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-[#E51636]/10 flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-[#E51636]" />
+                </div>
+                <div>
+                  <p className="text-sm text-[#27251F]/60">Email</p>
+                  <p className="font-medium text-[#27251F]">{profile.email}</p>
+                </div>
+              </div>
+              
+              {profile.phone && (
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-[#E51636]/10 flex items-center justify-center">
+                    <Phone className="w-5 h-5 text-[#E51636]" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-[#27251F]/60">Phone</p>
+                    <p className="font-medium text-[#27251F]">{profile.phone}</p>
+                  </div>
                 </div>
               )}
-              <span className={`px-3 py-1 rounded-full text-sm ${
-                profile.status === 'active' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {profile.status}
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-gray-400" />
-              <div>
-                <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium">{profile.email}</p>
-              </div>
-            </div>
-            
-            {profile.phone && (
+              
               <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-sm text-gray-500">Phone</p>
-                  <p className="font-medium">{profile.phone}</p>
+                <div className="h-10 w-10 rounded-xl bg-[#E51636]/10 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-[#E51636]" />
                 </div>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-3">
-              <Calendar className="w-5 h-5 text-gray-400" />
-              <div>
-                <p className="text-sm text-gray-500">Start Date</p>
-                <p className="font-medium">{new Date(profile.startDate).toLocaleDateString()}</p>
+                <div>
+                  <p className="text-sm text-[#27251F]/60">Start Date</p>
+                  <p className="font-medium text-[#27251F]">{new Date(profile.startDate).toLocaleDateString()}</p>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="performance" className="space-y-6">
-        <TabsList className="grid grid-cols-4 gap-4 bg-muted p-1">
-          <TabsTrigger 
-            value="performance" 
-            className="data-[state=active]:bg-red-600 data-[state=active]:text-white"
-          >
-            <Activity className="w-4 h-4 mr-2" />
-            Performance
-          </TabsTrigger>
-          <TabsTrigger 
-            value="development"
-            className="data-[state=active]:bg-red-600 data-[state=active]:text-white"
-          >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Development
-          </TabsTrigger>
-          <TabsTrigger 
-            value="documentation"
-            className="data-[state=active]:bg-red-600 data-[state=active]:text-white"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Documentation
-          </TabsTrigger>
-          <TabsTrigger 
-            value="metrics"
-            className="data-[state=active]:bg-red-600 data-[state=active]:text-white"
-          >
-            <Activity className="w-4 h-4 mr-2" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
+        {/* Tabs */}
+        <Tabs defaultValue="performance" className="space-y-6">
+          <TabsList className="bg-white rounded-xl p-1 flex flex-nowrap overflow-x-auto">
+            <TabsTrigger 
+              value="performance" 
+              className="flex-1 data-[state=active]:bg-[#E51636] data-[state=active]:text-white"
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Performance
+            </TabsTrigger>
+            <TabsTrigger 
+              value="development"
+              className="flex-1 data-[state=active]:bg-[#E51636] data-[state=active]:text-white"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Development
+            </TabsTrigger>
+            <TabsTrigger 
+              value="documentation"
+              className="flex-1 data-[state=active]:bg-[#E51636] data-[state=active]:text-white"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Documentation
+            </TabsTrigger>
+            <TabsTrigger 
+              value="metrics"
+              className="flex-1 data-[state=active]:bg-[#E51636] data-[state=active]:text-white"
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Performance Tab */}
-        <TabsContent value="performance">
-          <div className="grid gap-6">
-            {/* Performance Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={profile.metrics?.evaluationScores || []}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="date" 
-                        tickFormatter={(date) => new Date(date).toLocaleDateString()}
-                      />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="score" 
-                        stroke="#dc2626" 
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Performance Tab Content */}
+          <TabsContent value="performance">
+            <div className="grid gap-6">
+              <Card className="bg-white rounded-[20px] shadow-md">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-[#27251F] text-xl">Performance Overview</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={profile.metrics?.evaluationScores || []}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#27251F/10" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(date) => new Date(date).toLocaleDateString()}
+                          stroke="#27251F/60"
+                        />
+                        <YAxis domain={[0, 100]} stroke="#27251F/60" />
+                        <Tooltip />
+                        <Line 
+                          type="monotone" 
+                          dataKey="score" 
+                          stroke="#E51636" 
+                          strokeWidth={2}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Recent Evaluations */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Evaluations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {profile.evaluations?.map((evaluation: Evaluation, index: number) => (
-                    <Card key={evaluation.id || index}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h4 className="font-medium">{evaluation.type}</h4>
-                            <p className="text-sm text-gray-500">
-                              {new Date(evaluation.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-lg font-semibold">{evaluation.score}%</span>
-                          </div>
-                        </div>
-                        
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div>
-                            <h5 className="text-sm font-medium mb-2 flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              Strengths
-                            </h5>
-                            <ul className="list-disc pl-4 text-sm text-gray-600 space-y-1">
-                              {evaluation.strengths?.map((strength: string, i: number) => (
-                                <li key={i}>{strength}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          
-                          <div>
-                            <h5 className="text-sm font-medium mb-2 flex items-center gap-2">
-                              <Target className="w-4 h-4 text-blue-500" />
-                              Areas for Improvement
-                            </h5>
-                            <ul className="list-disc pl-4 text-sm text-gray-600 space-y-1">
-                              {evaluation.improvements?.map((improvement: string, i: number) => (
-                                <li key={i}>{improvement}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Development Tab */}
-        <TabsContent value="development">
-          <div className="grid gap-6">
-            {/* Development Goals */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Development Goals</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {profile.development?.map((goal: Goal, index: number) => (
-                    <Card key={goal.id || index}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h4 className="font-medium">{goal.goal}</h4>
-                            <p className="text-sm text-gray-500">
-                              Target: {new Date(goal.targetDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <span className={`px-2 py-1 rounded-full text-sm ${
-                            goal.status === 'completed' 
-                              ? 'bg-green-100 text-green-800'
-                              : goal.status === 'in-progress'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {goal.status}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Progress</span>
-                              <span>{goal.progress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-red-600 h-2 rounded-full" 
-                                style={{ width: `${goal.progress}%` }}
-                              />
-                            </div>
-                          </div>
-                          
-                          {goal.notes?.length > 0 && (
+              <Card className="bg-white rounded-[20px] shadow-md">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-[#27251F] text-xl">Recent Evaluations</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {profile.evaluations?.map((evaluation: Evaluation, index: number) => (
+                      <Card key={evaluation.id || index} className="bg-white rounded-xl shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-4">
                             <div>
-                              <h5 className="text-sm font-medium mb-2">Progress Notes</h5>
-                              <ul className="space-y-2">
-                                {goal.notes?.map((note: string, i: number) => (
-                                  <li key={i} className="text-sm text-gray-600">
-                                    {note}
-                                  </li>
+                              <h4 className="font-medium text-[#27251F]">{evaluation.type}</h4>
+                              <p className="text-sm text-[#27251F]/60">
+                                {new Date(evaluation.date).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-lg font-semibold text-[#E51636]">{evaluation.score}%</span>
+                            </div>
+                          </div>
+                          
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                              <h5 className="text-sm font-medium mb-2 flex items-center gap-2 text-[#27251F]">
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                Strengths
+                              </h5>
+                              <ul className="list-disc pl-4 text-sm text-[#27251F]/60 space-y-1">
+                                {evaluation.strengths?.map((strength: string, i: number) => (
+                                  <li key={i}>{strength}</li>
                                 ))}
                               </ul>
                             </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Documentation Tab */}
-        <TabsContent value="documentation">
-          <div className="grid gap-6">
-            {/* Documents List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Document History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {profile.documentation?.map((doc: Document, index: number) => (
-                    <Card key={doc.id || index}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              {doc.type === 'review' && <ClipboardList className="w-4 h-4 text-blue-500" />}
-                              {doc.type === 'disciplinary' && <AlertCircle className="w-4 h-4 text-red-500" />}
-                              {doc.type === 'coaching' && <BookOpen className="w-4 h-4 text-green-500" />}
-                              <h4 className="font-medium">{doc.title}</h4>
+                            
+                            <div>
+                              <h5 className="text-sm font-medium mb-2 flex items-center gap-2 text-[#27251F]">
+                                <Target className="w-4 h-4 text-[#E51636]" />
+                                Areas for Improvement
+                              </h5>
+                              <ul className="list-disc pl-4 text-sm text-[#27251F]/60 space-y-1">
+                                {evaluation.improvements?.map((improvement: string, i: number) => (
+                                  <li key={i}>{improvement}</li>
+                                ))}
+                              </ul>
                             </div>
-                            <p className="text-sm text-gray-500">
-                              {new Date(doc.date).toLocaleDateString()} • By {doc.createdBy}
-                            </p>
-                            <p className="text-sm mt-2">{doc.description}</p>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="metrics">
-          <div className="grid gap-6">
-            {/* Key Analytics Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center">
-                    <div className="text-3xl font-bold text-red-600 mb-2">
-                      {profile.metrics?.trainingCompletion || 0}%
-                    </div>
-                    <p className="text-sm text-gray-500 text-center">Training Completion Rate</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center">
-                    <div className="text-3xl font-bold text-red-600 mb-2">
-                      {profile.metrics?.goalAchievement || 0}%
-                    </div>
-                    <p className="text-sm text-gray-500 text-center">Goal Achievement Rate</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center">
-                    <div className="text-3xl font-bold text-red-600 mb-2">
-                      {profile.metrics?.leadershipScore || 0}%
-                    </div>
-                    <p className="text-sm text-gray-500 text-center">Leadership Score</p>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
 
-            {/* Hearts & Hands Quadrant */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Hearts & Hands Assessment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="max-w-[500px] mx-auto">
-                  <div className="aspect-square relative bg-white p-4 mt-8">
-                    {/* Y-axis Label */}
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-sm text-gray-500 font-medium">
-                      Engagement & Commitment
-                    </div>
-                    
-                    {/* X-axis Label */}
-                    <div className="absolute -right-32 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-medium rotate-90">
-                      Skills & Abilities
-                    </div>
-
-                    <div 
-                      className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 relative" 
-                      ref={dragContainerRef}
-                    >
-                      {/* Top Left Quadrant */}
-                      <div className="bg-yellow-100 rounded-tl-lg border border-gray-200"></div>
-                      {/* Top Right Quadrant */}
-                      <div className="bg-green-100 rounded-tr-lg border border-gray-200"></div>
-                      {/* Bottom Left Quadrant */}
-                      <div className="bg-red-100 rounded-bl-lg border border-gray-200"></div>
-                      {/* Bottom Right Quadrant */}
-                      <div className="bg-yellow-100 rounded-br-lg border border-gray-200"></div>
-
-                      {/* Interactive Position Marker */}
-                      <Draggable 
-                        bounds="parent"
-                        nodeRef={draggableRef}
-                        position={position}
-                        onDrag={(e, data) => {
-                          setPosition(data);
-                          if (dragContainerRef.current) {
-                            const rect = dragContainerRef.current.getBoundingClientRect();
-                            const dotSize = 32;
-                            const x = Math.max(0, Math.min(Math.round((data.x) / (rect.width - dotSize) * 100), 100));
-                            const y = Math.max(0, Math.min(Math.round(100 - (data.y / (rect.height - dotSize) * 100)), 100));
-                            setHeartsAndHandsPosition({ x, y });
-                          }
-                        }}
-                        onStop={(e, data) => {
-                          if (dragContainerRef.current) {
-                            const rect = dragContainerRef.current.getBoundingClientRect();
-                            const dotSize = 32;
-                            const x = Math.max(0, Math.min(Math.round((data.x) / (rect.width - dotSize) * 100), 100));
-                            const y = Math.max(0, Math.min(Math.round(100 - (data.y / (rect.height - dotSize) * 100)), 100));
-                            setHeartsAndHandsPosition({ x, y });
-                          }
-                        }}
-                      >
-                        <div 
-                          ref={draggableRef}
-                          className="w-8 h-8 bg-red-600 rounded-full cursor-move absolute flex items-center justify-center"
-                        >
-                          <span className="text-xs font-medium text-white">
-                            {profile?.name.split(' ').map((name: string) => name[0]).join('')}
-                          </span>
-                        </div>
-                      </Draggable>
-                    </div>
+          {/* Development Tab Content */}
+          <TabsContent value="development">
+            <div className="grid gap-6">
+              <Card className="bg-white rounded-[20px] shadow-md">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-[#27251F] text-xl">Development Goals</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {profile.development?.map((goal: Goal, index: number) => (
+                      <Card key={goal.id || index} className="bg-white rounded-xl shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h4 className="font-medium text-[#27251F]">{goal.goal}</h4>
+                              <p className="text-sm text-[#27251F]/60">
+                                Target: {new Date(goal.targetDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span className={`px-3 py-1 rounded-xl text-sm font-medium ${
+                              goal.status === 'completed' 
+                                ? 'bg-green-100 text-green-800'
+                                : goal.status === 'in-progress'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {goal.status}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-[#27251F]/60">Progress</span>
+                                <span className="text-[#27251F]">{goal.progress}%</span>
+                              </div>
+                              <div className="w-full bg-[#27251F]/10 rounded-full h-2">
+                                <div 
+                                  className="bg-[#E51636] h-2 rounded-full" 
+                                  style={{ width: `${goal.progress}%` }}
+                                />
+                              </div>
+                            </div>
+                            
+                            {goal.notes?.length > 0 && (
+                              <div>
+                                <h5 className="text-sm font-medium mb-2 text-[#27251F]">Progress Notes</h5>
+                                <ul className="space-y-2">
+                                  {goal.notes?.map((note: string, i: number) => (
+                                    <li key={i} className="text-sm text-[#27251F]/60">
+                                      {note}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-                  {/* Position Update Form - Only visible to managers/admins */}
-                  {(currentUser?.role === 'admin' || currentUser?._id === profile.manager?._id) && (
-                    <div className="mt-4 space-y-4">
-                      <div className="text-sm text-gray-500">
-                        Drag the red dot to update the team member's position on the Hearts & Hands quadrant.
+          {/* Documentation Tab Content */}
+          <TabsContent value="documentation">
+            <div className="grid gap-6">
+              {/* Disciplinary Incidents Section */}
+              <Card className="bg-white rounded-[20px] shadow-md">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-[#27251F] text-xl">Disciplinary Incidents</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {disciplinaryIncidents.map((incident) => (
+                      <Card key={incident._id} className="bg-white rounded-xl shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-[#E51636]" />
+                                <h4 className="font-medium text-[#27251F]">{incident.type}</h4>
+                              </div>
+                              <p className="text-sm text-[#27251F]/60">
+                                {new Date(incident.date).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-3 py-1 rounded-full text-sm ${
+                                incident.status === 'Open' ? 'bg-yellow-100 text-yellow-800' :
+                                incident.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {incident.status}
+                              </span>
+                              <span className={`px-3 py-1 rounded-full text-sm ${
+                                incident.severity === 'Minor' ? 'bg-gray-100 text-gray-800' :
+                                incident.severity === 'Moderate' ? 'bg-orange-100 text-orange-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {incident.severity}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <h5 className="text-sm font-medium text-[#27251F]">Description</h5>
+                              <p className="text-sm text-[#27251F]/60 mt-1">{incident.description}</p>
+                            </div>
+                            <div>
+                              <h5 className="text-sm font-medium text-[#27251F]">Action Taken</h5>
+                              <p className="text-sm text-[#27251F]/60 mt-1">{incident.actionTaken}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-[#27251F]/10">
+                            <div className="flex flex-wrap gap-2 text-sm text-[#27251F]/60">
+                              <span>Issued by: {incident.createdBy.name}</span>
+                              <span>•</span>
+                              <span>Manager: {incident.supervisor.name}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    {disciplinaryIncidents.length === 0 && (
+                      <div className="text-center py-6">
+                        <p className="text-[#27251F]/60">No disciplinary incidents on record</p>
                       </div>
-                      <div className="flex justify-end">
-                        <Button
-                          onClick={() => updateHeartsAndHandsMutation.mutate(heartsAndHandsPosition)}
-                          disabled={updateHeartsAndHandsMutation.isPending}
-                          className="bg-red-600 hover:bg-red-700"
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white rounded-[20px] shadow-md">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-[#27251F] text-xl">Document History</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {profile.documentation?.map((doc: Document, index: number) => (
+                      <Card key={doc.id || index} className="bg-white rounded-xl shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                {doc.type === 'review' && <ClipboardList className="w-4 h-4 text-[#E51636]" />}
+                                {doc.type === 'disciplinary' && <AlertCircle className="w-4 h-4 text-[#E51636]" />}
+                                {doc.type === 'coaching' && <BookOpen className="w-4 h-4 text-[#E51636]" />}
+                                <h4 className="font-medium text-[#27251F]">{doc.title}</h4>
+                              </div>
+                              <p className="text-sm text-[#27251F]/60">
+                                {new Date(doc.date).toLocaleDateString()} • By {doc.createdBy}
+                              </p>
+                              <p className="text-sm mt-2 text-[#27251F]">{doc.description}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Analytics Tab Content */}
+          <TabsContent value="metrics">
+            <div className="grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="bg-white rounded-[20px] shadow-md">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col items-center">
+                      <div className="text-3xl font-bold text-[#E51636] mb-2">
+                        {profile.metrics?.trainingCompletion || 0}%
+                      </div>
+                      <p className="text-sm text-[#27251F]/60 text-center">Training Completion Rate</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white rounded-[20px] shadow-md">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col items-center">
+                      <div className="text-3xl font-bold text-[#E51636] mb-2">
+                        {profile.metrics?.goalAchievement || 0}%
+                      </div>
+                      <p className="text-sm text-[#27251F]/60 text-center">Goal Achievement Rate</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white rounded-[20px] shadow-md">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col items-center">
+                      <div className="text-3xl font-bold text-[#E51636] mb-2">
+                        {profile.metrics?.leadershipScore || 0}%
+                      </div>
+                      <p className="text-sm text-[#27251F]/60 text-center">Leadership Score</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="bg-white rounded-[20px] shadow-md">
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-[#27251F] text-xl">Hearts & Hands Assessment</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="max-w-[500px] mx-auto">
+                    <div className="aspect-square relative bg-white p-4 mt-8">
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-sm text-[#27251F]/60 font-medium">
+                        Engagement & Commitment
+                      </div>
+                      
+                      <div className="absolute -right-32 top-1/2 -translate-y-1/2 text-sm text-[#27251F]/60 font-medium rotate-90">
+                        Skills & Abilities
+                      </div>
+
+                      <div 
+                        className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 relative" 
+                        ref={dragContainerRef}
+                      >
+                        <div className="bg-yellow-100 rounded-tl-lg border border-[#27251F]/10"></div>
+                        <div className="bg-green-100 rounded-tr-lg border border-[#27251F]/10"></div>
+                        <div className="bg-red-100 rounded-bl-lg border border-[#27251F]/10"></div>
+                        <div className="bg-yellow-100 rounded-br-lg border border-[#27251F]/10"></div>
+
+                        <Draggable 
+                          bounds="parent"
+                          nodeRef={draggableRef}
+                          position={position}
+                          onDrag={(e, data) => {
+                            setPosition(data);
+                            if (dragContainerRef.current) {
+                              const rect = dragContainerRef.current.getBoundingClientRect();
+                              const dotSize = 32;
+                              const x = Math.max(0, Math.min(Math.round((data.x) / (rect.width - dotSize) * 100), 100));
+                              const y = Math.max(0, Math.min(Math.round(100 - (data.y / (rect.height - dotSize) * 100)), 100));
+                              setHeartsAndHandsPosition({ x, y });
+                            }
+                          }}
+                          onStop={(e, data) => {
+                            if (dragContainerRef.current) {
+                              const rect = dragContainerRef.current.getBoundingClientRect();
+                              const dotSize = 32;
+                              const x = Math.max(0, Math.min(Math.round((data.x) / (rect.width - dotSize) * 100), 100));
+                              const y = Math.max(0, Math.min(Math.round(100 - (data.y / (rect.height - dotSize) * 100)), 100));
+                              setHeartsAndHandsPosition({ x, y });
+                            }
+                          }}
                         >
-                          {updateHeartsAndHandsMutation.isPending ? (
-                            <>
-                              <span className="mr-2">Saving...</span>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                            </>
-                          ) : (
-                            'Save Position'
-                          )}
-                        </Button>
+                          <div 
+                            ref={draggableRef}
+                            className="w-8 h-8 bg-[#E51636] rounded-full cursor-move absolute flex items-center justify-center"
+                          >
+                            <span className="text-xs font-medium text-white">
+                              {profile?.name.split(' ').map((name: string) => name[0]).join('')}
+                            </span>
+                          </div>
+                        </Draggable>
                       </div>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+
+                    {(currentUser?.role === 'admin' || currentUser?._id === profile.manager?._id) && (
+                      <div className="mt-4 space-y-4">
+                        <div className="text-sm text-[#27251F]/60">
+                          Drag the red dot to update the team member's position on the Hearts & Hands quadrant.
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={() => updateHeartsAndHandsMutation.mutate(heartsAndHandsPosition)}
+                            disabled={updateHeartsAndHandsMutation.isPending}
+                            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white"
+                          >
+                            {updateHeartsAndHandsMutation.isPending ? (
+                              <>
+                                <span className="mr-2">Saving...</span>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                              </>
+                            ) : (
+                              'Save Position'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

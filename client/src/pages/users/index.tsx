@@ -448,6 +448,24 @@ export default function Users() {
                               variant="ghost"
                               size="icon"
                               className="h-10 w-10 text-[#27251F]/60 hover:text-[#E51636]"
+                              onClick={() => navigate(`/users/${user._id}`)}
+                            >
+                              <User className="w-5 h-5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View Profile</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 text-[#27251F]/60 hover:text-[#E51636]"
                               onClick={() => {
                                 setSelectedUser(user);
                                 setShowEmailResetDialog(true);

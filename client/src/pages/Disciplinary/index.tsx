@@ -10,17 +10,20 @@ import {
   UserX,
   ClipboardList,
   Filter,
+  Search,
   Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import disciplinaryService, { DisciplinaryIncident } from '@/services/disciplinaryService';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
 
 export default function DisciplinaryPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [incidents, setIncidents] = useState<DisciplinaryIncident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState({
     open: 0,
     followUps: 0,
@@ -54,16 +57,34 @@ export default function DisciplinaryPage() {
   };
 
   const getFilteredIncidents = () => {
+    let filtered = incidents;
+
+    // Status filter
     switch (filter) {
       case 'open':
-        return incidents.filter(i => i.status === 'Open');
+        filtered = filtered.filter(i => i.status === 'Open');
+        break;
       case 'followup':
-        return incidents.filter(i => new Date(i.followUpDate) >= new Date());
+        filtered = filtered.filter(i => new Date(i.followUpDate) >= new Date());
+        break;
       case 'resolved':
-        return incidents.filter(i => i.status === 'Resolved');
-      default:
-        return incidents;
+        filtered = filtered.filter(i => i.status === 'Resolved');
+        break;
     }
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(i => 
+        i.employee.name.toLowerCase().includes(query) ||
+        i.employee.position.toLowerCase().includes(query) ||
+        i.employee.department.toLowerCase().includes(query) ||
+        i.type.toLowerCase().includes(query) ||
+        i.description.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
   };
 
   const handleNewIncident = () => {
@@ -157,6 +178,18 @@ export default function DisciplinaryPage() {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Input
+              type="text"
+              placeholder="Search by employee, position, department..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 pl-10 pr-4 rounded-xl bg-white border-gray-200 hover:border-gray-300 focus:border-red-600 focus:ring-red-600"
+            />
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          </div>
+
           {/* Filters */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <Filter className="w-5 h-5 text-[#27251F]/40 flex-shrink-0" />

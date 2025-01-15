@@ -56,6 +56,13 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Debug middleware for route matching
+app.use((req, res, next) => {
+  console.log('Request URL:', req.url);
+  console.log('Request Method:', req.method);
+  next();
+});
+
 // Create a router for API routes
 const apiRouter = express.Router();
 
