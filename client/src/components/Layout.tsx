@@ -272,31 +272,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             {/* Search */}
             <div className="relative w-48">
-              <SearchIcon className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#27251F]/40" />
               <Input 
                 type="search"
                 placeholder="Search"
-                className="pl-8 h-8 text-sm"
+                className="pl-10 h-12 text-base rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
               />
             </div>
 
             {/* Notifications */}
             <div className="relative" ref={notificationRef}>
               <button 
-                className="relative min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
+                className="relative p-2 hover:bg-gray-50 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-5 h-5 text-[#27251F]" />
                 {hasNotifications && (
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-600 rounded-full"></span>
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-[#E51636] rounded-full"></span>
                 )}
               </button>
 
               {/* Notification Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border py-2 z-50 backdrop-blur-none">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-[20px] shadow-md border py-2 z-50">
                   <div className="px-4 py-2 border-b">
-                    <h3 className="font-medium">Notifications</h3>
+                    <h3 className="font-medium text-[#27251F]">Notifications</h3>
                   </div>
                   <div className="max-h-[300px] overflow-y-auto momentum-scroll custom-scrollbar">
                     {upcomingEvaluations.length > 0 ? (
@@ -309,21 +309,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           }}
                           className="w-full px-4 py-2 hover:bg-gray-50 text-left flex items-start gap-3 min-h-[44px]"
                         >
-                          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                            <ClipboardList className="w-4 h-4 text-red-600" />
+                          <div className="w-8 h-8 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
+                            <ClipboardList className="w-4 h-4 text-[#E51636]" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">
-                              Upcoming Evaluation: {evaluation.employee.name}
+                            <p className="text-sm font-medium text-[#27251F]">
+                              Upcoming Evaluation: {evaluation.employee?.name || 'Unknown Employee'}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[#27251F]/60">
                               Scheduled for {new Date(evaluation.scheduledDate).toLocaleDateString()}
                             </p>
                           </div>
                         </button>
                       ))
                     ) : (
-                      <div className="px-4 py-2 text-sm text-gray-500">
+                      <div className="px-4 py-2 text-sm text-[#27251F]/60">
                         No new notifications
                       </div>
                     )}
