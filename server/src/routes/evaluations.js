@@ -9,7 +9,8 @@ import {
     submitSelfEvaluation,
     scheduleReviewSession,
     completeManagerEvaluation,
-    acknowledgeEvaluation
+    acknowledgeEvaluation,
+    markNotificationViewed
 } from '../controllers/evaluations.js';
 import { auth } from '../middleware/auth.js';
 import { isManager } from '../middleware/roles.js';
@@ -31,5 +32,8 @@ router.post('/:evaluationId/self-evaluation', auth, submitSelfEvaluation);
 router.post('/:evaluationId/schedule-review', auth, isManager, scheduleReviewSession);
 router.post('/:evaluationId/complete', auth, isManager, completeManagerEvaluation);
 router.post('/:evaluationId/acknowledge', auth, acknowledgeEvaluation);
+
+// Mark notification as viewed
+router.post('/:evaluationId/mark-viewed', auth, markNotificationViewed);
 
 export default router;

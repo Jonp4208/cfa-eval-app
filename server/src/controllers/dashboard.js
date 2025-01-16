@@ -67,6 +67,17 @@ export const getDashboardStats = async (req, res) => {
         // Get upcoming evaluations
         const upcomingEvaluations = await Evaluation.find({
             store,
+            $or: [
+                { employee: req.user._id },  // User is the employee
+                { evaluator: req.user._id }  // User is the evaluator
+            ],
+            notificationViewed: {
+                $not: {
+                    $elemMatch: {
+                        user: req.user._id
+                    }
+                }
+            },
             status: { 
                 $in: ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'] 
             },
@@ -75,8 +86,7 @@ export const getDashboardStats = async (req, res) => {
         .populate('employee', 'name')
         .populate('template', 'name')
         .sort({ scheduledDate: 1 })
-        .limit(5)
-        .select('scheduledDate');
+        .limit(5);
 
         // Get recent activity
         const recentActivity = await Evaluation.find({
@@ -97,15 +107,15 @@ export const getDashboardStats = async (req, res) => {
             openDisciplinaryIncidents,
             resolvedDisciplinaryThisMonth,
             upcomingEvaluations: upcomingEvaluations.map(evaluation => ({
-                id: evaluation._id,
-                employeeName: evaluation.employee.name,
+                _id: evaluation._id,
+                employeeName: evaluation.employee?.name || 'Unknown Employee',
                 templateName: evaluation.template?.name || 'No Template',
                 scheduledDate: evaluation.scheduledDate
             })),
             recentActivity: recentActivity.map(activity => ({
                 id: activity._id,
                 type: activity.status,
-                description: `${activity.evaluator.name} ${activity.status} evaluation for ${activity.employee.name}`,
+                description: `${activity.evaluator?.name || 'Unknown'} ${activity.status} evaluation for ${activity.employee?.name || 'Unknown Employee'}`,
                 date: activity.updatedAt
             }))
         });

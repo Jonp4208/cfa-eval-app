@@ -308,26 +308,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <div className="max-h-[300px] overflow-y-auto momentum-scroll custom-scrollbar">
                     {upcomingEvaluations.length > 0 ? (
                       upcomingEvaluations.map((evaluation: any) => (
-                        <button
-                          key={evaluation._id}
-                          onClick={() => {
-                            navigate(`/evaluations/${evaluation._id}`);
-                            setShowNotifications(false);
-                          }}
-                          className="w-full px-4 py-2 hover:bg-gray-50 text-left flex items-start gap-3 min-h-[44px]"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
-                            <ClipboardList className="w-4 h-4 text-[#E51636]" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-[#27251F]">
-                              Upcoming Evaluation: {evaluation.employee?.name || 'Unknown Employee'}
-                            </p>
-                            <p className="text-xs text-[#27251F]/60">
-                              Scheduled for {new Date(evaluation.scheduledDate).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </button>
+                        <div key={evaluation._id} className="group relative">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.post(`/api/evaluations/${evaluation._id}/mark-viewed`);
+                                navigate(`/evaluations/${evaluation._id}`);
+                                setShowNotifications(false);
+                              } catch (error) {
+                                console.error('Error marking notification as viewed:', error);
+                                // Still navigate even if marking as viewed fails
+                                navigate(`/evaluations/${evaluation._id}`);
+                                setShowNotifications(false);
+                              }
+                            }}
+                            className="w-full px-4 py-2 hover:bg-gray-50 text-left flex items-start gap-3 min-h-[44px]"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
+                              <ClipboardList className="w-4 h-4 text-[#E51636]" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-[#27251F]">
+                                Upcoming Evaluation: {evaluation.employeeName}
+                              </p>
+                              <p className="text-xs text-[#27251F]/60">
+                                Scheduled for {new Date(evaluation.scheduledDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                await api.post(`/api/evaluations/${evaluation._id}/mark-viewed`);
+                                // Refetch notifications to update the list
+                                refetch();
+                              } catch (error) {
+                                console.error('Error dismissing notification:', error);
+                              }
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-100 rounded-full transition-all"
+                          >
+                            <X className="w-4 h-4 text-[#27251F]/60" />
+                          </button>
+                        </div>
                       ))
                     ) : (
                       <div className="px-4 py-2 text-sm text-[#27251F]/60">

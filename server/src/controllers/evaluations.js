@@ -174,6 +174,35 @@ export const getEvaluation = async (req, res) => {
             storeId: req.user.store._id
         });
 
+        // First try to find the evaluation without store filter
+        const evaluationWithoutStore = await Evaluation.findById(req.params.evaluationId);
+        
+        if (!evaluationWithoutStore) {
+            console.log('Evaluation does not exist:', {
+                requestedId: req.params.evaluationId
+            });
+            return res.status(404).json({ 
+                message: 'Evaluation not found',
+                details: 'The requested evaluation does not exist'
+            });
+        }
+
+        // Check store match
+        if (evaluationWithoutStore.store.toString() !== req.user.store._id.toString()) {
+            console.log('Store mismatch:', {
+                evaluationStore: evaluationWithoutStore.store,
+                userStore: req.user.store._id,
+                evaluationId: req.params.evaluationId,
+                employeeId: evaluationWithoutStore.employee,
+                evaluatorId: evaluationWithoutStore.evaluator
+            });
+            return res.status(403).json({ 
+                message: 'Access denied',
+                details: 'You do not have permission to view this evaluation'
+            });
+        }
+
+        // Get full evaluation with populated fields
         const evaluation = await Evaluation.findOne({
             _id: req.params.evaluationId,
             store: req.user.store._id
@@ -193,18 +222,33 @@ export const getEvaluation = async (req, res) => {
             }
         });
 
-        if (!evaluation) {
-            console.log('Evaluation not found');
-            return res.status(404).json({ message: 'Evaluation not found' });
+        // Check if user has access
+        const isAdmin = req.user.role === 'admin';
+        const isEmployee = evaluation.employee._id.toString() === req.user._id.toString();
+        const isEvaluator = evaluation.evaluator._id.toString() === req.user._id.toString();
+
+        if (!isAdmin && !isEmployee && !isEvaluator) {
+            console.log('Access denied:', {
+                isAdmin,
+                isEmployee,
+                isEvaluator,
+                userId: req.user._id,
+                employeeId: evaluation.employee._id,
+                evaluatorId: evaluation.evaluator._id
+            });
+            return res.status(403).json({ 
+                message: 'Access denied',
+                details: 'You must be the employee, evaluator, or an admin to view this evaluation'
+            });
         }
 
-        // Update legacy 'pending' status to new workflow status
+        // Update legacy 'pending' status
         if (evaluation.status === 'pending') {
             evaluation.status = 'pending_self_evaluation';
             await evaluation.save();
         }
 
-        // Transform template data to match client expectations
+        // Transform template data
         const transformedEvaluation = {
             ...evaluation.toObject(),
             template: {
@@ -222,7 +266,6 @@ export const getEvaluation = async (req, res) => {
                     }))
                 }))
             },
-            // Convert Map fields to plain objects
             selfEvaluation: evaluation.selfEvaluation && evaluation.selfEvaluation.size > 0
                 ? Object.fromEntries(evaluation.selfEvaluation)
                 : {},
@@ -231,29 +274,13 @@ export const getEvaluation = async (req, res) => {
                 : {}
         };
 
-        console.log('Transformed evaluation:', JSON.stringify(transformedEvaluation, null, 2));
-
-        // Check if user has access
-        const isAdmin = req.user.role === 'admin';
-        const isEmployee = evaluation.employee._id.toString() === req.user._id.toString();
-        const isEvaluator = evaluation.evaluator._id.toString() === req.user._id.toString();
-
-        if (!isAdmin && !isEmployee && !isEvaluator) {
-            console.log('Access denied:', {
-                isAdmin,
-                isEmployee,
-                isEvaluator,
-                userId: req.user._id,
-                employeeId: evaluation.employee._id,
-                evaluatorId: evaluation.evaluator._id
-            });
-            return res.status(403).json({ message: 'Access denied' });
-        }
-
         res.json({ evaluation: transformedEvaluation });
     } catch (error) {
         console.error('Get evaluation error:', error);
-        res.status(500).json({ message: 'Error retrieving evaluation' });
+        res.status(500).json({ 
+            message: 'Error retrieving evaluation',
+            details: error.message
+        });
     }
 };
 
@@ -546,5 +573,43 @@ export const acknowledgeEvaluation = async (req, res) => {
     } catch (error) {
         console.error('Acknowledge evaluation error:', error);
         res.status(500).json({ message: 'Error acknowledging evaluation' });
+    }
+};
+
+// Mark notification as viewed
+export const markNotificationViewed = async (req, res) => {
+    try {
+        const evaluation = await Evaluation.findById(req.params.evaluationId);
+        
+        if (!evaluation) {
+            return res.status(404).json({ message: 'Evaluation not found' });
+        }
+
+        // Check if user has permission to view this evaluation
+        if (evaluation.employee.toString() !== req.user._id.toString() && 
+            evaluation.evaluator.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to view this evaluation' });
+        }
+
+        // Check if notification is already viewed by this user
+        const alreadyViewed = evaluation.notificationViewed.some(
+            view => view.user.toString() === req.user._id.toString()
+        );
+
+        if (!alreadyViewed) {
+            evaluation.notificationViewed.push({
+                user: req.user._id,
+                viewedAt: new Date()
+            });
+            await evaluation.save();
+        }
+
+        res.json({ message: 'Notification marked as viewed' });
+    } catch (error) {
+        console.error('Error marking notification as viewed:', error);
+        res.status(500).json({ 
+            message: 'Error marking notification as viewed',
+            error: error.message 
+        });
     }
 };

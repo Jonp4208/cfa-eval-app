@@ -55,7 +55,17 @@ const evaluationSchema = new mongoose.Schema({
       default: false
     },
     date: Date
-  }
+  },
+  notificationViewed: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    viewedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });
