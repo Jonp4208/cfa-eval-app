@@ -4,6 +4,7 @@ import { User } from '../models/index.js';
 export const auth = async (req, res, next) => {
   try {
     console.log('Auth middleware - headers:', req.headers);
+    
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
@@ -20,7 +21,7 @@ export const auth = async (req, res, next) => {
         path: 'store',
         select: '_id storeNumber name location'
       });
-
+      
     if (!user) {
       console.log('Auth middleware - user not found for id:', decoded.userId);
       throw new Error('User not found');

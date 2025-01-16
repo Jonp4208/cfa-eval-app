@@ -27,6 +27,9 @@ interface DashboardStats {
   completedEvaluations: number;
   totalEmployees: number;
   activeTemplates: number;
+  completedReviewsLast30Days: number;
+  openDisciplinaryIncidents: number;
+  resolvedDisciplinaryThisMonth: number;
   upcomingEvaluations: Array<{
     id: string;
     employeeName: string;
@@ -59,7 +62,6 @@ interface DashboardStats {
     };
     newHiresLast30Days: number;
   };
-  completedReviewsLast30Days: number;
 }
 
 export default function Dashboard() {
@@ -163,9 +165,9 @@ export default function Dashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[#27251F]/60 font-medium">Active Incidents</p>
-                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{stats?.disciplinary?.active || 0}</h3>
+                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{stats?.openDisciplinaryIncidents || 0}</h3>
                   <p className="text-[#27251F]/60 mt-1">
-                    {stats?.disciplinary?.followUps || 0} follow-ups needed
+                    {stats?.resolvedDisciplinaryThisMonth || 0} resolved this month
                   </p>
                 </div>
                 <div className="h-14 w-14 bg-orange-100 rounded-2xl flex items-center justify-center">
@@ -174,7 +176,7 @@ export default function Dashboard() {
               </div>
               <div className="mt-6">
                 <Progress 
-                  value={stats?.disciplinary?.last30Days ? (stats.disciplinary.last30Days / 30) * 100 : 0} 
+                  value={stats?.resolvedDisciplinaryThisMonth ? (stats.resolvedDisciplinaryThisMonth / (stats.resolvedDisciplinaryThisMonth + stats.openDisciplinaryIncidents)) * 100 : 0} 
                   className="h-2 bg-orange-100" 
                 />
               </div>

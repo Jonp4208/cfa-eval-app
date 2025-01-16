@@ -64,7 +64,8 @@ export const createIncident = handleAsync(async (req, res) => {
     previousIncidents,
     documentationAttached,
     supervisor: employee.supervisor || req.user._id,
-    createdBy: req.user._id
+    createdBy: req.user._id,
+    store: req.user.store
   });
 
   await incident.populate([
@@ -192,4 +193,43 @@ export const getEmployeeIncidents = handleAsync(async (req, res) => {
   
   console.log('Found incidents:', incidents);
   res.json(incidents);
+});
+
+// Get all disciplinary incidents
+export const getAllDisciplinaryIncidents = async (req, res) => {
+    try {
+        const { store } = req.user;
+        console.log('Getting all disciplinary incidents for store:', store);
+        
+        const incidents = await Disciplinary.find({ store })
+            .populate('employee', 'name')
+            .populate('supervisor', 'name')
+            .sort('-date');
+            
+        console.log('Found incidents:', incidents);
+        
+        res.json(incidents);
+    } catch (error) {
+        console.error('Error getting disciplinary incidents:', error);
+        res.status(500).json({ 
+            message: 'Error getting disciplinary incidents',
+            error: error.message 
+        });
+    }
+};
+
+// Update existing incidents with store field
+export const updateExistingIncidents = handleAsync(async (req, res) => {
+  const { store } = req.user;
+  
+  // Update all incidents that don't have a store field
+  const result = await Disciplinary.updateMany(
+    { store: { $exists: false } },
+    { $set: { store: store } }
+  );
+  
+  res.json({
+    message: 'Updated existing incidents',
+    modifiedCount: result.modifiedCount
+  });
 }); 

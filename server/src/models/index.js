@@ -1,8 +1,8 @@
-import User from './User.js';
-import Store from './Store.js';
-import Settings from './Settings.js';
-import Evaluation from './Evaluation.js';
-import Template from './Templates.js';
-import { Goal } from './Goal.js';
-
-export { User, Store, Settings, Evaluation, Template, Goal }; 
+export { default as User } from './User.js';
+export { default as Store } from './Store.js';
+export { default as Settings } from './Settings.js';
+export { default as Evaluation } from './Evaluation.js';
+export { default as Template } from './Templates.js';
+export { default as Goal } from './Goal.js';
+export { default as Notification } from './Notification.js';
+export { default as Disciplinary } from './Disciplinary.js'; 

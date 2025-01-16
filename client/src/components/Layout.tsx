@@ -141,6 +141,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: '/analytics',
       show: true,
       badge: null
+    },
+    {
+      icon: Settings,
+      label: 'Settings',
+      href: '/settings',
+      show: true,
+      badge: null
     }
   ];
 

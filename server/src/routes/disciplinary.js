@@ -8,7 +8,9 @@ import {
   deleteIncident,
   addFollowUp,
   addDocument,
-  getEmployeeIncidents
+  getEmployeeIncidents,
+  getAllDisciplinaryIncidents,
+  updateExistingIncidents
 } from '../controllers/disciplinary.js';
 
 const router = express.Router();
@@ -40,5 +42,11 @@ router.route('/:id')
   .get(getIncidentById)
   .put(updateIncident)
   .delete(deleteIncident);
+
+// Get all disciplinary incidents
+router.get('/all', auth, getAllDisciplinaryIncidents);
+
+// Update existing incidents with store field
+router.post('/update-store', auth, updateExistingIncidents);
 
 export default router; 

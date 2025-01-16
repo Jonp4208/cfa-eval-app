@@ -122,17 +122,22 @@ export default function ViewEvaluation() {
             }))
           }))
         },
-        // Handle evaluation data, ensuring it's always an object
+        // Handle evaluation data, ensuring it's always an object and preserving the data
         selfEvaluation: rawEvaluation.selfEvaluation instanceof Map 
           ? Object.fromEntries(rawEvaluation.selfEvaluation)
           : typeof rawEvaluation.selfEvaluation === 'object' && rawEvaluation.selfEvaluation !== null
-            ? rawEvaluation.selfEvaluation 
+            ? { ...rawEvaluation.selfEvaluation }
             : {},
         managerEvaluation: rawEvaluation.managerEvaluation instanceof Map
           ? Object.fromEntries(rawEvaluation.managerEvaluation)
           : typeof rawEvaluation.managerEvaluation === 'object' && rawEvaluation.managerEvaluation !== null
-            ? rawEvaluation.managerEvaluation
-            : {}
+            ? { ...rawEvaluation.managerEvaluation }
+            : {},
+        // Ensure other fields are preserved
+        overallComments: rawEvaluation.overallComments || '',
+        developmentPlan: rawEvaluation.developmentPlan || '',
+        acknowledgement: rawEvaluation.acknowledgement || { acknowledged: false },
+        status: rawEvaluation.status || 'pending_self_evaluation'
       };
       
       console.log('Transformed Evaluation:', transformedEvaluation);
@@ -482,8 +487,7 @@ export default function ViewEvaluation() {
                   </div>
                   <Progress 
                     value={calculateProgress()} 
-                    className="h-2 bg-[#27251F]/10 rounded-full"
-                    indicatorClassName="bg-[#E51636] rounded-full"
+                    className="h-2 bg-[#27251F]/10 rounded-full [&>div]:bg-[#E51636] [&>div]:rounded-full"
                   />
                 </div>
 

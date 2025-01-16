@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   Check,
   Search,
-  CheckCircle
+  CheckCircle,
+  ArrowLeft
 } from 'lucide-react';
 import api from '../../lib/axios';
 import { useAuth } from '../../contexts/AuthContext';
@@ -57,12 +58,7 @@ interface Template {
   criteriaCount: number;
 }
 
-const steps = [
-  { id: 1, name: 'Select Employee', icon: Users },
-  { id: 2, name: 'Choose Template', icon: FileText },
-  { id: 3, name: 'Schedule', icon: Calendar },
-  { id: 4, name: 'Review', icon: ClipboardList }
-];
+const steps = ['Select Employees', 'Choose Template', 'Schedule'];
 
 export default function NewEvaluation() {
   const navigate = useNavigate();
@@ -71,13 +67,24 @@ export default function NewEvaluation() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedEmployees, setSelectedEmployees] = useState<Employee[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [scheduledDate, setScheduledDate] = useState<string>('');
+  const [scheduledDate, setScheduledDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
-  const [selectedTag, setSelectedTag] = useState<string>('All');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedTag, setSelectedTag] = useState('All');
+  const [selectedCountByDepartment, setSelectedCountByDepartment] = useState<Record<string, number>>({});
 
   // Predefined departments that match the server's enum values
   const DEPARTMENTS = ['all', 'FOH', 'BOH', 'Leadership'];
+
+  // Get selected count by department
+  React.useEffect(() => {
+    const counts: Record<string, number> = {};
+    selectedEmployees.forEach((emp) => {
+      const department = emp.department || 'Uncategorized';
+      counts[department] = (counts[department] || 0) + 1;
+    });
+    setSelectedCountByDepartment(counts);
+  }, [selectedEmployees]);
 
   // Fetch employees with their pending evaluations
   const { data: employees, isLoading: loadingEmployees } = useQuery({
@@ -154,17 +161,6 @@ export default function NewEvaluation() {
     return groups;
   }, [filteredEmployees]);
 
-  // Get selected count by department
-  const selectedCountByDepartment = React.useMemo(() => {
-    if (!selectedEmployees) return {};
-    const counts: { [key: string]: number } = {};
-    selectedEmployees.forEach((emp: Employee) => {
-      const department = emp.department || 'Uncategorized';
-      counts[department] = (counts[department] || 0) + 1;
-    });
-    return counts;
-  }, [selectedEmployees]);
-
   // Fetch templates
   const { data: templates = [], isLoading: loadingTemplates } = useQuery({
     queryKey: ['templates'],
@@ -195,7 +191,6 @@ export default function NewEvaluation() {
 
   const handleEmployeeToggle = (employee: Employee, event: React.MouseEvent) => {
     event.stopPropagation();
-    // Check if employee can be selected (has manager and reports to current user)
     const reportsToCurrentUser = typeof employee.manager === 'string'
       ? employee.manager === user?._id
       : employee.manager?._id === user?._id;
@@ -255,15 +250,23 @@ export default function NewEvaluation() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header with gradient background */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-6 md:p-8 shadow-xl relative overflow-hidden">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
           <div className="relative">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              <div className="flex-1">
-                <h1 className="text-3xl md:text-[40px] font-bold text-white leading-tight">New Evaluation</h1>
-                <p className="text-white/80 mt-2 text-base md:text-lg">Create and schedule team evaluations</p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Create Evaluation</h1>
+                <p className="text-white/80 mt-2 text-lg">Schedule performance evaluations for your team</p>
               </div>
+              <Button 
+                variant="secondary"
+                className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
+                onClick={() => navigate('/evaluations')}
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back to Evaluations
+              </Button>
             </div>
           </div>
         </div>
@@ -271,33 +274,43 @@ export default function NewEvaluation() {
         {/* Progress Steps */}
         <Card className="bg-white rounded-[20px] shadow-md">
           <CardContent className="p-6">
-            <nav aria-label="Progress">
-              <ol role="list" className="flex items-center justify-between px-4">
-                {steps.map((step, stepIdx) => {
-                  const Icon = step.icon;
-                  return (
-                    <li key={step.id} className="relative">
-                      <div className="relative flex flex-col items-center group">
-                        <div className={`w-10 h-10 flex items-center justify-center rounded-full border-2 bg-white
-                          ${currentStep === step.id ? 'border-[#E51636] bg-[#E51636]/10' : 'border-gray-300'}`}>
-                          <Icon className={`w-5 h-5 ${currentStep === step.id ? 'text-[#E51636]' : 'text-gray-500'}`} />
-                        </div>
-                        <span className={`mt-4 text-sm font-medium whitespace-nowrap
-                          ${currentStep === step.id ? 'text-[#E51636]' : 'text-[#27251F]/60'}`}>
-                          {step.name}
+            <div className="flex justify-between items-center">
+              {steps.map((step, index) => (
+                <div key={step} className="flex items-center">
+                  <div className={`flex flex-col items-center ${index + 1 === currentStep ? 'text-[#E51636]' : 'text-[#27251F]/40'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                      index + 1 === currentStep 
+                        ? 'border-[#E51636] bg-[#E51636]/10' 
+                        : index + 1 < currentStep
+                        ? 'border-[#E51636] bg-[#E51636]/10'
+                        : 'border-gray-200'
+                    }`}>
+                      {index + 1 < currentStep ? (
+                        <CheckCircle className="w-6 h-6 text-[#E51636]" />
+                      ) : (
+                        <span className={index + 1 === currentStep ? 'text-[#E51636] font-semibold' : 'text-[#27251F]/40'}>
+                          {index + 1}
                         </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            </nav>
+                      )}
+                    </div>
+                    <span className="mt-2 text-sm font-medium">{step}</span>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className="w-full mx-4 h-[2px] bg-gray-200">
+                      <div className={`h-full bg-[#E51636] transition-all ${
+                        index + 1 < currentStep ? 'w-full' : 'w-0'
+                      }`} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Step Content */}
+        {/* Content Section */}
         <Card className="bg-white rounded-[20px] shadow-md">
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-6">
             {currentStep === 1 && (
               <>
                 {/* Filters */}
@@ -305,17 +318,17 @@ export default function NewEvaluation() {
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#27251F]/40 w-5 h-5" />
                         <input
                           type="text"
                           placeholder="Search employees..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent text-base bg-white"
+                          className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
                         />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#27251F]/40 w-5 h-5" />
                       </div>
                       <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                        <SelectTrigger className="w-full rounded-xl border-gray-200 py-3 text-base bg-white">
+                        <SelectTrigger className="h-12 rounded-xl border-gray-200 hover:border-gray-300">
                           <SelectValue placeholder="All Departments" />
                         </SelectTrigger>
                         <SelectContent>
@@ -583,103 +596,28 @@ export default function NewEvaluation() {
                 </div>
               </div>
             )}
-
-            {/* Step 4: Review */}
-            {currentStep === 4 && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="bg-white rounded-[20px] shadow-md">
-                    <CardHeader>
-                      <CardTitle className="text-lg text-[#27251F]">Selected Employees ({selectedEmployees.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {selectedEmployees.length > 0 && Object.entries(
-                          selectedEmployees.reduce((acc: { [key: string]: Employee[] }, emp) => {
-                            const dept = emp.department || 'Uncategorized';
-                            if (!acc[dept]) acc[dept] = [];
-                            acc[dept].push(emp);
-                            return acc;
-                          }, {})
-                        ).map(([department, employees]) => (
-                          <div key={`review-${department}`}>
-                            <h4 className="font-medium text-[#27251F] mb-2">
-                              {department} ({employees.length})
-                            </h4>
-                            <div className="space-y-2">
-                              {employees.map(employee => (
-                                <div key={`review-${employee._id}`} className="flex items-center gap-2 text-sm">
-                                  <Users className="w-4 h-4 text-[#27251F]/40" />
-                                  <span className="text-[#27251F]">{employee.name}</span>
-                                  <span className="text-[#27251F]/60">({employee.position})</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="space-y-4">
-                    <Card className="bg-white rounded-[20px] shadow-md">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-[#27251F]">Selected Template</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <h3 className="font-medium text-[#27251F]">{selectedTemplate?.name}</h3>
-                        <p className="text-sm text-[#27251F]/60 mt-2">{selectedTemplate?.description}</p>
-                        <div className="flex items-center gap-4 mt-4 text-sm text-[#27251F]/60">
-                          <div className="flex items-center gap-1">
-                            <FileText className="w-4 h-4" />
-                            {selectedTemplate?.sectionsCount} {selectedTemplate?.sectionsCount === 1 ? 'section' : 'sections'}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" />
-                            {selectedTemplate?.criteriaCount} {selectedTemplate?.criteriaCount === 1 ? 'question' : 'questions'}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-white rounded-[20px] shadow-md">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-[#27251F]">Scheduled Date</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-2 text-[#27251F]/60">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(scheduledDate).toLocaleDateString()}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Navigation */}
-            <div className="flex justify-between mt-8 pt-4 border-t border-gray-200">
-              <Button
-                onClick={handleBack}
-                disabled={currentStep === 1}
-                variant="outline"
-                className="flex items-center gap-2 h-12 px-6 rounded-2xl"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Back
-              </Button>
-              <Button
-                onClick={handleNext}
-                disabled={isNextDisabled()}
-                className="flex items-center gap-2 h-12 px-6 rounded-2xl bg-[#E51636] text-white hover:bg-[#E51636]/90"
-              >
-                {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
           </CardContent>
         </Card>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-6">
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            className={`h-12 px-6 rounded-xl border-gray-200 hover:bg-gray-50 text-[#27251F] ${currentStep === 1 ? 'invisible' : ''}`}
+          >
+            <ChevronLeft className="w-5 h-5 mr-2" />
+            Back
+          </Button>
+          <Button
+            onClick={handleNext}
+            disabled={isNextDisabled()}
+            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6 rounded-xl"
+          >
+            {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
+            {currentStep !== steps.length && <ChevronRight className="w-5 h-5 ml-2" />}
+          </Button>
+        </div>
       </div>
     </div>
   );

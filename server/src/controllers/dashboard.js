@@ -1,5 +1,4 @@
-import { User, Evaluation } from '../models/index.js';
-import Template from '../models/Templates.js';  // Direct import since it's a default export
+import { User, Evaluation, Template, Disciplinary } from '../models/index.js';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req, res) => {
@@ -14,10 +13,45 @@ export const getDashboardStats = async (req, res) => {
             }
         });
         
+        // Get the start of the current quarter
+        const now = new Date();
+        const currentQuarter = Math.floor(now.getMonth() / 3);
+        const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1);
+        
         const completedEvaluations = await Evaluation.countDocuments({ 
             store, 
-            status: 'completed' 
+            status: 'completed',
+            completedDate: { $gte: startOfQuarter }
         });
+
+        // Get completed evaluations in last 30 days
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const completedReviewsLast30Days = await Evaluation.countDocuments({
+            store,
+            status: 'completed',
+            completedDate: { $gte: thirtyDaysAgo }
+        });
+
+        // Get disciplinary stats
+        console.log('Querying disciplinary incidents for store:', store);
+        const openDisciplinaryIncidents = await Disciplinary.countDocuments({
+            $or: [
+                { store },
+                { store: { $exists: false }, createdBy: req.user._id }
+            ],
+            status: { $in: ['Open', 'In Progress'] }
+        });
+        console.log('Open disciplinary incidents:', openDisciplinaryIncidents);
+
+        const resolvedDisciplinaryThisMonth = await Disciplinary.countDocuments({
+            $or: [
+                { store },
+                { store: { $exists: false }, createdBy: req.user._id }
+            ],
+            status: 'Resolved',
+            date: { $gte: new Date(now.getFullYear(), now.getMonth(), 1) }
+        });
+        console.log('Resolved disciplinary incidents this month:', resolvedDisciplinaryThisMonth);
         
         const totalEmployees = await User.countDocuments({ 
             store,
@@ -57,8 +91,11 @@ export const getDashboardStats = async (req, res) => {
         res.json({
             pendingEvaluations,
             completedEvaluations,
+            completedReviewsLast30Days,
             totalEmployees,
             activeTemplates,
+            openDisciplinaryIncidents,
+            resolvedDisciplinaryThisMonth,
             upcomingEvaluations: upcomingEvaluations.map(evaluation => ({
                 id: evaluation._id,
                 employeeName: evaluation.employee.name,

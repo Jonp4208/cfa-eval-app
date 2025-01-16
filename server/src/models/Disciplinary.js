@@ -47,6 +47,11 @@ const disciplinarySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  store: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Store',
+    required: false
+  },
   date: {
     type: Date,
     required: true

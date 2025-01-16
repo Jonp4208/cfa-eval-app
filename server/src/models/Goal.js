@@ -68,4 +68,4 @@ goalSchema.pre('save', function(next) {
   next();
 });
 
-export const Goal = mongoose.model('Goal', goalSchema); 
+export default mongoose.model('Goal', goalSchema); 

@@ -14,7 +14,7 @@ router.get('/quick-stats', auth, async (req, res) => {
     const recentEvaluations = await Evaluation.find({
       store: req.user.store._id,
       status: 'completed',
-      completedAt: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } // Last 90 days
+      completedDate: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } // Last 90 days
     });
 
     let avgPerformance = 0;
@@ -80,7 +80,7 @@ router.get('/department/:department', auth, async (req, res) => {
     const evaluations = await Evaluation.find({
       store: req.user.store._id,
       status: 'completed',
-      completedAt: { $gte: startDate }
+      completedDate: { $gte: startDate }
     })
     .populate({
       path: 'employee',
@@ -223,7 +223,7 @@ router.get('/development', auth, async (req, res) => {
     const evaluations = await Evaluation.find({
       store: req.user.store._id,
       status: 'completed',
-      completedAt: { $gte: startDate }
+      completedDate: { $gte: startDate }
     }).populate('employee template');
 
     // Initialize response data structure
