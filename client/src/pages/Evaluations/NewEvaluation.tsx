@@ -142,7 +142,7 @@ export default function NewEvaluation() {
       const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          emp.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          emp.position.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesDepartment = selectedDepartment === 'all' || emp.departments.includes(selectedDepartment);
+      const matchesDepartment = selectedDepartment === 'all' || emp.department === selectedDepartment;
       return reportsToCurrentUser && matchesSearch && matchesDepartment;
     });
   }, [employees, searchQuery, selectedDepartment, user?._id]);

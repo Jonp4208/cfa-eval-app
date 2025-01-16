@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
 const PUBLIC_ROUTES = ['/api/login', '/api/register', '/api/auth/login', '/api/auth/register'];
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 console.log('Initializing axios with API_URL:', API_URL);
 

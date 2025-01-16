@@ -68,7 +68,15 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  if (user?.role === 'user') {
+  console.log('Dashboard - user details:', {
+    name: user?.name,
+    position: user?.position,
+    role: user?.role
+  });
+  
+  // Show Team Member dashboard for Team Members and Trainers
+  // Show Manager dashboard for Leaders and Directors
+  if (user?.position === 'Team Member' || user?.position === 'Trainer') {
     return <TeamMemberDashboard />;
   }
 

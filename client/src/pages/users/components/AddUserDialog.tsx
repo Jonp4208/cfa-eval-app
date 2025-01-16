@@ -19,15 +19,24 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import api from '@/lib/axios';
+import { MultiSelect } from "@/components/ui/multi-select";
 
 interface User {
   _id: string;
   name: string;
   email: string;
-  department: string;
+  departments: string[];
   position: string;
   role: string;
   evaluator?: string;
+}
+
+interface FormData {
+  name: string;
+  email: string;
+  departments: string[];
+  position: string;
+  role: string;
 }
 
 interface AddUserDialogProps {
@@ -39,13 +48,12 @@ interface AddUserDialogProps {
 export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialogProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
-    department: '',
+    departments: [],
     position: '',
-    role: '',
-    evaluator: ''
+    role: 'user'
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -64,75 +72,66 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
   useEffect(() => {
     if (open && user) {
       setFormData({
-        name: user.name,
-        email: user.email,
-        department: user.department,
-        position: user.position,
-        role: user.role,
-        evaluator: user.evaluator || ''
+        name: user.name || '',
+        email: user.email || '',
+        departments: user.departments || [],
+        position: user.position || '',
+        role: user.role || 'user'
       });
-    } else if (!open) {
+    } else if (open) {
       setFormData({
         name: '',
         email: '',
-        department: '',
+        departments: [],
         position: '',
-        role: '',
-        evaluator: ''
+        role: 'user'
       });
     }
     setErrors({});
   }, [open, user]);
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.email) newErrors.email = 'Email is required';
+    if (!formData.position) newErrors.position = 'Position is required';
+    if (formData.departments.length === 0) newErrors.departments = 'At least one department is required';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({});
-
-    // Validate form
-    const validationErrors: Record<string, string> = {};
-    if (!formData.name) validationErrors.name = 'Name is required';
-    if (!formData.email) validationErrors.email = 'Email is required';
-    if (!formData.department) validationErrors.department = 'Department is required';
-    if (!formData.position) validationErrors.position = 'Position is required';
-    if (!formData.role) validationErrors.role = 'Role is required';
-
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+    
+    if (!validateForm()) return;
 
     try {
-      const dataToSend = {
-        name: formData.name,
-        email: formData.email,
-        department: formData.department.toLowerCase(),
-        position: formData.position.toLowerCase().replace(/\s+/g, '-'),
-        role: formData.role,
-        evaluator: formData.evaluator === 'none' ? null : formData.evaluator || null
-      };
-
-      console.log('Sending data:', dataToSend);
-
       if (user) {
         // Update existing user
-        await api.put(`/api/users/${user._id}`, dataToSend);
-        toast({
-          title: "Success",
-          description: "User updated successfully",
-          duration: 5000,
-        });
+        const response = await api.put(`/api/users/${user._id}`, formData);
       } else {
         // Create new user
-        await api.post('/api/users', dataToSend);
-        toast({
-          title: "Success",
-          description: "User created successfully. An email with login credentials has been sent.",
-          duration: 5000,
-        });
+        const response = await api.post('/api/users', formData);
       }
-
-      // Refresh users list
+      
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      
+      toast({
+        title: "✅ Success",
+        description: user ? "Team member has been updated successfully" : "Team member has been added successfully",
+        duration: 5000,
+      });
+      
+      setFormData({
+        name: '',
+        email: '',
+        departments: [],
+        position: '',
+        role: 'user'
+      });
+      
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error saving user:', error);
@@ -183,23 +182,18 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
               {errors.email && <p className="text-sm text-[#E51636]">{errors.email}</p>}
             </div>
 
-            <div className="grid gap-2">
-              <label htmlFor="department" className="text-sm font-medium text-[#27251F]">Department</label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
-              >
-                <SelectTrigger id="department" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="FOH">Front of House</SelectItem>
-                  <SelectItem value="BOH">Back of House</SelectItem>
-                  <SelectItem value="Leadership">Leadership</SelectItem>
-                  <SelectItem value="Training">Training</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.department && <p className="text-sm text-[#E51636]">{errors.department}</p>}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-[#27251F]">Departments</label>
+              <MultiSelect
+                options={[
+                  { value: 'Front Counter', label: 'Front Counter' },
+                  { value: 'Drive Thru', label: 'Drive Thru' },
+                  { value: 'Kitchen', label: 'Kitchen' }
+                ]}
+                selected={formData.departments}
+                onChange={(value) => setFormData(prev => ({ ...prev, departments: value }))}
+              />
+              {errors.departments && <p className="text-sm text-[#E51636]">{errors.departments}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -214,9 +208,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                 <SelectContent>
                   <SelectItem value="Team Member">Team Member</SelectItem>
                   <SelectItem value="Trainer">Trainer</SelectItem>
-                  <SelectItem value="Team Leader">Team Leader</SelectItem>
-                  <SelectItem value="Shift Leader">Shift Leader</SelectItem>
-                  <SelectItem value="Manager">Manager</SelectItem>
+                  <SelectItem value="Leader">Leader</SelectItem>
                   <SelectItem value="Director">Director</SelectItem>
                 </SelectContent>
               </Select>
@@ -233,38 +225,11 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrator</SelectItem>
-                  <SelectItem value="store-director">Store Director</SelectItem>
-                  <SelectItem value="kitchen-director">Kitchen Director</SelectItem>
-                  <SelectItem value="service-director">Service Director</SelectItem>
-                  <SelectItem value="store-leader">Store Leader</SelectItem>
-                  <SelectItem value="training-leader">Training Leader</SelectItem>
-                  <SelectItem value="shift-leader">Shift Leader</SelectItem>
-                  <SelectItem value="evaluator">Evaluator</SelectItem>
                   <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && <p className="text-sm text-[#E51636]">{errors.role}</p>}
-            </div>
-
-            <div className="grid gap-2">
-              <label htmlFor="evaluator" className="text-sm font-medium text-[#27251F]">Evaluator</label>
-              <Select
-                value={formData.evaluator || 'none'}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, evaluator: value === 'none' ? '' : value }))}
-              >
-                <SelectTrigger id="evaluator" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
-                  <SelectValue placeholder="Select evaluator" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Evaluator</SelectItem>
-                  {evaluators?.map((evaluator: any) => (
-                    <SelectItem key={evaluator._id} value={evaluator._id}>
-                      {evaluator.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
 

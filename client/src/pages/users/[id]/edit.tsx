@@ -18,6 +18,7 @@ interface UserFormData {
   position: string;
   status: string;
   isAdmin: boolean;
+  role: string;
 }
 
 export default function EditUser() {
@@ -30,7 +31,8 @@ export default function EditUser() {
     departments: [],
     position: '',
     status: 'active',
-    isAdmin: false
+    isAdmin: false,
+    role: 'user'
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +54,8 @@ export default function EditUser() {
         departments: user.departments || [],
         position: user.position || '',
         status: user.status || 'active',
-        isAdmin: ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(user.position || '')
+        isAdmin: user.position === 'Director',
+        role: user.role || 'user'
       };
       setFormData(transformedData);
     }
@@ -174,19 +177,14 @@ export default function EditUser() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Departments</label>
                   <MultiSelect
-                    value={formData.departments}
-                    onValueChange={(value: string[]) => setFormData({ ...formData, departments: value })}
-                  >
-                    <SelectTrigger className="border-gray-200">
-                      <SelectValue placeholder="Select departments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Front Counter">Front Counter</SelectItem>
-                      <SelectItem value="Drive Thru">Drive Thru</SelectItem>
-                      <SelectItem value="Kitchen">Kitchen</SelectItem>
-                      <SelectItem value="Everything">Everything</SelectItem>
-                    </SelectContent>
-                  </MultiSelect>
+                    options={[
+                      { value: 'Front Counter', label: 'Front Counter' },
+                      { value: 'Drive Thru', label: 'Drive Thru' },
+                      { value: 'Kitchen', label: 'Kitchen' }
+                    ]}
+                    selected={formData.departments}
+                    onChange={(value) => setFormData({ ...formData, departments: value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Position</label>
@@ -196,7 +194,7 @@ export default function EditUser() {
                       setFormData({ 
                         ...formData, 
                         position: value,
-                        isAdmin: ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(value)
+                        isAdmin: value === 'Director'
                       });
                     }}
                   >
@@ -204,15 +202,10 @@ export default function EditUser() {
                       <SelectValue placeholder="Select position" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Store Director">Store Director</SelectItem>
-                      <SelectItem value="Kitchen Director">Kitchen Director</SelectItem>
-                      <SelectItem value="Service Director">Service Director</SelectItem>
-                      <SelectItem value="Store Leader">Store Leader</SelectItem>
-                      <SelectItem value="Training Leader">Training Leader</SelectItem>
-                      <SelectItem value="Shift Leader">Shift Leader</SelectItem>
-                      <SelectItem value="Team Leader">Team Leader</SelectItem>
-                      <SelectItem value="Trainer">Trainer</SelectItem>
                       <SelectItem value="Team Member">Team Member</SelectItem>
+                      <SelectItem value="Trainer">Trainer</SelectItem>
+                      <SelectItem value="Leader">Leader</SelectItem>
+                      <SelectItem value="Director">Director</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -221,8 +214,23 @@ export default function EditUser() {
 
             {/* Status Section */}
             <div className="space-y-4 pt-4 border-t">
-              <h2 className="text-lg font-semibold text-gray-700">Status</h2>
-              <div>
+              <h2 className="text-lg font-semibold text-gray-700">Role & Status</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Role</label>
+                  <Select
+                    value={formData.role}
+                    onValueChange={(value) => setFormData({ ...formData, role: value })}
+                  >
+                    <SelectTrigger className="border-gray-200">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Account Status</label>
                   <Select

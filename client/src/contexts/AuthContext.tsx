@@ -6,7 +6,8 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'user' | 'evaluator' | 'manager' | 'admin';
+  position: string;
+  role: 'user' | 'admin';
   store?: {
     _id: string;
     name: string;

@@ -66,19 +66,15 @@ export default function AddUserDialog({ isOpen, onClose }: { isOpen: boolean; on
             <div className="space-y-2">
               <label className="text-sm font-medium">Departments</label>
               <MultiSelect
-                value={formData.departments}
-                onValueChange={(value: string[]) => setFormData({ ...formData, departments: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select departments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Front Counter">Front Counter</SelectItem>
-                  <SelectItem value="Drive Thru">Drive Thru</SelectItem>
-                  <SelectItem value="Kitchen">Kitchen</SelectItem>
-                  <SelectItem value="Everything">Everything</SelectItem>
-                </SelectContent>
-              </MultiSelect>
+                selected={formData.departments}
+                onChange={(value: string[]) => setFormData({ ...formData, departments: value })}
+                options={[
+                  { label: "Front Counter", value: "Front Counter" },
+                  { label: "Drive Thru", value: "Drive Thru" },
+                  { label: "Kitchen", value: "Kitchen" },
+                  { label: "Everything", value: "Everything" }
+                ]}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Position</label>
