@@ -38,9 +38,9 @@ interface UserType {
   _id: string;
   name: string;
   email: string;
-  position?: string;
-  department?: string;
-  role: 'user' | 'evaluator' | 'manager' | 'admin';
+  position: string;
+  departments: string[];
+  role: 'user' | 'admin';
   status?: string;
   store?: {
     _id: string;
@@ -122,19 +122,10 @@ export default function Users() {
           return { users: [] };
         }
 
-        // For regular users and evaluators, redirect to their dashboard
-        if (currentUser.role === 'user' || currentUser.role === 'evaluator') {
+        // For regular users, redirect to their dashboard
+        if (currentUser.role === 'user') {
           navigate('/dashboard');
           return { users: [] };
-        }
-
-        // For managers, only fetch their team members
-        if (currentUser.role === 'manager') {
-          const response = await api.get('/api/users', {
-            params: { managerId: currentUser._id }
-          });
-          console.log('Fetched users:', response.data); // Debug log
-          return response.data;
         }
 
         // For admins, fetch all users
@@ -165,41 +156,24 @@ export default function Users() {
   
   // Filter users based on search query and filter selection
   const filteredUsers = users?.filter(user => {
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = (
-      user.name.toLowerCase().includes(searchLower) ||
-      user.email.toLowerCase().includes(searchLower) ||
-      user.position?.toLowerCase().includes(searchLower) ||
-      user.department?.toLowerCase().includes(searchLower) ||
-      user.role.toLowerCase().includes(searchLower)
-    );
+    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Apply department/manager filter
-    const matchesFilter = filterBy === 'all' ? true :
-      filterBy === 'myTeam' ? user.manager?._id === currentUser?._id :
-      user.department === filterBy;
+    const matchesFilter = filterBy === 'all' ||
+      (user.departments && user.departments.includes(filterBy));
 
     return matchesSearch && matchesFilter;
   });
 
   // Sort users based on selected field
   const sortedUsers = [...(filteredUsers || [])].sort((a, b) => {
-    switch (sortBy) {
-      case 'name':
-        return a.name.localeCompare(b.name);
-      case 'position':
-        return (a.position || '').localeCompare(b.position || '');
-      case 'department':
-        return (a.department || '').localeCompare(b.department || '');
-      case 'role':
-        return a.role.localeCompare(b.role);
-      case 'manager':
-        const managerA = a.manager?.name || '';
-        const managerB = b.manager?.name || '';
-        return managerA.localeCompare(managerB);
-      default:
-        return 0;
+    if (sortBy === 'name') {
+      return a.name.localeCompare(b.name);
     }
+    if (sortBy === 'department') {
+      return (a.departments?.[0] || '').localeCompare(b.departments?.[0] || '');
+    }
+    return 0;
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,6 +248,9 @@ export default function Users() {
     window.URL.revokeObjectURL(url);
   };
 
+  // Update currentUser check
+  const isAdmin = currentUser?.role === 'admin';
+
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -332,7 +309,7 @@ export default function Users() {
                   <SelectItem value="Drive Thru">Drive Thru</SelectItem>
                   <SelectItem value="Kitchen">Kitchen</SelectItem>
                   <SelectItem value="Everything">Everything</SelectItem>
-                  {currentUser?.isAdmin && (
+                  {currentUser?.role === 'admin' && (
                     <SelectItem value="myTeam">My Team</SelectItem>
                   )}
                 </SelectContent>
@@ -435,8 +412,17 @@ export default function Users() {
                           {user.position && (
                             <span className="text-sm text-[#27251F]/60">{user.position}</span>
                           )}
+                          {user.role && (
+                            <>
+                              <span className="text-sm text-[#27251F]/60">•</span>
+                              <span className="text-sm text-[#27251F]/60">{user.role === 'admin' ? 'Admin' : 'User'}</span>
+                            </>
+                          )}
                           {user.departments && (
-                            <span className="text-sm text-[#27251F]/60">{user.departments.join(', ')}</span>
+                            <>
+                              <span className="text-sm text-[#27251F]/60">•</span>
+                              <span className="text-sm text-[#27251F]/60">{user.departments.join(', ')}</span>
+                            </>
                           )}
                         </div>
                       </div>
