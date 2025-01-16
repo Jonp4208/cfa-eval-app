@@ -15,15 +15,16 @@ import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import api from '@/lib/axios';
 import { Toaster } from '@/components/ui/toaster';
+import { MultiSelect } from "../../../components/ui/multi-select";
 
 interface UserFormData {
   name: string;
   email: string;
-  department: string;
+  departments: string[];
   position: string;
-  role: string;
   status: string;
   manager?: string;
+  isAdmin: boolean;
 }
 
 export default function EditUser() {
@@ -33,11 +34,11 @@ export default function EditUser() {
   const [formData, setFormData] = useState<UserFormData>({
     name: '',
     email: '',
-    department: '',
+    departments: [],
     position: '',
-    role: '',
     status: 'active',
-    manager: ''
+    manager: '',
+    isAdmin: false
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -79,49 +80,16 @@ export default function EditUser() {
     if (user) {
       console.log('Setting form data with user:', user);
       
-      // Transform department to match select options
-      const transformDepartment = (dept: string) => {
-        if (!dept) return '';
-        console.log('Transforming department:', dept);
-        // Map to match schema enum values
-        const deptMap: { [key: string]: string } = {
-          'LEADERSHIP': 'Leadership',
-          'FOH': 'FOH',
-          'BOH': 'BOH',
-          'Leadership': 'Leadership',
-          'Front of House': 'FOH',
-          'Back of House': 'BOH'
-        };
-        return deptMap[dept] || dept;
-      };
-
-      // Transform position to match select options
-      const transformPosition = (pos: string) => {
-        if (!pos) return '';
-        console.log('Original position:', pos);
-        // Keep original case since SelectItem values match server values
-        return pos;
-      };
-
-      // Transform role to match select options
-      const transformRole = (role: string) => {
-        if (!role) return '';
-        console.log('Original role:', role);
-        // Convert to lowercase to match schema enum values
-        return role.toLowerCase();
-      };
-
-      const transformedData = {
+      const transformedData: UserFormData = {
         name: user.name || '',
         email: user.email || '',
-        department: transformDepartment(user.department),
-        position: transformPosition(user.position),
-        role: transformRole(user.role),
+        departments: user.departments || [],
+        position: user.position || '',
         status: user.status || 'active',
-        manager: user.manager?._id || 'none'
+        manager: user.manager?._id || 'none',
+        isAdmin: ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(user.position || '')
       };
-      
-      console.log('Final transformed form data:', transformedData);
+
       setFormData(transformedData);
     }
   }, [user]);
@@ -136,9 +104,7 @@ export default function EditUser() {
         // Transform data to match server expectations
         const transformedData = {
           ...data,
-          manager: data.manager === 'none' ? null : data.manager,
-          role: data.role.toLowerCase(),
-          department: data.department
+          manager: data.manager === 'none' ? null : data.manager
         };
 
         console.log('Transformed mutation data:', transformedData);
@@ -187,10 +153,17 @@ export default function EditUser() {
     }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted with data:', formData);
-    updateUserMutation.mutate(formData);
+    updateUserMutation.mutate({
+      name: formData.name,
+      email: formData.email,
+      departments: formData.departments,
+      position: formData.position,
+      status: formData.status,
+      manager: formData.manager,
+      isAdmin: formData.isAdmin
+    });
   };
 
   if (isLoading) {
@@ -272,27 +245,33 @@ export default function EditUser() {
               <h2 className="text-lg font-semibold text-gray-700">Role & Position</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Department</label>
-                  <Select
-                    value={formData.department}
-                    onValueChange={(value) => setFormData({ ...formData, department: value })}
+                  <label className="text-sm font-medium text-gray-700">Departments</label>
+                  <MultiSelect
+                    value={formData.departments}
+                    onValueChange={(value: string[]) => setFormData({ ...formData, departments: value })}
                   >
                     <SelectTrigger className="border-gray-200">
-                      <SelectValue placeholder="Select department" />
+                      <SelectValue placeholder="Select departments" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Leadership">Leadership</SelectItem>
-                      <SelectItem value="FOH">FOH</SelectItem>
-                      <SelectItem value="BOH">BOH</SelectItem>
-                      <SelectItem value="Training">Training</SelectItem>
+                      <SelectItem value="Front Counter">Front Counter</SelectItem>
+                      <SelectItem value="Drive Thru">Drive Thru</SelectItem>
+                      <SelectItem value="Kitchen">Kitchen</SelectItem>
+                      <SelectItem value="Everything">Everything</SelectItem>
                     </SelectContent>
-                  </Select>
+                  </MultiSelect>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Position</label>
                   <Select
                     value={formData.position}
-                    onValueChange={(value) => setFormData({ ...formData, position: value })}
+                    onValueChange={(value: string) => {
+                      setFormData({ 
+                        ...formData, 
+                        position: value,
+                        isAdmin: ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(value)
+                      });
+                    }}
                   >
                     <SelectTrigger className="border-gray-200">
                       <SelectValue placeholder="Select position" />
@@ -317,28 +296,6 @@ export default function EditUser() {
             <div className="space-y-4 pt-4 border-t">
               <h2 className="text-lg font-semibold text-gray-700">Access & Status</h2>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">System Role</label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value) => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger className="border-gray-200">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="store-director">Store Director</SelectItem>
-                      <SelectItem value="kitchen-director">Kitchen Director</SelectItem>
-                      <SelectItem value="service-director">Service Director</SelectItem>
-                      <SelectItem value="store-leader">Store Leader</SelectItem>
-                      <SelectItem value="training-leader">Training Leader</SelectItem>
-                      <SelectItem value="shift-leader">Shift Leader</SelectItem>
-                      <SelectItem value="evaluator">Evaluator</SelectItem>
-                      <SelectItem value="user">User</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Account Status</label>
                   <Select

@@ -18,16 +18,11 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String
   },
-  role: {
+  departments: [{
     type: String,
-    enum: ['user', 'evaluator', 'admin', 'store-director', 'kitchen-director', 'service-director', 'store-leader', 'training-leader', 'shift-leader'],
-    default: 'user'
-  },
-  department: {
-    type: String,
-    enum: ['FOH', 'BOH', 'Leadership', 'Training'],
+    enum: ['Front Counter', 'Drive Thru', 'Kitchen', 'Everything'],
     required: true
-  },
+  }],
   position: {
     type: String,
     enum: [
@@ -42,6 +37,10 @@ const userSchema = new mongoose.Schema({
       'Training Leader'
     ],
     required: true
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
   },
   evaluator: {
     type: mongoose.Schema.Types.ObjectId,
