@@ -175,14 +175,6 @@ export const getEvaluation = async (req, res) => {
             }
         });
 
-        console.log('Raw evaluation:', JSON.stringify(evaluation, null, 2));
-        console.log('Self evaluation type:', typeof evaluation.selfEvaluation);
-        console.log('Self evaluation instanceof Map:', evaluation.selfEvaluation instanceof Map);
-        console.log('Self evaluation keys:', Object.keys(evaluation.selfEvaluation));
-        console.log('Manager evaluation type:', typeof evaluation.managerEvaluation);
-        console.log('Manager evaluation instanceof Map:', evaluation.managerEvaluation instanceof Map);
-        console.log('Manager evaluation keys:', Object.keys(evaluation.managerEvaluation));
-
         if (!evaluation) {
             console.log('Evaluation not found');
             return res.status(404).json({ message: 'Evaluation not found' });
