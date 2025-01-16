@@ -20,6 +20,14 @@ const storeSchema = new mongoose.Schema({
   storeEmail: {
     type: String
   },
+  visionStatement: {
+    type: String,
+    default: ''
+  },
+  missionStatement: {
+    type: String,
+    default: ''
+  },
   admins: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

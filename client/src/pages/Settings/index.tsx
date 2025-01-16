@@ -28,6 +28,8 @@ const SettingsPage = () => {
     storeAddress: '',
     storePhone: '',
     storeEmail: '',
+    visionStatement: '',
+    missionStatement: '',
     darkMode: false,
     compactMode: false
   });
@@ -47,6 +49,8 @@ const SettingsPage = () => {
         storeAddress: settings.storeAddress || '',
         storePhone: settings.storePhone || '',
         storeEmail: settings.storeEmail || '',
+        visionStatement: settings.visionStatement || '',
+        missionStatement: settings.missionStatement || '',
         darkMode: settings.darkMode || false,
         compactMode: settings.compactMode || false
       });
@@ -208,61 +212,56 @@ const SettingsPage = () => {
               <Card className="bg-white rounded-[20px] shadow-md">
                 <CardHeader>
                   <CardTitle className="text-lg text-[#27251F]">Store Information</CardTitle>
-                  <CardDescription className="text-[#27251F]/60">Update your store's basic information</CardDescription>
+                  <CardDescription className="text-[#27251F]/60">
+                    Contact your administrator to update store information
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label htmlFor="storeName" className="text-sm font-medium text-[#27251F]/60">Store Name</label>
-                      <Input
-                        id="storeName"
-                        name="storeName"
-                        value={formState.storeName}
-                        onChange={(e) => handleSettingChange('storeName', e.target.value)}
-                        placeholder="Enter store name"
-                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
-                      />
+                      <label className="text-sm font-medium text-[#27251F]/60">Store Name</label>
+                      <p className="text-[#27251F] font-medium">{settings?.storeName || 'Calhoun FSU'}</p>
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="storeNumber" className="text-sm font-medium text-[#27251F]/60">Store Number</label>
-                      <Input
-                        id="storeNumber"
-                        value={formState.storeNumber}
-                        onChange={(e) => handleSettingChange('storeNumber', e.target.value)}
-                        placeholder="Enter store number"
-                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
-                      />
+                      <label className="text-sm font-medium text-[#27251F]/60">Store Number</label>
+                      <p className="text-[#27251F] font-medium">{settings?.storeNumber || '00727'}</p>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="storeAddress" className="text-sm font-medium text-[#27251F]/60">Store Address</label>
-                    <Input
-                      id="storeAddress"
-                      value={formState.storeAddress}
-                      onChange={(e) => handleSettingChange('storeAddress', e.target.value)}
-                      placeholder="Enter store address"
-                      className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
-                    />
+                    <label className="text-sm font-medium text-[#27251F]/60">Location</label>
+                    <p className="text-[#27251F] font-medium">{settings?.location || 'Calhoun G'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]/60">Store Address</label>
+                    <p className="text-[#27251F] font-medium">{settings?.storeAddress || ''}</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label htmlFor="storePhone" className="text-sm font-medium text-[#27251F]/60">Store Phone</label>
-                      <Input
-                        id="storePhone"
-                        value={formState.storePhone}
-                        onChange={(e) => handleSettingChange('storePhone', e.target.value)}
-                        placeholder="Enter store phone"
-                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
-                      />
+                      <label className="text-sm font-medium text-[#27251F]/60">Store Phone</label>
+                      <p className="text-[#27251F] font-medium">{settings?.storePhone || ''}</p>
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="storeEmail" className="text-sm font-medium text-[#27251F]/60">Store Email</label>
-                      <Input
-                        id="storeEmail"
-                        value={formState.storeEmail}
-                        onChange={(e) => handleSettingChange('storeEmail', e.target.value)}
-                        placeholder="Enter store email"
-                        className="h-12 px-4 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                      <label className="text-sm font-medium text-[#27251F]/60">Store Email</label>
+                      <p className="text-[#27251F] font-medium">{settings?.storeEmail || ''}</p>
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[#27251F]/60">Vision Statement</label>
+                      <textarea
+                        value={formState.visionStatement}
+                        onChange={(e) => handleSettingChange('visionStatement', e.target.value)}
+                        placeholder="Enter your store's vision statement"
+                        className="w-full h-32 px-4 py-3 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent resize-none"
+                      />
+                    </div>
+                    <div className="space-y-2 mt-4">
+                      <label className="text-sm font-medium text-[#27251F]/60">Mission Statement</label>
+                      <textarea
+                        value={formState.missionStatement}
+                        onChange={(e) => handleSettingChange('missionStatement', e.target.value)}
+                        placeholder="Enter your store's mission statement"
+                        className="w-full h-32 px-4 py-3 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent resize-none"
                       />
                     </div>
                   </div>
