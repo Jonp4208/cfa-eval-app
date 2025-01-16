@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw } from 'lucide-react';
+import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, ChevronLeft } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import UserAccessSettings from './components/UserAccessSettings';
 import EvaluationSettings from './components/EvaluationSettings';
@@ -15,8 +15,10 @@ import ChangePasswordForm from './components/ChangePasswordForm';
 import { settingsService } from '@/lib/services/settings';
 import api from '@/lib/axios';
 import { handleError } from '@/lib/utils/error-handler';
+import { useNavigate } from 'react-router-dom';
 
 const SettingsPage = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -163,9 +165,24 @@ const SettingsPage = () => {
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-[#27251F]">Settings</h1>
-          <p className="text-[#27251F]/60">Manage your store and application preferences</p>
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Settings</h1>
+                <p className="text-white/80 mt-2">Manage your store and application preferences</p>
+              </div>
+              <Button 
+                variant="secondary" 
+                className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6"
+                onClick={() => navigate('/')}
+              >
+                <ChevronLeft className="w-5 h-5 mr-2" />
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Alerts */}
