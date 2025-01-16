@@ -106,17 +106,17 @@ export default function Dashboard() {
                 <h1 className="text-3xl md:text-4xl font-bold">Welcome back, {user?.name}</h1>
                 <p className="text-white/80 mt-2 text-lg">CFA Store #{user?.store?.storeNumber}</p>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-col max-[430px]:w-full sm:flex-row gap-4">
                 <Button 
                   variant="secondary" 
-                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6"
+                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"
                   onClick={() => navigate('/evaluations/new')}
                 >
                   <ClipboardList className="w-5 h-5 mr-2" />
                   New Evaluation
                 </Button>
                 <Button 
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6"
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
                   onClick={() => navigate('/disciplinary/new')}
                 >
                   <AlertCircle className="w-5 h-5 mr-2" />
