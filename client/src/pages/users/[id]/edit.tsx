@@ -183,17 +183,14 @@ export default function EditUser() {
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
           <div className="flex">
-            <div className="flex-shrink-0">
-              ❌
-            </div>
+            <div className="flex-shrink-0">❌</div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">
-                {error}
-              </p>
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           </div>
         </div>
       )}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Edit User</h1>
@@ -242,7 +239,7 @@ export default function EditUser() {
 
             {/* Role & Position Section */}
             <div className="space-y-4 pt-4 border-t">
-              <h2 className="text-lg font-semibold text-gray-700">Role & Position</h2>
+              <h2 className="text-lg font-semibold text-gray-700">Departments & Position</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Departments</label>
@@ -292,9 +289,9 @@ export default function EditUser() {
               </div>
             </div>
 
-            {/* Access & Status Section */}
+            {/* Status Section */}
             <div className="space-y-4 pt-4 border-t">
-              <h2 className="text-lg font-semibold text-gray-700">Access & Status</h2>
+              <h2 className="text-lg font-semibold text-gray-700">Status</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Account Status</label>
@@ -311,42 +308,31 @@ export default function EditUser() {
                     </SelectContent>
                   </Select>
                 </div>
+                {managers && managers.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Reports To</label>
+                    <Select
+                      value={formData.manager}
+                      onValueChange={(value) => setFormData({ ...formData, manager: value })}
+                    >
+                      <SelectTrigger className="border-gray-200">
+                        <SelectValue placeholder="Select manager" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Manager</SelectItem>
+                        {managers.map((manager: any) => (
+                          <SelectItem key={manager._id} value={manager._id}>
+                            {manager.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Manager Assignment Section */}
-            <div className="space-y-4 pt-4 border-t">
-              <h2 className="text-lg font-semibold text-gray-700">Manager Assignment</h2>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Reports To</label>
-                <p className="text-sm text-gray-500 mb-2">Only Team Leaders and above can be assigned as managers</p>
-                <Select
-                  value={formData.manager}
-                  onValueChange={(value) => setFormData({ ...formData, manager: value })}
-                >
-                  <SelectTrigger className="border-gray-200">
-                    <SelectValue placeholder="Select manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Manager</SelectItem>
-                    {managers?.filter((manager: { position?: string; _id: string; name: string }) => {
-                      const position = manager.position?.toLowerCase() || '';
-                      return position.includes('team leader') || 
-                             position.includes('shift leader') || 
-                             position.includes('manager') || 
-                             position.includes('director');
-                    }).map((manager: any) => (
-                      <SelectItem key={manager._id} value={manager._id}>
-                        {manager.name} ({manager.position})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex justify-end gap-4 pt-6 border-t">
+            <div className="flex justify-end space-x-4 pt-6">
               <Button
                 type="button"
                 variant="outline"
@@ -356,7 +342,6 @@ export default function EditUser() {
               </Button>
               <Button
                 type="submit"
-                className="bg-red-600 hover:bg-red-700 text-white px-6"
                 disabled={updateUserMutation.isPending}
               >
                 {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
