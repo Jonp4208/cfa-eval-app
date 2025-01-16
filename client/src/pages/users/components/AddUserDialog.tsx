@@ -29,6 +29,10 @@ interface User {
   position: string;
   role: string;
   evaluator?: string;
+  manager?: {
+    _id: string;
+    name: string;
+  };
 }
 
 interface FormData {
@@ -37,6 +41,7 @@ interface FormData {
   departments: string[];
   position: string;
   role: string;
+  managerId?: string;
 }
 
 interface AddUserDialogProps {
@@ -53,7 +58,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     email: '',
     departments: [],
     position: '',
-    role: 'user'
+    role: 'user',
+    managerId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -68,6 +74,20 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     }
   });
 
+  // Fetch potential managers
+  const { data: managers } = useQuery({
+    queryKey: ['managers'],
+    queryFn: async () => {
+      const response = await api.get('/api/users', {
+        params: { 
+          role: ['manager', 'admin'],
+          excludeId: user?._id 
+        }
+      });
+      return response.data.users;
+    }
+  });
+
   // Reset form when dialog opens/closes or user changes
   useEffect(() => {
     if (open && user) {
@@ -76,7 +96,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         email: user.email || '',
         departments: user.departments || [],
         position: user.position || '',
-        role: user.role || 'user'
+        role: user.role || 'user',
+        managerId: user.manager?._id || ''
       });
     } else if (open) {
       setFormData({
@@ -84,7 +105,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         email: '',
         departments: [],
         position: '',
-        role: 'user'
+        role: 'user',
+        managerId: ''
       });
     }
     setErrors({});
@@ -110,10 +132,36 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     try {
       if (user) {
         // Update existing user
-        const response = await api.put(`/api/users/${user._id}`, formData);
+        const response = await api.put(`/api/users/${user._id}`, {
+          name: formData.name,
+          email: formData.email,
+          departments: formData.departments,
+          position: formData.position,
+          role: formData.role
+        });
+
+        // Update manager if changed
+        if (formData.managerId !== user.manager?._id) {
+          await api.patch(`/api/users/${user._id}`, {
+            managerId: formData.managerId || null
+          });
+        }
       } else {
         // Create new user
-        const response = await api.post('/api/users', formData);
+        const response = await api.post('/api/users', {
+          name: formData.name,
+          email: formData.email,
+          departments: formData.departments,
+          position: formData.position,
+          role: formData.role
+        });
+
+        // Set manager for new user if selected
+        if (formData.managerId) {
+          await api.patch(`/api/users/${response.data.user._id}`, {
+            managerId: formData.managerId
+          });
+        }
       }
       
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -129,7 +177,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         email: '',
         departments: [],
         position: '',
-        role: 'user'
+        role: 'user',
+        managerId: ''
       });
       
       onOpenChange(false);
@@ -230,6 +279,26 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                 </SelectContent>
               </Select>
               {errors.role && <p className="text-sm text-[#E51636]">{errors.role}</p>}
+            </div>
+
+            <div className="grid gap-2">
+              <label htmlFor="manager" className="text-sm font-medium text-[#27251F]">Manager</label>
+              <Select
+                value={formData.managerId}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, managerId: value }))}
+              >
+                <SelectTrigger id="manager" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
+                  <SelectValue placeholder="Select manager" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Manager</SelectItem>
+                  {managers?.map((manager: User) => (
+                    <SelectItem key={manager._id} value={manager._id}>
+                      {manager.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

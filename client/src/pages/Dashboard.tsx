@@ -31,7 +31,7 @@ interface DashboardStats {
   openDisciplinaryIncidents: number;
   resolvedDisciplinaryThisMonth: number;
   upcomingEvaluations: Array<{
-    id: string;
+    _id: string;
     employeeName: string;
     scheduledDate: string;
     templateName: string;
@@ -368,9 +368,9 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {stats?.upcomingEvaluations?.map((evaluation) => (
                   <div 
-                    key={evaluation.id} 
+                    key={evaluation._id} 
                     className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/evaluations/${evaluation.id}`)}
+                    onClick={() => navigate(`/evaluations/${evaluation._id}`)}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex gap-3">
