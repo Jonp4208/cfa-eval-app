@@ -28,6 +28,43 @@ const upload = multer({
   }
 });
 
+// Helper function to normalize user data
+const normalizeUserData = (data) => {
+  console.log('Normalizing user data:', data);
+
+  // Normalize departments - ensure proper case
+  if (data.departments) {
+    data.departments = data.departments.map(dept => {
+      switch(dept.toLowerCase()) {
+        case 'front counter': return 'Front Counter';
+        case 'drive thru': return 'Drive Thru';
+        case 'kitchen': return 'Kitchen';
+        case 'everything': return 'Everything';
+        default: return dept;
+      }
+    });
+    console.log('Normalized departments:', data.departments);
+  }
+
+  // Normalize position - ensure exact match with enum
+  if (data.position) {
+    const positionMap = {
+      'director': 'Director',
+      'team member': 'Team Member',
+      'trainer': 'Trainer',
+      'leader': 'Leader'
+    };
+    data.position = positionMap[data.position.toLowerCase()] || data.position;
+    console.log('Normalized position:', data.position);
+
+    // Set role based on position - ensure this runs after position is normalized
+    data.role = data.position === 'Director' ? 'admin' : 'user';
+    data.isAdmin = data.position === 'Director'; // Keep isAdmin for backward compatibility
+  }
+
+  return data;
+};
+
 // Get all users
 router.get('/', auth, async (req, res) => {
   try {
@@ -37,6 +74,7 @@ router.get('/', auth, async (req, res) => {
     console.log('User from auth middleware:', {
       _id: req.user._id,
       name: req.user.name,
+      position: req.user.position,
       role: req.user.role,
       store: req.user.store
     });
@@ -46,22 +84,29 @@ router.get('/', auth, async (req, res) => {
 
     console.log('Initial query filter:', JSON.stringify(query, null, 2));
 
-    // For admin users, only filter by store
-    if (req.user.role === 'admin') {
-      console.log('Admin user - fetching all users in store');
-    }
-    // For managers, filter by manager ID
-    else if (req.user.role === 'manager') {
-      if (managerId) {
-        query.manager = managerId;
-      } else {
-        query.manager = req.user._id;  // By default, fetch their team
-      }
-      console.log('Manager user - query updated:', JSON.stringify(query, null, 2));
-    }
-    // For other roles, they shouldn't access this endpoint
-    else {
-      console.log('Unauthorized role attempted to fetch users:', req.user.role);
+    // Leadership positions that can view all users in their store
+    const leadershipKeywords = ['Director', 'Leader'];
+
+    // Check if user has a leadership position by checking if their position contains any leadership keywords
+    const hasLeadershipPosition = leadershipKeywords.some(keyword => 
+      String(req.user.position).includes(keyword)
+    );
+
+    console.log('Authorization check:', {
+      userPosition: req.user.position,
+      hasLeadershipPosition,
+      leadershipKeywords,
+      positionMatch: leadershipKeywords.find(keyword => 
+        String(req.user.position).includes(keyword)
+      ),
+      positionType: typeof req.user.position,
+      positionValue: String(req.user.position)
+    });
+
+    if (hasLeadershipPosition) {
+      console.log('Leadership position - fetching all users in store');
+    } else {
+      console.log('Unauthorized position attempted to fetch users:', req.user.position);
       return res.status(403).json({ message: 'Not authorized to view users' });
     }
 
@@ -79,6 +124,7 @@ router.get('/', auth, async (req, res) => {
       email: u.email,
       store: u.store?._id,
       role: u.role,
+      position: u.position,
       manager: u.manager?._id
     })), null, 2));
 
@@ -158,16 +204,12 @@ router.post('/', auth, async (req, res) => {
     // Generate a random password
     const password = User.generateRandomPassword();
 
-    // Determine if user should be admin based on position
-    const isAdmin = ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(position);
+    // Normalize the data and set admin status
+    const normalizedData = normalizeUserData({ name, email, departments, position });
 
     // Create new user
     const user = new User({
-      name,
-      email,
-      departments,
-      position,
-      isAdmin,
+      ...normalizedData,
       password,
       status: 'active',
       store: req.user.store._id // Associate with current user's store
@@ -225,14 +267,53 @@ router.post('/', auth, async (req, res) => {
 // Update user
 router.put('/:id', auth, async (req, res) => {
   try {
+    // Leadership keywords that indicate authority
+    const leadershipKeywords = ['Director', 'Leader'];
+
+    const userToUpdate = await User.findById(req.params.id);
+    if (!userToUpdate) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     // Check if user has permission to update
-    if (req.user.role !== 'admin' && req.user._id.toString() !== req.params.id) {
+    const hasLeadershipPosition = leadershipKeywords.some(keyword => 
+      req.user.position?.includes(keyword)
+    );
+    const isSameStore = userToUpdate.store.toString() === req.user.store._id.toString();
+    const isUpdatingSelf = req.user._id.toString() === req.params.id;
+
+    console.log('Update permission check:', {
+      userPosition: req.user.position,
+      hasLeadershipPosition,
+      isSameStore,
+      isUpdatingSelf,
+      leadershipMatch: leadershipKeywords.find(keyword => 
+        req.user.position?.includes(keyword)
+      )
+    });
+
+    if (!hasLeadershipPosition && !isUpdatingSelf) {
       return res.status(403).json({ message: 'Not authorized to update this user' });
     }
 
-    await updateUser(req, res);
+    // If updating another user, ensure they're in the same store
+    if (!isUpdatingSelf && !isSameStore) {
+      return res.status(403).json({ message: 'Not authorized to update users from other stores' });
+    }
+
+    console.log('Request body before normalization:', req.body);
+    
+    // Normalize the user data before updating
+    const normalizedData = normalizeUserData(req.body);
+    console.log('Normalized data:', normalizedData);
+    
+    await updateUser(req, res, normalizedData);
   } catch (error) {
     console.error('Error updating user:', error);
+    if (error.name === 'ValidationError') {
+      console.error('Validation error details:', error.errors);
+      return res.status(400).json({ message: 'Invalid updates', errorObject: error.errors });
+    }
     res.status(500).json({ message: 'Failed to update user' });
   }
 });
