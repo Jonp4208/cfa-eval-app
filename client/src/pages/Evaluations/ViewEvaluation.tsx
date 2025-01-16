@@ -96,38 +96,41 @@ export default function ViewEvaluation() {
       const rawEvaluation = response.data.evaluation;
       console.log('Raw Evaluation:', rawEvaluation);
       
-      if (!rawEvaluation || !rawEvaluation.template || !rawEvaluation.template._doc) {
+      if (!rawEvaluation || !rawEvaluation.template) {
         console.error('Invalid evaluation structure:', rawEvaluation);
         throw new Error('Invalid evaluation data');
       }
+      
+      // Get the template data, handling both local and production structures
+      const templateData = rawEvaluation.template._doc || rawEvaluation.template;
       
       // Create a clean version of the evaluation object that preserves the raw data
       const transformedEvaluation = {
         ...rawEvaluation,
         template: {
-          ...rawEvaluation.template._doc,
-          sections: rawEvaluation.template._doc.sections.map((section: any) => ({
+          ...templateData,
+          sections: (templateData.sections || []).map((section: any) => ({
             title: section.title,
             description: section.description,
             order: section.order,
-            questions: section.criteria.map((criterion: any) => ({
-              id: criterion._id,
-              text: criterion.name,
+            questions: (section.criteria || section.questions || []).map((criterion: any) => ({
+              id: criterion._id || criterion.id,
+              text: criterion.name || criterion.text,
               description: criterion.description,
-              type: 'rating',
+              type: criterion.type || 'rating',
               required: criterion.required
             }))
           }))
         },
-        // Convert Map data to plain objects if they exist
+        // Handle evaluation data, ensuring it's always an object
         selfEvaluation: rawEvaluation.selfEvaluation instanceof Map 
           ? Object.fromEntries(rawEvaluation.selfEvaluation)
-          : typeof rawEvaluation.selfEvaluation === 'object' 
+          : typeof rawEvaluation.selfEvaluation === 'object' && rawEvaluation.selfEvaluation !== null
             ? rawEvaluation.selfEvaluation 
             : {},
         managerEvaluation: rawEvaluation.managerEvaluation instanceof Map
           ? Object.fromEntries(rawEvaluation.managerEvaluation)
-          : typeof rawEvaluation.managerEvaluation === 'object'
+          : typeof rawEvaluation.managerEvaluation === 'object' && rawEvaluation.managerEvaluation !== null
             ? rawEvaluation.managerEvaluation
             : {}
       };
