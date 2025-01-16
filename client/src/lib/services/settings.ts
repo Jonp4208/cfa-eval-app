@@ -48,7 +48,7 @@ export const settingsService = {
 
   updateSettings: async (settings: Partial<StoreSettings>): Promise<StoreSettings> => {
     try {
-      const response = await api.put('/api/settings', settings);
+      const response = await api.patch('/api/settings', settings);
       return response.data;
     } catch (error) {
       throw error;
@@ -57,7 +57,7 @@ export const settingsService = {
 
   updateStoreInfo: async (storeInfo: Partial<StoreInfo>): Promise<StoreInfo> => {
     try {
-      const response = await api.put('/api/settings/store', storeInfo);
+      const response = await api.patch('/api/settings/store', storeInfo);
       return response.data;
     } catch (error) {
       throw error;
