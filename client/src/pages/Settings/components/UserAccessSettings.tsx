@@ -17,10 +17,27 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
   return (
     <Card className="bg-white rounded-[20px] shadow-md">
       <CardHeader>
-        <CardTitle className="text-lg text-[#27251F]">User Access Settings</CardTitle>
-        <CardDescription className="text-[#27251F]/60">Configure security and access control settings</CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-lg text-[#27251F]">User Access Settings</CardTitle>
+            <CardDescription className="text-[#27251F]/60">Customize security and access control settings for your store</CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            className="h-9 px-4 border-[#E51636] text-[#E51636] hover:bg-[#E51636] hover:text-white"
+            onClick={() => onUpdate('resetToDefault', true)}
+            disabled={isUpdating}
+          >
+            Reset to Default
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 p-4 bg-[#FEF3F2] rounded-lg border border-[#FEE4E2]">
+          <p className="text-sm text-[#B42318]">
+            Note: These settings override the default access levels. Changes will affect how team members can interact with evaluations and disciplinary actions.
+          </p>
+        </div>
         <Accordion type="single" collapsible className="w-full space-y-4">
           {/* Password Policy */}
           <AccordionItem value="password" className="border-b-0">
@@ -149,21 +166,21 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
           <AccordionItem value="roles" className="border-b-0">
             <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
               <div className="flex flex-col items-start gap-1">
-                <span className="font-medium">Role Management</span>
-                <span className="text-sm font-normal text-[#27251F]/60">Configure role-based access control</span>
+                <span className="font-medium">Access Levels</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure role-based permissions</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-2 pb-6">
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium text-[#27251F]">Custom Roles</label>
-                    <p className="text-sm text-[#27251F]/60">Allow creation of custom roles</p>
+                    <label className="text-sm font-medium text-[#27251F]">Store Director Access</label>
+                    <p className="text-sm text-[#27251F]/60">Full access to all features and settings</p>
                   </div>
                   <Switch 
-                    checked={settings?.userAccess?.roleManagement?.allowCustomRoles}
+                    checked={settings?.userAccess?.roleManagement?.storeDirectorAccess}
                     onCheckedChange={(checked) => 
-                      onUpdate('roleManagement', { allowCustomRoles: checked })
+                      onUpdate('roleManagement', { storeDirectorAccess: checked })
                     }
                     className="data-[state=checked]:bg-[#E51636]"
                   />
@@ -171,13 +188,111 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium text-[#27251F]">Department-Specific Roles</label>
-                    <p className="text-sm text-[#27251F]/60">Enable department-level role management</p>
+                    <label className="text-sm font-medium text-[#27251F]">Kitchen Director Access</label>
+                    <p className="text-sm text-[#27251F]/60">Can manage all BOH operations and evaluations</p>
                   </div>
                   <Switch 
-                    checked={settings?.userAccess?.roleManagement?.departmentSpecificRoles}
+                    checked={settings?.userAccess?.roleManagement?.kitchenDirectorAccess}
                     onCheckedChange={(checked) => 
-                      onUpdate('roleManagement', { departmentSpecificRoles: checked })
+                      onUpdate('roleManagement', { kitchenDirectorAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Service Director Access</label>
+                    <p className="text-sm text-[#27251F]/60">Can manage all FOH operations and evaluations</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.roleManagement?.serviceDirectorAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('roleManagement', { serviceDirectorAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Store Leader Access</label>
+                    <p className="text-sm text-[#27251F]/60">Can manage evaluations and disciplinary actions</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.roleManagement?.storeLeaderAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('roleManagement', { storeLeaderAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Training Leader Access</label>
+                    <p className="text-sm text-[#27251F]/60">Can manage training evaluations and certifications</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.roleManagement?.trainingLeaderAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('roleManagement', { trainingLeaderAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Shift Leader Access</label>
+                    <p className="text-sm text-[#27251F]/60">Can create evaluations during their shifts</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.roleManagement?.shiftLeaderAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('roleManagement', { shiftLeaderAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Front of House Team Leader</label>
+                    <p className="text-sm text-[#27251F]/60">Can manage FOH team evaluations</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.roleManagement?.fohLeaderAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('roleManagement', { fohLeaderAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Back of House Team Leader</label>
+                    <p className="text-sm text-[#27251F]/60">Can manage BOH team evaluations</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.roleManagement?.bohLeaderAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('roleManagement', { bohLeaderAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Drive-Thru Team Leader</label>
+                    <p className="text-sm text-[#27251F]/60">Can manage DT team evaluations</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.roleManagement?.dtLeaderAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('roleManagement', { dtLeaderAccess: checked })
                     }
                     className="data-[state=checked]:bg-[#E51636]"
                   />
@@ -186,25 +301,25 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
             </AccordionContent>
           </AccordionItem>
 
-          {/* User Lifecycle */}
-          <AccordionItem value="lifecycle" className="border-b-0">
+          {/* Evaluation Access */}
+          <AccordionItem value="evaluation" className="border-b-0">
             <AccordionTrigger className="hover:no-underline py-4 text-[#27251F]">
               <div className="flex flex-col items-start gap-1">
-                <span className="font-medium">User Lifecycle</span>
-                <span className="text-sm font-normal text-[#27251F]/60">Configure user lifecycle settings</span>
+                <span className="font-medium">Evaluation Access</span>
+                <span className="text-sm font-normal text-[#27251F]/60">Configure evaluation and disciplinary action permissions</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-2 pb-6">
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium text-[#27251F]">Training Tracking</label>
-                    <p className="text-sm text-[#27251F]/60">Enable required training tracking</p>
+                    <label className="text-sm font-medium text-[#27251F]">Team Leader Evaluation Access</label>
+                    <p className="text-sm text-[#27251F]/60">Team leaders can only evaluate their department</p>
                   </div>
                   <Switch 
-                    checked={settings?.userAccess?.userLifecycle?.requireTrainingTracking}
+                    checked={settings?.userAccess?.evaluation?.departmentRestriction}
                     onCheckedChange={(checked) => 
-                      onUpdate('userLifecycle', { requireTrainingTracking: checked })
+                      onUpdate('evaluation', { departmentRestriction: checked })
                     }
                     className="data-[state=checked]:bg-[#E51636]"
                   />
@@ -212,13 +327,91 @@ const UserAccessSettings = ({ settings, onUpdate, isUpdating }: UserAccessSettin
 
                 <div className="flex justify-between items-center">
                   <div>
-                    <label className="text-sm font-medium text-[#27251F]">Certification Alerts</label>
-                    <p className="text-sm text-[#27251F]/60">Enable certification expiration alerts</p>
+                    <label className="text-sm font-medium text-[#27251F]">Store Leader Review</label>
+                    <p className="text-sm text-[#27251F]/60">Require Store Leader review of evaluations</p>
                   </div>
                   <Switch 
-                    checked={settings?.userAccess?.userLifecycle?.certificationAlerts}
+                    checked={settings?.userAccess?.evaluation?.requireStoreLeaderReview}
                     onCheckedChange={(checked) => 
-                      onUpdate('userLifecycle', { certificationAlerts: checked })
+                      onUpdate('evaluation', { requireStoreLeaderReview: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Director Approval</label>
+                    <p className="text-sm text-[#27251F]/60">Require Store Director approval for disciplinary actions</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.evaluation?.requireDirectorApproval}
+                    onCheckedChange={(checked) => 
+                      onUpdate('evaluation', { requireDirectorApproval: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Evaluation Workflow</label>
+                    <p className="text-sm text-[#27251F]/60">Select evaluation approval process</p>
+                  </div>
+                  <Select 
+                    defaultValue={settings?.userAccess?.evaluation?.workflowType}
+                    onValueChange={(value) => 
+                      onUpdate('evaluation', { workflowType: value })
+                    }
+                  >
+                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
+                      <SelectValue placeholder="Select workflow" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="simple">Team Leader → Store Leader</SelectItem>
+                      <SelectItem value="standard">Team Leader → Store Leader → Director</SelectItem>
+                      <SelectItem value="strict">Team Leader → Department Review → Store Leader → Director</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Training Evaluation Access</label>
+                    <p className="text-sm text-[#27251F]/60">Allow Training Leaders to manage certifications</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.evaluation?.trainingAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('evaluation', { trainingAccess: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Core Role Certification</label>
+                    <p className="text-sm text-[#27251F]/60">Allow Training Leaders to approve core role certifications</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.evaluation?.certificationApproval}
+                    onCheckedChange={(checked) => 
+                      onUpdate('evaluation', { certificationApproval: checked })
+                    }
+                    className="data-[state=checked]:bg-[#E51636]"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Performance Metrics Access</label>
+                    <p className="text-sm text-[#27251F]/60">Allow leaders to view Hearts & Hands scores</p>
+                  </div>
+                  <Switch 
+                    checked={settings?.userAccess?.evaluation?.metricsAccess}
+                    onCheckedChange={(checked) => 
+                      onUpdate('evaluation', { metricsAccess: checked })
                     }
                     className="data-[state=checked]:bg-[#E51636]"
                   />

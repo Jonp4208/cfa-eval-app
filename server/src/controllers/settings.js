@@ -1,6 +1,29 @@
 // File: src/controllers/settings.js
 import { Settings, Store } from '../models/index.js';
 
+const DEFAULT_USER_ACCESS = {
+  roleManagement: {
+    storeDirectorAccess: true,
+    kitchenDirectorAccess: true,
+    serviceDirectorAccess: true,
+    storeLeaderAccess: true,
+    trainingLeaderAccess: true,
+    shiftLeaderAccess: true,
+    fohLeaderAccess: true,
+    bohLeaderAccess: true,
+    dtLeaderAccess: true
+  },
+  evaluation: {
+    departmentRestriction: true,
+    requireStoreLeaderReview: true,
+    requireDirectorApproval: true,
+    trainingAccess: true,
+    certificationApproval: true,
+    metricsAccess: true,
+    workflowType: 'standard'
+  }
+};
+
 export const getSettings = async (req, res) => {
   try {
     if (!req.user.store) {
@@ -20,7 +43,8 @@ export const getSettings = async (req, res) => {
       settings = await Settings.create({
         store: req.user.store,
         darkMode: false,
-        compactMode: false
+        compactMode: false,
+        userAccess: DEFAULT_USER_ACCESS
       });
     }
     
@@ -49,45 +73,44 @@ export const updateSettings = async (req, res) => {
       return res.status(400).json({ error: 'Store ID is required' });
     }
 
-    // Extract vision and mission statements if present
-    const { visionStatement, missionStatement, ...otherSettings } = req.body;
+    if (!req.user.role === 'admin') {
+      return res.status(403).json({ error: 'Only store admins can update settings' });
+    }
 
-    // Update store vision and mission if provided
-    if (req.user.role === 'admin' && (visionStatement !== undefined || missionStatement !== undefined)) {
-      const storeUpdates = {};
-      if (visionStatement !== undefined) storeUpdates.visionStatement = visionStatement;
-      if (missionStatement !== undefined) storeUpdates.missionStatement = missionStatement;
-      
-      await Store.findByIdAndUpdate(
-        req.user.store,
-        { $set: storeUpdates },
-        { new: true }
-      );
+    const settings = await Settings.findOne({ store: req.user.store });
+    if (!settings) {
+      return res.status(404).json({ error: 'Settings not found' });
+    }
+
+    // Handle resetToDefault flag
+    if (req.body.resetToDefault) {
+      settings.userAccess = DEFAULT_USER_ACCESS;
+      await settings.save();
+      return res.json(settings);
+    }
+
+    // Update specific settings
+    if (req.body.userAccess) {
+      if (req.body.userAccess.roleManagement) {
+        settings.userAccess.roleManagement = {
+          ...settings.userAccess.roleManagement,
+          ...req.body.userAccess.roleManagement
+        };
+      }
+      if (req.body.userAccess.evaluation) {
+        settings.userAccess.evaluation = {
+          ...settings.userAccess.evaluation,
+          ...req.body.userAccess.evaluation
+        };
+      }
     }
 
     // Update other settings
-    const settings = await Settings.findOneAndUpdate(
-      { store: req.user.store },
-      { $set: otherSettings },
-      { new: true, runValidators: true }
-    );
+    if (req.body.darkMode !== undefined) settings.darkMode = req.body.darkMode;
+    if (req.body.compactMode !== undefined) settings.compactMode = req.body.compactMode;
 
-    // Get updated store info
-    const store = await Store.findById(req.user.store);
-    
-    // Combine settings with store info
-    const response = {
-      ...settings.toObject(),
-      storeName: store.name,
-      storeNumber: store.storeNumber,
-      storeAddress: store.storeAddress,
-      storePhone: store.storePhone,
-      storeEmail: store.storeEmail,
-      visionStatement: store.visionStatement,
-      missionStatement: store.missionStatement
-    };
-
-    res.json(response);
+    await settings.save();
+    res.json(settings);
   } catch (error) {
     console.error('Error in updateSettings:', error);
     res.status(500).json({ error: error.message });
