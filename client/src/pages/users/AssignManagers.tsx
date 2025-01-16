@@ -9,7 +9,7 @@ interface User {
   _id: string;
   name: string;
   position: string;
-  department: string;
+  departments: string[];
   manager?: {
     _id: string;
     name: string;
@@ -124,7 +124,7 @@ export default function AssignManagers() {
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
               >
-                {departments.map((dept: string) => (
+                {(departments as string[]).map((dept: string) => (
                   <option key={dept} value={dept}>
                     {dept === 'all' ? 'All Departments' : dept}
                   </option>
