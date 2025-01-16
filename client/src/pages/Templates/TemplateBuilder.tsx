@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, GripVertical, Trash2, Save } from 'lucide-react';
+import { Plus, GripVertical, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   DndContext, 
@@ -19,7 +19,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { DraggableSection } from './components/DraggableSection';
+import DraggableSection from './components/DraggableSection';
 import api from '@/lib/axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { handleError, handleValidationError } from '@/lib/utils/error-handler';
@@ -87,7 +87,21 @@ export default function TemplateBuilder() {
     name: '',
     description: '',
     tags: ['General'],
-    sections: [],
+    sections: [{
+      id: Date.now().toString(),
+      title: 'Customer Service',
+      description: 'Evaluate employee performance in customer service and interaction',
+      order: 0,
+      criteria: [
+        {
+          id: `${Date.now()}-1`,
+          name: 'Communication Skills',
+          description: 'Ability to communicate clearly and effectively with customers',
+          ratingScale: '1-5',
+          required: true
+        }
+      ]
+    }],
     store: '',
     isActive: true
   });
@@ -217,20 +231,23 @@ export default function TemplateBuilder() {
   }
 
   const addSection = () => {
+    const newSectionId = Date.now().toString();
+    const newCriterionId = `${Date.now()}-1`;
+    
     setFormData(prev => ({
       ...prev,
       sections: [
         ...prev.sections,
         {
-          id: Date.now().toString(),
-          title: '',
-          description: '',
+          id: newSectionId,
+          title: 'Customer Service',
+          description: 'Evaluate employee performance in customer service and interaction',
           order: prev.sections.length,
           criteria: [
             {
-              id: `${Date.now()}-1`,
-              name: '',
-              description: '',
+              id: newCriterionId,
+              name: 'Communication Skills',
+              description: 'Ability to communicate clearly and effectively with customers',
               ratingScale: '1-5',
               required: true
             }
@@ -490,261 +507,145 @@ export default function TemplateBuilder() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Header with Save Button */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{isEditMode ? 'Edit' : 'Create'} Evaluation Template</h1>
-        <Button 
-          onClick={handleSave}
-          variant="red"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isEditMode ? 'Update' : 'Save'} Template
-        </Button>
-      </div>
-
-      {/* Template Details Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Template Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">Template Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter template name"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Enter template description"
-              />
-            </div>
-
-            <div>
-              <Label>Tags</Label>
-              <div className="flex flex-wrap gap-4 mt-2">
-                {availableTags.map((tag) => (
-                  <div key={tag} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`tag-${tag}`}
-                      checked={formData.tags.includes(tag)}
-                      onCheckedChange={(checked: boolean) => handleTagChange(tag, checked)}
-                    />
-                    <label
-                      htmlFor={`tag-${tag}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {tag}
-                    </label>
-                  </div>
-                ))}
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">{isEditMode ? 'Edit Template' : 'Create Template'}</h1>
+                <p className="text-white/80 mt-2 text-lg">Design evaluation templates for your team</p>
               </div>
-              <div className="flex gap-2 mt-2">
-                {formData.tags.map(tag => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
+              <Button 
+                variant="secondary"
+                className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
+                onClick={() => navigate('/templates')}
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back to Templates
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Sections with DnD */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={formData.sections.map(s => s.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {formData.sections.map((section, index) => (
-            <DraggableSection
-              key={section.id}
-              id={section.id}
-              index={index}
-              section={section}
-              onRemove={removeSection}
-              onUpdate={updateSection}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
+        {/* Main Content */}
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              {/* Template Details */}
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name" className="text-base font-medium text-[#27251F]">Template Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="mt-1.5 h-12 rounded-xl border-gray-200"
+                    placeholder="Enter template name"
+                  />
+                  {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+                </div>
 
-      {/* Sections */}
-      {formData.sections.map((section, sectionIndex) => (
-        <Card key={section.id} className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <GripVertical className="w-5 h-5 text-gray-400" />
-              <CardTitle>Section {sectionIndex + 1}</CardTitle>
-            </div>
-            <button
-              onClick={() => removeSection(section.id)}
-              className="text-red-600"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Section Title
-              </label>
-              <input
-                type="text"
-                className={`w-full p-2 border rounded-md ${errors.sections[section.id]?.title ? 'border-red-500' : ''}`}
-                value={section.title}
-                onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-                placeholder="e.g., Customer Service"
-              />
-              {errors.sections[section.id]?.title && (
-                <p className="mt-1 text-sm text-red-500">{errors.sections[section.id].title}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Section Description
-              </label>
-              <textarea
-                className="w-full p-2 border rounded-md"
-                rows={2}
-                value={section.description}
-                onChange={(e) => updateSection(section.id, 'description', e.target.value)}
-                placeholder="Describe what this section evaluates"
-              />
-            </div>
+                <div>
+                  <Label htmlFor="description" className="text-base font-medium text-[#27251F]">Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="mt-1.5 min-h-[100px] rounded-xl border-gray-200 resize-none"
+                    placeholder="Enter template description"
+                  />
+                </div>
 
-            {/* Criteria */}
-            <div className="space-y-4">
-              {section.criteria.map((criterion, criterionIndex) => (
-                <div key={criterion.id} className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium">Question {criterionIndex + 1}</span>
-                    </div>
-                    <button
-                      onClick={() => removeCriterion(section.id, criterion.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Question Name
-                      </label>
-                      <input
-                        type="text"
-                        className={`w-full p-2 border rounded-md ${
-                          errors.sections[section.id]?.criteria[criterion.id]?.name ? 'border-red-500' : ''
-                        }`}
-                        value={criterion.name}
-                        onChange={(e) => updateCriterion(section.id, criterion.id, 'name', e.target.value)}
-                        placeholder="e.g., Communication Skills"
-                      />
-                      {errors.sections[section.id]?.criteria[criterion.id]?.name && (
-                        <p className="mt-1 text-sm text-red-500">
-                          {errors.sections[section.id].criteria[criterion.id].name}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Description
-                      </label>
-                      <textarea
-                        className={`w-full p-2 border rounded-md ${
-                          errors.sections[section.id]?.criteria[criterion.id]?.description ? 'border-red-500' : ''
-                        }`}
-                        rows={2}
-                        value={criterion.description}
-                        onChange={(e) => updateCriterion(section.id, criterion.id, 'description', e.target.value)}
-                        placeholder="Describe what to evaluate for this criterion"
-                      />
-                      {errors.sections[section.id]?.criteria[criterion.id]?.description && (
-                        <p className="mt-1 text-sm text-red-500">
-                          {errors.sections[section.id].criteria[criterion.id].description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-4">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">
-                          Response Type
-                        </label>
-                        <select
-                          className="w-full p-2 border rounded-md"
-                          value={criterion.ratingScale}
-                          onChange={(e) => updateCriterion(section.id, criterion.id, 'ratingScale', e.target.value)}
+                <div>
+                  <Label className="text-base font-medium text-[#27251F]">Tags</Label>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {availableTags.map((tag) => (
+                      <div key={tag} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={tag}
+                          checked={formData.tags.includes(tag)}
+                          onCheckedChange={(checked) => handleTagChange(tag, checked)}
+                          className="rounded-md data-[state=checked]:bg-[#E51636] data-[state=checked]:border-[#E51636]"
+                        />
+                        <Label
+                          htmlFor={tag}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
-                          <option value="1-5">Rating Scale (1-5)</option>
-                          <option value="1-10">Rating Scale (1-10)</option>
-                          <option value="yes-no">Yes/No</option>
-                        </select>
+                          {tag}
+                        </Label>
                       </div>
-                      <div className="flex items-end">
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={criterion.required}
-                            onChange={(e) => updateCriterion(section.id, criterion.id, 'required', e.target.checked)}
-                            className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                          />
-                          <span className="text-sm">Required</span>
-                        </label>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-              <button
-                onClick={() => addCriterion(section.id)}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700"
-              >
-                <Plus className="w-4 h-4" />
-                Add Question
-              </button>
+              </div>
+
+              {/* Sections */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-medium text-[#27251F]">Sections</h2>
+                  <Button
+                    onClick={addSection}
+                    className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-10 px-4 rounded-xl"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add Section
+                  </Button>
+                </div>
+
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={formData.sections.map(section => section.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {formData.sections.map((section, index) => (
+                        <DraggableSection
+                          key={section.id}
+                          section={section}
+                          index={index}
+                          errors={errors.sections[section.id] || {}}
+                          onUpdateSection={updateSection}
+                          onUpdateCriterion={updateCriterion}
+                          onAddCriterion={() => addCriterion(section.id)}
+                          onRemoveSection={() => removeSection(section.id)}
+                          onRemoveCriterion={(criterionId) => removeCriterion(section.id, criterionId)}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
             </div>
           </CardContent>
         </Card>
-      ))}
 
-      {/* Add Section Button */}
-      <button
-        onClick={addSection}
-        className="w-full p-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-red-600 hover:text-red-600 flex items-center justify-center gap-2 transition-colors"
-      >
-        <Plus className="w-5 h-5" />
-        Add New Section
-      </button>
-
-      {/* Bottom Save Button */}
-      <div className="flex justify-end mt-6">
-        <Button 
-          onClick={handleSave}
-          variant="red"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isEditMode ? 'Update' : 'Save'} Template
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex justify-start gap-4">
+          <Button
+            onClick={handleSave}
+            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6 rounded-xl"
+          >
+            <Save className="w-5 h-5 mr-2" />
+            {isEditMode ? 'Save Changes' : 'Create Template'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/templates')}
+            className="h-12 px-6 rounded-xl border-gray-200 hover:bg-gray-50 text-[#27251F]"
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     </div>
-    
   );
 }
