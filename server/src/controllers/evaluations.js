@@ -2,6 +2,7 @@ import { User, Store } from '../models/index.js';
 import Evaluation from '../models/Evaluation.js';
 import Template from '../models/Templates.js';
 import Notification from '../models/Notification.js';
+import { sendEmail } from '../utils/email.js';
 
 // Create new evaluation
 export const createEvaluation = async (req, res) => {
@@ -75,6 +76,23 @@ export const createEvaluation = async (req, res) => {
                 message: `You have a new evaluation scheduled for ${new Date(scheduledDate).toLocaleDateString()}. Please complete your self-evaluation.`,
                 relatedId: evaluation._id,
                 relatedModel: 'Evaluation'
+            });
+
+            // Send email notification to employee
+            await sendEmail({
+                to: employee.email,
+                subject: 'New Evaluation Assigned',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h1 style="color: #E4002B;">New Evaluation Assigned</h1>
+                        <p>Hello ${employee.name},</p>
+                        <p>A new evaluation has been assigned to you. Please complete your self-evaluation by ${new Date(scheduledDate).toLocaleDateString()}.</p>
+                        <p><strong>Evaluator:</strong> ${req.user.name}</p>
+                        <p><strong>Due Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
+                        <p>Please log in to the Growth Hub platform to complete your self-evaluation.</p>
+                        <p>Best regards,<br>Growth Hub Team</p>
+                    </div>
+                `
             });
 
             // Get all managers in the store (except the creator)
@@ -205,12 +223,12 @@ export const getEvaluation = async (req, res) => {
                 }))
             },
             // Convert Map fields to plain objects
-            selfEvaluation: evaluation.selfEvaluation instanceof Map 
+            selfEvaluation: evaluation.selfEvaluation && evaluation.selfEvaluation.size > 0
                 ? Object.fromEntries(evaluation.selfEvaluation)
-                : evaluation.selfEvaluation || {},
-            managerEvaluation: evaluation.managerEvaluation instanceof Map
+                : {},
+            managerEvaluation: evaluation.managerEvaluation && evaluation.managerEvaluation.size > 0
                 ? Object.fromEntries(evaluation.managerEvaluation)
-                : evaluation.managerEvaluation || {}
+                : {}
         };
 
         console.log('Transformed evaluation:', JSON.stringify(transformedEvaluation, null, 2));
@@ -361,7 +379,7 @@ export const submitSelfEvaluation = async (req, res) => {
             employee: req.user._id,
             store: req.user.store._id,
             status: 'pending_self_evaluation'
-        }).populate('evaluator', 'name _id');
+        }).populate('evaluator', 'name email _id');
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Evaluation not found or not in self-evaluation state' });
@@ -381,6 +399,21 @@ export const submitSelfEvaluation = async (req, res) => {
             message: `${req.user.name} has submitted their self-evaluation. Please review and schedule a review session.`,
             relatedId: evaluation._id,
             relatedModel: 'Evaluation'
+        });
+
+        // Send email notification to evaluator
+        await sendEmail({
+            to: evaluation.evaluator.email,
+            subject: 'Self-Evaluation Submitted',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h1 style="color: #E4002B;">Self-Evaluation Submitted</h1>
+                    <p>Hello ${evaluation.evaluator.name},</p>
+                    <p>${req.user.name} has submitted their self-evaluation. Please review and schedule a review session.</p>
+                    <p>Please log in to the Growth Hub platform to review the self-evaluation and schedule the review session.</p>
+                    <p>Best regards,<br>Growth Hub Team</p>
+                </div>
+            `
         });
 
         res.json({ evaluation });
@@ -438,7 +471,7 @@ export const completeManagerEvaluation = async (req, res) => {
             evaluator: req.user._id,
             store: req.user.store._id,
             status: 'in_review_session'
-        }).populate('employee', 'name _id');
+        }).populate('employee', 'name email _id');
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Evaluation not found or not in review session' });
@@ -461,6 +494,25 @@ export const completeManagerEvaluation = async (req, res) => {
             message: `Your evaluation has been completed. Please review and acknowledge the results.`,
             relatedId: evaluation._id,
             relatedModel: 'Evaluation'
+        });
+
+        // Send email notification to employee
+        await sendEmail({
+            to: evaluation.employee.email,
+            subject: 'Evaluation Completed',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h1 style="color: #E4002B;">Evaluation Completed</h1>
+                    <p>Hello ${evaluation.employee.name},</p>
+                    <p>Your evaluation has been completed by ${req.user.name}. Please log in to review the results and development plan.</p>
+                    <p><strong>Overall Comments:</strong></p>
+                    <p>${overallComments}</p>
+                    <p><strong>Development Plan:</strong></p>
+                    <p>${developmentPlan}</p>
+                    <p>Please log in to the Growth Hub platform to review the complete evaluation and acknowledge the results.</p>
+                    <p>Best regards,<br>Growth Hub Team</p>
+                </div>
+            `
         });
 
         res.json({ evaluation });
