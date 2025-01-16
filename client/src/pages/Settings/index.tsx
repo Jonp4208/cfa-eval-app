@@ -297,39 +297,6 @@ const SettingsPage = () => {
 
             <Card className="bg-white rounded-[20px] shadow-md">
               <CardHeader>
-                <CardTitle className="text-lg text-[#27251F]">Appearance</CardTitle>
-                <CardDescription className="text-[#27251F]/60">Customize how the application looks</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <label htmlFor="darkMode" className="text-sm font-medium text-[#27251F]">Dark Mode</label>
-                    <p className="text-sm text-[#27251F]/60">Enable dark mode for the application</p>
-                  </div>
-                  <Switch
-                    id="darkMode"
-                    checked={formState.darkMode}
-                    onCheckedChange={(checked) => handleSettingChange('darkMode', checked)}
-                    className="data-[state=checked]:bg-[#E51636]"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <label htmlFor="compactMode" className="text-sm font-medium text-[#27251F]">Compact Mode</label>
-                    <p className="text-sm text-[#27251F]/60">Make the interface more compact</p>
-                  </div>
-                  <Switch
-                    id="compactMode"
-                    checked={formState.compactMode}
-                    onCheckedChange={(checked) => handleSettingChange('compactMode', checked)}
-                    className="data-[state=checked]:bg-[#E51636]"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white rounded-[20px] shadow-md">
-              <CardHeader>
                 <CardTitle className="text-lg text-[#27251F]">Security</CardTitle>
                 <CardDescription className="text-[#27251F]/60">Update your security settings</CardDescription>
               </CardHeader>
