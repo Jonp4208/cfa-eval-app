@@ -1,6 +1,22 @@
 // File: src/lib/services/settings.ts
 import api from '../axios';
 
+export interface UserAccessSettings {
+  roleManagement: {
+    storeDirectorAccess: boolean;
+    storeLeaderAccess: boolean;
+    fohLeaderAccess: boolean;
+    bohLeaderAccess: boolean;
+    dtLeaderAccess: boolean;
+  };
+  evaluation: {
+    departmentRestriction: boolean;
+    requireStoreLeaderReview: boolean;
+    requireDirectorApproval: boolean;
+    workflowType: 'simple' | 'standard' | 'strict';
+  };
+}
+
 export interface StoreSettings {
   darkMode: boolean;
   compactMode: boolean;
@@ -9,14 +25,9 @@ export interface StoreSettings {
   storeAddress: string;
   storePhone: string;
   storeEmail: string;
-  userAccess: {
-    allowRegistration: boolean;
-    defaultRole: string;
-  };
-  evaluations: {
-    allowSelfEvaluations: boolean;
-    reviewPeriodDays: number;
-  };
+  visionStatement: string;
+  missionStatement: string;
+  userAccess: UserAccessSettings;
 }
 
 export interface StoreInfo {
@@ -25,6 +36,8 @@ export interface StoreInfo {
   storeAddress: string;
   storePhone: string;
   storeEmail: string;
+  visionStatement: string;
+  missionStatement: string;
 }
 
 export const settingsService = {
@@ -64,9 +77,9 @@ export const settingsService = {
     }
   },
 
-  resetSettings: async (): Promise<StoreSettings> => {
+  resetToDefault: async (): Promise<StoreSettings> => {
     try {
-      const response = await api.post('/api/settings/reset');
+      const response = await api.patch('/api/settings', { resetToDefault: true });
       return response.data;
     } catch (error) {
       throw error;

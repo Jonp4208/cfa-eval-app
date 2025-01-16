@@ -196,6 +196,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                   <SelectItem value="FOH">Front of House</SelectItem>
                   <SelectItem value="BOH">Back of House</SelectItem>
                   <SelectItem value="Leadership">Leadership</SelectItem>
+                  <SelectItem value="Training">Training</SelectItem>
                 </SelectContent>
               </Select>
               {errors.department && <p className="text-sm text-[#E51636]">{errors.department}</p>}
@@ -232,9 +233,15 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="evaluator">Evaluator</SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
+                  <SelectItem value="store-director">Store Director</SelectItem>
+                  <SelectItem value="kitchen-director">Kitchen Director</SelectItem>
+                  <SelectItem value="service-director">Service Director</SelectItem>
+                  <SelectItem value="store-leader">Store Leader</SelectItem>
+                  <SelectItem value="training-leader">Training Leader</SelectItem>
+                  <SelectItem value="shift-leader">Shift Leader</SelectItem>
+                  <SelectItem value="evaluator">Evaluator</SelectItem>
+                  <SelectItem value="user">User</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && <p className="text-sm text-[#E51636]">{errors.role}</p>}

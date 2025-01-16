@@ -284,6 +284,7 @@ export default function EditUser() {
                       <SelectItem value="Leadership">Leadership</SelectItem>
                       <SelectItem value="FOH">FOH</SelectItem>
                       <SelectItem value="BOH">BOH</SelectItem>
+                      <SelectItem value="Training">Training</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -297,8 +298,11 @@ export default function EditUser() {
                       <SelectValue placeholder="Select position" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Director">Director</SelectItem>
-                      <SelectItem value="Manager">Manager</SelectItem>
+                      <SelectItem value="Store Director">Store Director</SelectItem>
+                      <SelectItem value="Kitchen Director">Kitchen Director</SelectItem>
+                      <SelectItem value="Service Director">Service Director</SelectItem>
+                      <SelectItem value="Store Leader">Store Leader</SelectItem>
+                      <SelectItem value="Training Leader">Training Leader</SelectItem>
                       <SelectItem value="Shift Leader">Shift Leader</SelectItem>
                       <SelectItem value="Team Leader">Team Leader</SelectItem>
                       <SelectItem value="Trainer">Trainer</SelectItem>
@@ -324,6 +328,12 @@ export default function EditUser() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="store-director">Store Director</SelectItem>
+                      <SelectItem value="kitchen-director">Kitchen Director</SelectItem>
+                      <SelectItem value="service-director">Service Director</SelectItem>
+                      <SelectItem value="store-leader">Store Leader</SelectItem>
+                      <SelectItem value="training-leader">Training Leader</SelectItem>
+                      <SelectItem value="shift-leader">Shift Leader</SelectItem>
                       <SelectItem value="evaluator">Evaluator</SelectItem>
                       <SelectItem value="user">User</SelectItem>
                     </SelectContent>

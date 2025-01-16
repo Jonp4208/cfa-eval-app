@@ -20,17 +20,27 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'evaluator', 'admin'],
+    enum: ['user', 'evaluator', 'admin', 'store-director', 'kitchen-director', 'service-director', 'store-leader', 'training-leader', 'shift-leader'],
     default: 'user'
   },
   department: {
     type: String,
-    enum: ['FOH', 'BOH', 'Leadership'],
+    enum: ['FOH', 'BOH', 'Leadership', 'Training'],
     required: true
   },
   position: {
     type: String,
-    enum: ['Team Member', 'Trainer', 'Team Leader', 'Shift Leader', 'Manager', 'Director'],
+    enum: [
+      'Team Member',
+      'Trainer',
+      'Team Leader',
+      'Shift Leader',
+      'Store Leader',
+      'Kitchen Director',
+      'Service Director',
+      'Store Director',
+      'Training Leader'
+    ],
     required: true
   },
   evaluator: {

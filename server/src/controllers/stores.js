@@ -199,9 +199,20 @@ export const removeStoreUser = async (req, res) => {
 // Update user role
 export const updateUserRole = async (req, res) => {
     try {
-        const { role } = req.body;
+        const { role, position } = req.body;
         
-        if (!['evaluator', 'manager'].includes(role)) {
+        const validRoles = [
+            'user',
+            'evaluator',
+            'store-director',
+            'kitchen-director',
+            'service-director',
+            'store-leader',
+            'training-leader',
+            'shift-leader'
+        ];
+        
+        if (!validRoles.includes(role)) {
             return res.status(400).json({ message: 'Invalid role' });
         }
 
@@ -221,7 +232,23 @@ export const updateUserRole = async (req, res) => {
             return res.status(403).json({ message: 'Cannot change admin role' });
         }
 
+        // Update role and position if provided
         user.role = role;
+        if (position) {
+            user.position = position;
+        }
+        
+        // Update department based on role
+        if (['kitchen-director', 'store-leader'].includes(role)) {
+            user.department = 'BOH';
+        } else if (['service-director'].includes(role)) {
+            user.department = 'FOH';
+        } else if (['training-leader'].includes(role)) {
+            user.department = 'Training';
+        } else if (['store-director'].includes(role)) {
+            user.department = 'Leadership';
+        }
+
         await user.save();
 
         res.json({
@@ -229,7 +256,9 @@ export const updateUserRole = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                position: user.position,
+                department: user.department
             }
         });
 
