@@ -176,6 +176,12 @@ export const getEvaluation = async (req, res) => {
         });
 
         console.log('Raw evaluation:', JSON.stringify(evaluation, null, 2));
+        console.log('Self evaluation type:', typeof evaluation.selfEvaluation);
+        console.log('Self evaluation instanceof Map:', evaluation.selfEvaluation instanceof Map);
+        console.log('Self evaluation keys:', Object.keys(evaluation.selfEvaluation));
+        console.log('Manager evaluation type:', typeof evaluation.managerEvaluation);
+        console.log('Manager evaluation instanceof Map:', evaluation.managerEvaluation instanceof Map);
+        console.log('Manager evaluation keys:', Object.keys(evaluation.managerEvaluation));
 
         if (!evaluation) {
             console.log('Evaluation not found');
@@ -205,7 +211,14 @@ export const getEvaluation = async (req, res) => {
                         required: criterion.required
                     }))
                 }))
-            }
+            },
+            // Convert Map fields to plain objects
+            selfEvaluation: evaluation.selfEvaluation instanceof Map 
+                ? Object.fromEntries(evaluation.selfEvaluation)
+                : evaluation.selfEvaluation || {},
+            managerEvaluation: evaluation.managerEvaluation instanceof Map
+                ? Object.fromEntries(evaluation.managerEvaluation)
+                : evaluation.managerEvaluation || {}
         };
 
         console.log('Transformed evaluation:', JSON.stringify(transformedEvaluation, null, 2));
@@ -362,7 +375,8 @@ export const submitSelfEvaluation = async (req, res) => {
             return res.status(404).json({ message: 'Evaluation not found or not in self-evaluation state' });
         }
 
-        evaluation.selfEvaluation = selfEvaluation;
+        // Convert the evaluation data to a Map
+        evaluation.selfEvaluation = new Map(Object.entries(selfEvaluation));
         evaluation.status = 'pending_manager_review';
         await evaluation.save();
 
@@ -438,7 +452,8 @@ export const completeManagerEvaluation = async (req, res) => {
             return res.status(404).json({ message: 'Evaluation not found or not in review session' });
         }
 
-        evaluation.managerEvaluation = managerEvaluation;
+        // Convert the evaluation data to a Map
+        evaluation.managerEvaluation = new Map(Object.entries(managerEvaluation));
         evaluation.overallComments = overallComments;
         evaluation.developmentPlan = developmentPlan;
         evaluation.status = 'completed';
