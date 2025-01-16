@@ -87,7 +87,8 @@ export const login = async (req, res) => {
       user: { 
         _id: user._id,
         name: user.name, 
-        email: user.email, 
+        email: user.email,
+        position: user.position,
         role: user.role,
         store: user.store,
         status: user.status
@@ -115,6 +116,7 @@ export const getProfile = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        position: user.position,
         role: user.role,
         store: user.store
       }

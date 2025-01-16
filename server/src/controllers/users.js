@@ -32,50 +32,45 @@ export const updateUserMetrics = async (req, res) => {
 };
 
 // Update user
-export const updateUser = async (req, res) => {
+export const updateUser = async (req, res, normalizedData) => {
   try {
-    const updates = req.body;
-    const allowedUpdates = ['name', 'email', 'departments', 'position', 'status', 'manager', 'isAdmin'];
-    const isValidOperation = Object.keys(updates).every(update => allowedUpdates.includes(update));
+    const { id } = req.params;
+    const updates = normalizedData || req.body;
 
-    if (!isValidOperation) {
-      return res.status(400).json({ message: 'Invalid updates' });
-    }
+    // Remove any sensitive fields that shouldn't be updated directly
+    delete updates.password;
+    delete updates.store; // Store should only be changed through specific endpoints
 
-    const user = await User.findById(req.params.id);
+    console.log('Updating user with normalized data:', {
+      id,
+      updates,
+      departments: updates.departments,
+      position: updates.position
+    });
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).populate('store', 'name storeNumber');
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update user fields
-    Object.keys(updates).forEach(key => {
-      if (allowedUpdates.includes(key)) {
-        if (key === 'manager') {
-          user[key] = updates[key] === 'none' ? null : updates[key];
-        } else {
-          user[key] = updates[key];
-        }
+    res.json({
+      message: 'User updated successfully',
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        departments: user.departments,
+        position: user.position,
+        store: user.store
       }
     });
-
-    await user.save();
-
-    res.json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      departments: user.departments,
-      position: user.position,
-      status: user.status,
-      isAdmin: user.isAdmin,
-      manager: user.manager ? {
-        _id: user.manager._id,
-        name: user.manager.name
-      } : null
-    });
-
   } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ message: 'Error updating user' });
+    console.error('Error in updateUser:', error);
+    res.status(500).json({ message: 'Failed to update user' });
   }
 }; 

@@ -27,11 +27,15 @@ export const auth = async (req, res, next) => {
       throw new Error('User not found');
     }
 
-    console.log('Auth middleware - user found:', {
+    console.log('Auth middleware - user details:', {
       _id: user._id,
       name: user.name,
       store: user.store,
-      role: user.role
+      role: user.role,
+      position: user.position,
+      departments: user.departments,
+      positionType: typeof user.position,
+      positionExists: 'position' in user
     });
 
     req.user = {

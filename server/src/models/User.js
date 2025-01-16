@@ -28,15 +28,15 @@ const userSchema = new mongoose.Schema({
     enum: [
       'Team Member',
       'Trainer',
-      'Team Leader',
-      'Shift Leader',
-      'Store Leader',
-      'Kitchen Director',
-      'Service Director',
-      'Store Director',
-      'Training Leader'
+      'Leader',
+      'Director'
     ],
     required: true
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   isAdmin: {
     type: Boolean,
