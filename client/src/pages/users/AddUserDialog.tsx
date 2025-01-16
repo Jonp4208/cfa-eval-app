@@ -1,4 +1,10 @@
-import { MultiSelect } from "../../components/ui/multi-select";
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelect } from '@/components/ui/multi-select';
+import api from '@/lib/axios';
 
 interface AddUserFormData {
   name: string;
@@ -20,13 +26,7 @@ export default function AddUserDialog({ isOpen, onClose }: { isOpen: boolean; on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await api.post('/api/users', {
-        name: formData.name,
-        email: formData.email,
-        departments: formData.departments,
-        position: formData.position,
-        isAdmin: formData.isAdmin
-      });
+      await api.post('/api/users', formData);
       onClose();
     } catch (error) {
       console.error('Error adding user:', error);
@@ -37,9 +37,9 @@ export default function AddUserDialog({ isOpen, onClose }: { isOpen: boolean; on
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Add New Team Member</DialogTitle>
           <DialogDescription>
-            Create a new user account. They will receive an email with login instructions.
+            Create a new team member account. They will receive an email with login instructions.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -113,7 +113,7 @@ export default function AddUserDialog({ isOpen, onClose }: { isOpen: boolean; on
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Add User</Button>
+            <Button type="submit">Add Team Member</Button>
           </DialogFooter>
         </form>
       </DialogContent>

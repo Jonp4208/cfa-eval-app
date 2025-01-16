@@ -1,21 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Card, CardContent, } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import api from '@/lib/axios';
 import { Toaster } from '@/components/ui/toaster';
-import { MultiSelect } from "../../../components/ui/multi-select";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 interface UserFormData {
   name: string;
@@ -23,7 +17,6 @@ interface UserFormData {
   departments: string[];
   position: string;
   status: string;
-  manager?: string;
   isAdmin: boolean;
 }
 
@@ -37,7 +30,6 @@ export default function EditUser() {
     departments: [],
     position: '',
     status: 'active',
-    manager: '',
     isAdmin: false
   });
   const [error, setError] = useState<string | null>(null);
@@ -47,49 +39,21 @@ export default function EditUser() {
     queryKey: ['user', id],
     queryFn: async () => {
       const response = await api.get(`/api/users/${id}`);
-      console.log('User data from API:', response.data);  // Debug log
-      return response.data;  // The server already sends the user object directly
+      return response.data;
     }
-  });
-
-  // Fetch potential managers
-  const { data: managers } = useQuery({
-    queryKey: ['potential-managers', user?.store?._id],
-    queryFn: async () => {
-      try {
-        if (!user?.store?._id) {
-          return [];
-        }
-        const response = await api.get('/api/users', {
-          params: {
-            store: user.store._id,
-            excludeId: id
-          }
-        });
-        return response.data.users.filter((manager: any) => manager._id !== id) || [];
-      } catch (error) {
-        console.error('Error fetching potential managers:', error);
-        return [];
-      }
-    },
-    enabled: !!user?.store?._id
   });
 
   // Update form data when user data is loaded
   useEffect(() => {
     if (user) {
-      console.log('Setting form data with user:', user);
-      
       const transformedData: UserFormData = {
         name: user.name || '',
         email: user.email || '',
         departments: user.departments || [],
         position: user.position || '',
         status: user.status || 'active',
-        manager: user.manager?._id || 'none',
         isAdmin: ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(user.position || '')
       };
-
       setFormData(transformedData);
     }
   }, [user]);
@@ -99,51 +63,25 @@ export default function EditUser() {
     mutationFn: async (data: UserFormData) => {
       try {
         setError(null);
-        console.log('Original mutation data:', data);
-        
-        // Transform data to match server expectations
-        const transformedData = {
-          ...data,
-          manager: data.manager === 'none' ? null : data.manager
-        };
-
-        console.log('Transformed mutation data:', transformedData);
-        const response = await api.put(`/api/users/${id}`, transformedData);
-        console.log('Server response:', response.data);
+        const response = await api.put(`/api/users/${id}`, data);
         return response.data;
       } catch (error: any) {
         const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error occurred';
         setError(errorMessage);
-        console.error('Error in mutation:', {
-          error,
-          formData: data,
-          errorMessage
-        });
         throw error;
       }
     },
     onSuccess: () => {
-      setError(null);
-      console.log('Update successful');
       toast({
         title: "✅ Success",
-        description: "User has been updated successfully",
+        description: "Team member has been updated successfully",
         duration: 5000,
       });
-      // Navigate after a short delay to allow the toast to be seen
-      setTimeout(() => {
-        navigate('/users');
-      }, 1000);
+      setTimeout(() => navigate('/users'), 1000);
     },
     onError: (error: any) => {
       const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error occurred';
       setError(errorMessage);
-      console.error('Mutation error:', {
-        error,
-        message: errorMessage,
-        response: error.response?.data
-      });
-      
       toast({
         title: "❌ Update Failed",
         description: errorMessage,
@@ -155,15 +93,7 @@ export default function EditUser() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserMutation.mutate({
-      name: formData.name,
-      email: formData.email,
-      departments: formData.departments,
-      position: formData.position,
-      status: formData.status,
-      manager: formData.manager,
-      isAdmin: formData.isAdmin
-    });
+    updateUserMutation.mutate(formData);
   };
 
   if (isLoading) {
@@ -171,7 +101,7 @@ export default function EditUser() {
       <div className="p-6">
         <Card>
           <CardContent className="p-6">
-            Loading user data...
+            Loading team member data...
           </CardContent>
         </Card>
       </div>
@@ -193,8 +123,8 @@ export default function EditUser() {
       
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Edit User</h1>
-          <p className="text-gray-500">Update user information and permissions</p>
+          <h1 className="text-2xl font-bold">Edit Team Member</h1>
+          <p className="text-gray-500">Update team member information</p>
         </div>
         <Button
           variant="outline"
@@ -202,7 +132,7 @@ export default function EditUser() {
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Users
+          Back to Team Members
         </Button>
       </div>
 
@@ -237,7 +167,7 @@ export default function EditUser() {
               </div>
             </div>
 
-            {/* Role & Position Section */}
+            {/* Departments & Position Section */}
             <div className="space-y-4 pt-4 border-t">
               <h2 className="text-lg font-semibold text-gray-700">Departments & Position</h2>
               <div className="grid grid-cols-2 gap-4">
@@ -292,7 +222,7 @@ export default function EditUser() {
             {/* Status Section */}
             <div className="space-y-4 pt-4 border-t">
               <h2 className="text-lg font-semibold text-gray-700">Status</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Account Status</label>
                   <Select
@@ -308,27 +238,6 @@ export default function EditUser() {
                     </SelectContent>
                   </Select>
                 </div>
-                {managers && managers.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Reports To</label>
-                    <Select
-                      value={formData.manager}
-                      onValueChange={(value) => setFormData({ ...formData, manager: value })}
-                    >
-                      <SelectTrigger className="border-gray-200">
-                        <SelectValue placeholder="Select manager" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Manager</SelectItem>
-                        {managers.map((manager: any) => (
-                          <SelectItem key={manager._id} value={manager._id}>
-                            {manager.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
               </div>
             </div>
 
