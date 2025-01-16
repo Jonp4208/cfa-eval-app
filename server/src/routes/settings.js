@@ -17,13 +17,13 @@ router.use(auth);
 router.get('/', getSettings);
 
 // Update settings
-router.put('/', updateSettings);
+router.patch('/', updateSettings);
 
 // Reset settings
 router.post('/reset', resetSettings);
 
 // Store routes
 router.get('/store', getStoreInfo);
-router.put('/store', updateStoreInfo);
+router.patch('/store', updateStoreInfo);
 
 export default router; 
