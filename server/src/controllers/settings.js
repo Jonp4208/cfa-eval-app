@@ -173,7 +173,18 @@ export const updateStoreInfo = async (req, res) => {
       return res.status(404).json({ error: 'Store not found' });
     }
 
-    res.json(store);
+    // Return the full store info in the response
+    const response = {
+      storeName: store.name,
+      storeNumber: store.storeNumber,
+      storeAddress: store.storeAddress,
+      storePhone: store.storePhone,
+      storeEmail: store.storeEmail,
+      visionStatement: store.visionStatement,
+      missionStatement: store.missionStatement
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error in updateStoreInfo:', error);
     res.status(500).json({ error: error.message });
