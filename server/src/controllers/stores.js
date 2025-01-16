@@ -120,7 +120,9 @@ export const getStoreUsers = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                departments: user.departments,
+                position: user.position,
+                isAdmin: user.isAdmin
             }))
         });
 
@@ -133,7 +135,7 @@ export const getStoreUsers = async (req, res) => {
 // Add user to store
 export const addStoreUser = async (req, res) => {
     try {
-        const { email, name, role, password } = req.body;
+        const { email, name, departments, position } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -141,13 +143,18 @@ export const addStoreUser = async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
+        // Determine if user should be admin based on position
+        const isAdmin = ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(position);
+
         // Create new user
         const user = new User({
             email,
-            password,
             name,
-            role: role || 'evaluator',
-            store: req.params.storeId
+            departments,
+            position,
+            isAdmin,
+            store: req.params.storeId,
+            password: User.generateRandomPassword()
         });
 
         await user.save();
@@ -157,7 +164,9 @@ export const addStoreUser = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                departments: user.departments,
+                position: user.position,
+                isAdmin: user.isAdmin
             }
         });
 
@@ -199,23 +208,8 @@ export const removeStoreUser = async (req, res) => {
 // Update user role
 export const updateUserRole = async (req, res) => {
     try {
-        const { role, position } = req.body;
+        const { departments, position } = req.body;
         
-        const validRoles = [
-            'user',
-            'evaluator',
-            'store-director',
-            'kitchen-director',
-            'service-director',
-            'store-leader',
-            'training-leader',
-            'shift-leader'
-        ];
-        
-        if (!validRoles.includes(role)) {
-            return res.status(400).json({ message: 'Invalid role' });
-        }
-
         const user = await User.findById(req.params.userId);
         
         if (!user) {
@@ -227,28 +221,13 @@ export const updateUserRole = async (req, res) => {
             return res.status(403).json({ message: 'User not in this store' });
         }
 
-        // Cannot change store admin's role
-        if (user.role === 'admin') {
-            return res.status(403).json({ message: 'Cannot change admin role' });
-        }
-
-        // Update role and position if provided
-        user.role = role;
-        if (position) {
-            user.position = position;
-        }
+        // Update departments and position
+        user.departments = departments;
+        user.position = position;
         
-        // Update department based on role
-        if (['kitchen-director', 'store-leader'].includes(role)) {
-            user.department = 'BOH';
-        } else if (['service-director'].includes(role)) {
-            user.department = 'FOH';
-        } else if (['training-leader'].includes(role)) {
-            user.department = 'Training';
-        } else if (['store-director'].includes(role)) {
-            user.department = 'Leadership';
-        }
-
+        // Update isAdmin based on position
+        user.isAdmin = ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(position);
+        
         await user.save();
 
         res.json({
@@ -256,9 +235,9 @@ export const updateUserRole = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role,
+                departments: user.departments,
                 position: user.position,
-                department: user.department
+                isAdmin: user.isAdmin
             }
         });
 

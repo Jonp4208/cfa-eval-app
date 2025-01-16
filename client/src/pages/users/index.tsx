@@ -58,7 +58,7 @@ export default function Users() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'position' | 'department' | 'role' | 'manager'>('name');
-  const [filterBy, setFilterBy] = useState<'all' | 'FOH' | 'BOH' | 'Leadership' | 'myTeam'>('all');
+  const [filterBy, setFilterBy] = useState<'all' | 'Front Counter' | 'Drive Thru' | 'Kitchen' | 'Everything' | 'myTeam'>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEmailResetDialog, setShowEmailResetDialog] = useState(false);
@@ -328,10 +328,11 @@ export default function Users() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Departments</SelectItem>
-                  <SelectItem value="FOH">Front of House</SelectItem>
-                  <SelectItem value="BOH">Back of House</SelectItem>
-                  <SelectItem value="Leadership">Leadership</SelectItem>
-                  {currentUser?.role === 'manager' && (
+                  <SelectItem value="Front Counter">Front Counter</SelectItem>
+                  <SelectItem value="Drive Thru">Drive Thru</SelectItem>
+                  <SelectItem value="Kitchen">Kitchen</SelectItem>
+                  <SelectItem value="Everything">Everything</SelectItem>
+                  {currentUser?.isAdmin && (
                     <SelectItem value="myTeam">My Team</SelectItem>
                   )}
                 </SelectContent>
@@ -434,8 +435,8 @@ export default function Users() {
                           {user.position && (
                             <span className="text-sm text-[#27251F]/60">{user.position}</span>
                           )}
-                          {user.department && (
-                            <span className="text-sm text-[#27251F]/60">{user.department}</span>
+                          {user.departments && (
+                            <span className="text-sm text-[#27251F]/60">{user.departments.join(', ')}</span>
                           )}
                         </div>
                       </div>

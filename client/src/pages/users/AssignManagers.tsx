@@ -33,18 +33,18 @@ export default function AssignManagers() {
 
   // Get managers (users with role 'evaluator' or 'admin')
   const managers = users?.filter((user: User) => 
-    user.position === 'Manager' || user.position === 'Director'
+    ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader', 'Training Leader', 'Shift Leader'].includes(user.position)
   ) || [];
 
   // Get team members (excluding managers)
   const teamMembers = users?.filter((user: User) => 
-    user.position !== 'Manager' && user.position !== 'Director'
+    !['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader', 'Training Leader', 'Shift Leader'].includes(user.position)
   ) || [];
 
   // Get unique departments
   const departments = React.useMemo(() => {
     if (!users) return ['all'];
-    const depts = [...new Set(users.map((user: User) => user.department))];
+    const depts = [...new Set(users.flatMap((user: User) => user.departments))];
     return ['all', ...depts.sort()];
   }, [users]);
 
@@ -52,7 +52,7 @@ export default function AssignManagers() {
   const filteredTeamMembers = React.useMemo(() => {
     return teamMembers.filter((member: User) => {
       const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesDepartment = selectedDepartment === 'all' || member.department === selectedDepartment;
+      const matchesDepartment = selectedDepartment === 'all' || member.departments.includes(selectedDepartment);
       return matchesSearch && matchesDepartment;
     });
   }, [teamMembers, searchQuery, selectedDepartment]);
@@ -61,10 +61,14 @@ export default function AssignManagers() {
   const groupedTeamMembers = React.useMemo(() => {
     const groups: { [key: string]: User[] } = {};
     filteredTeamMembers.forEach((member: User) => {
-      if (!groups[member.department]) {
-        groups[member.department] = [];
-      }
-      groups[member.department].push(member);
+      member.departments.forEach(dept => {
+        if (!groups[dept]) {
+          groups[dept] = [];
+        }
+        if (!groups[dept].find(m => m._id === member._id)) {
+          groups[dept].push(member);
+        }
+      });
     });
     return groups;
   }, [filteredTeamMembers]);

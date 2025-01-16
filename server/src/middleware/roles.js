@@ -1,33 +1,31 @@
 // server/src/middleware/roles.js
-export const isStoreAdmin = async (req, res, next) => {
-    try {
-        if (req.user.role !== 'admin' && req.user.role !== 'store-director') {
-            return res.status(403).json({ message: 'Access denied. Admin only.' });
-        }
-        next();
-    } catch (error) {
-        res.status(500).json({ message: 'Error checking admin status' });
-    }
+export const isStoreAdmin = (req, res, next) => {
+  if (!req.user.isAdmin) {
+    return res.status(403).json({
+      message: 'Forbidden - Admin access required'
+    });
+  }
+  next();
 };
 
 export const isManager = async (req, res, next) => {
-    try {
-        const managerRoles = [
-            'admin',
-            'store-director',
-            'kitchen-director',
-            'service-director',
-            'store-leader',
-            'training-leader',
-            'shift-leader'
-        ];
-        if (!managerRoles.includes(req.user.role)) {
-            return res.status(403).json({ message: 'Access denied. Managers only.' });
-        }
-        next();
-    } catch (error) {
-        res.status(500).json({ message: 'Error checking manager status' });
+  try {
+    const managerPositions = [
+      'Store Director',
+      'Kitchen Director',
+      'Service Director',
+      'Store Leader',
+      'Training Leader',
+      'Shift Leader'
+    ];
+
+    if (!managerPositions.includes(req.user.position)) {
+      return res.status(403).json({ message: 'Access denied. Managers only.' });
     }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: 'Error checking manager status' });
+  }
 };
 
 // Check if user has required role(s)
@@ -56,24 +54,22 @@ export const checkRole = (roles) => {
 // Check if user can manage their department
 export const canManageDepartment = (req, res, next) => {
   try {
-    const departmentRoles = {
-      'kitchen-director': ['BOH'],
-      'service-director': ['FOH'],
-      'training-leader': ['Training'],
-      'store-leader': ['FOH', 'BOH'],
-      'shift-leader': ['FOH', 'BOH']
-    };
-
-    // Admins and store directors can manage all departments
-    if (['admin', 'store-director'].includes(req.user.role)) {
+    // Admins can manage all departments
+    if (req.user.isAdmin) {
       return next();
     }
 
-    // Check if user can manage the target department
-    const allowedDepartments = departmentRoles[req.user.role] || [];
-    const targetDepartment = req.body.department || req.params.department;
+    // Get the target departments from request
+    const targetDepartments = Array.isArray(req.body.departments) 
+      ? req.body.departments 
+      : [req.body.department || req.params.department];
 
-    if (!targetDepartment || allowedDepartments.includes(targetDepartment)) {
+    // Check if user's departments include all target departments
+    const canManage = targetDepartments.every(dept => 
+      req.user.departments.includes(dept)
+    );
+
+    if (canManage) {
       return next();
     }
 

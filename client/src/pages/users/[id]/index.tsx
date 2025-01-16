@@ -363,7 +363,7 @@ export default function UserProfile() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
               <div>
                 <p className="text-[#27251F]/60 uppercase">
-                  {profile.position} • {profile.department}
+                  {profile.position} • {profile.departments.join(', ')}
                   {profile.manager && (
                     <>
                       <span className="mx-2">|</span>
@@ -389,7 +389,7 @@ export default function UserProfile() {
                       <option value="">No Manager Assigned</option>
                       {potentialManagers?.map((manager: any) => (
                         <option key={manager._id} value={manager._id}>
-                          {manager.name} ({manager.role})
+                          {manager.name} ({manager.position})
                         </option>
                       ))}
                     </select>

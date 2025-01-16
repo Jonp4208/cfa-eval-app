@@ -98,45 +98,12 @@ router.get('/', auth, async (req, res) => {
 // Get single user by ID
 router.get('/:id', auth, async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log('Fetching user with ID:', id);
-    
-    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      console.log('Invalid user ID format:', id);
-      return res.status(400).json({ message: 'Invalid user ID format' });
-    }
-
-    const user = await User.findById(id)
-      .select('-password') // Exclude password
-      .populate({
-        path: 'store',
-        select: 'name storeNumber'
-      })
-      .populate({
-        path: 'manager',
-        select: 'name _id'
-      });
-
-    console.log('Found user:', JSON.stringify(user, null, 2));
+    const user = await User.findById(req.params.id)
+      .populate('store', 'storeNumber name')
+      .populate('manager', 'name');
 
     if (!user) {
-      console.log('User not found');
       return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Ensure user has a store
-    if (!user.store) {
-      console.log('User has no store:', id);
-      return res.status(500).json({ message: 'User has no associated store' });
-    }
-
-    // Ensure user belongs to the same store
-    if (!req.user?.store?._id || user.store._id.toString() !== req.user.store._id.toString()) {
-      console.log('User store mismatch:', {
-        userStoreId: user.store._id,
-        requestUserStoreId: req.user?.store?._id
-      });
-      return res.status(403).json({ message: 'Not authorized to view this user' });
     }
 
     // Transform the user object to match the expected format
@@ -145,22 +112,15 @@ router.get('/:id', auth, async (req, res) => {
       name: user.name || 'Unknown',
       email: user.email,
       phone: user.phone,
-      department: user.department,
-      position: user.position.split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' '),
-      role: (user.role || 'user').toUpperCase(),
+      departments: user.departments || [],
+      position: user.position,
+      isAdmin: user.isAdmin,
       status: user.status || 'active',
-      reportsTo: user.manager ? user.manager.name : 'No Manager Assigned',
       store: {
         _id: user.store._id,
         name: user.store.name || 'Unknown Store',
         storeNumber: user.store.storeNumber || 'N/A'
       },
-      manager: user.manager ? {
-        _id: user.manager._id,
-        name: user.manager.name
-      } : null,
       startDate: user.startDate || new Date(),
       previousRoles: user.previousRoles || [],
       evaluations: user.evaluations || [],
@@ -177,22 +137,17 @@ router.get('/:id', auth, async (req, res) => {
       }
     };
 
-    console.log('Sending user profile:', JSON.stringify(userProfile, null, 2));
     res.json(userProfile);
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    // Send a more detailed error message in development
-    const errorMessage = process.env.NODE_ENV === 'development' 
-      ? `Failed to fetch user profile: ${error.message}`
-      : 'Failed to fetch user profile';
-    res.status(500).json({ message: errorMessage, error: process.env.NODE_ENV === 'development' ? error.stack : undefined });
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Error getting user details' });
   }
 });
 
 // Create a new user
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, email, department, position, role } = req.body;
+    const { name, email, departments, position } = req.body;
 
     // Check if user with email already exists
     const existingUser = await User.findOne({ email });
@@ -203,13 +158,16 @@ router.post('/', auth, async (req, res) => {
     // Generate a random password
     const password = User.generateRandomPassword();
 
+    // Determine if user should be admin based on position
+    const isAdmin = ['Store Director', 'Kitchen Director', 'Service Director', 'Store Leader'].includes(position);
+
     // Create new user
     const user = new User({
       name,
       email,
-      department,
+      departments,
       position,
-      role,
+      isAdmin,
       password,
       status: 'active',
       store: req.user.store._id // Associate with current user's store
@@ -231,27 +189,14 @@ router.post('/', auth, async (req, res) => {
           
           <div style="padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
             <p>Hello ${name},</p>
-            <p>Welcome to Growth Hub! Your account has been created successfully. Here are your login credentials:</p>
-            
-            <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Login URL:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
-              <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-              <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
-            </div>
-            
-            <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
-            <p>For your security, please follow these steps:</p>
-            <ol style="margin: 10px 0; padding-left: 20px;">
-              <li>Log in using your email and temporary password</li>
-              <li>Change your password immediately upon first login</li>
-              <li>Keep your login credentials secure and do not share them</li>
-            </ol>
-            
-            <p>If you have any questions or need assistance, please contact your manager or administrator.</p>
-          </div>
-          
-          <div style="text-align: center; padding: 20px; color: #666;">
-            <p>Best regards,<br>Growth Hub Team</p>
+            <p>Welcome to Growth Hub! Your account has been created successfully.</p>
+            <p>Here are your login credentials:</p>
+            <ul>
+              <li>Email: ${email}</li>
+              <li>Temporary Password: ${password}</li>
+            </ul>
+            <p>Please change your password after your first login.</p>
+            <p>Best regards,<br>The Growth Hub Team</p>
           </div>
         </div>
       `
@@ -265,9 +210,9 @@ router.post('/', auth, async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        department: user.department,
+        departments: user.departments,
         position: user.position,
+        isAdmin: user.isAdmin,
         status: user.status
       }
     });
