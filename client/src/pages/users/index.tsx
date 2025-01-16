@@ -286,17 +286,17 @@ export default function Users() {
                 <h1 className="text-3xl md:text-4xl font-bold">Team Management</h1>
                 <p className="text-white/80 mt-2 text-lg">Manage your team members and their roles</p>
               </div>
-              <div className="flex flex-row gap-3">
+              <div className="flex flex-col max-[430px]:w-full sm:flex-row gap-4">
                 <Button
                   variant="secondary"
-                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
+                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"
                   onClick={() => navigate('/users/assign-managers')}
                 >
                   <User className="w-5 h-5 mr-2" />
                   Assign Managers
                 </Button>
                 <Button
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 flex-1 md:flex-none"
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
                   onClick={() => setShowAddDialog(true)}
                 >
                   <Plus className="w-5 h-5 mr-2" />
@@ -352,7 +352,7 @@ export default function Users() {
             </div>
 
             {/* Import/Export Section */}
-            <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-4 border-t border-gray-200">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -362,7 +362,7 @@ export default function Users() {
               />
               <Button
                 variant="outline"
-                className="h-12 px-6 rounded-xl"
+                className="h-12 px-6 rounded-xl w-full sm:w-auto"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="w-5 h-5 mr-2" />
@@ -370,7 +370,7 @@ export default function Users() {
               </Button>
               <Button
                 variant="outline"
-                className="h-12 px-6 rounded-xl"
+                className="h-12 px-6 rounded-xl w-full sm:w-auto"
                 onClick={handleDownloadTemplate}
               >
                 <Download className="w-5 h-5 mr-2" />
@@ -440,7 +440,7 @@ export default function Users() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-4 md:mt-0">
+                    <div className="flex items-center justify-center md:justify-start gap-2 w-full md:w-auto mt-4 md:mt-0">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
