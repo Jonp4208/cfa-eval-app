@@ -24,7 +24,7 @@ const SettingsPage = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isDirector = ['Store Director', 'Kitchen Director', 'Service Director'].includes(user?.position || '');
+  const isDirector = user?.position === 'Director';
 
   // State to track form changes
   const [formState, setFormState] = useState({

@@ -84,7 +84,7 @@ export const updateSettings = async (req, res) => {
     }
 
     // Check for director-level access for sensitive settings
-    const isDirector = ['Store Director', 'Kitchen Director', 'Service Director'].includes(req.user.position);
+    const isDirector = req.user.position === 'Director';
     if (!isDirector) {
       // Only allow updating personal preferences if not a director
       const allowedFields = ['darkMode', 'compactMode'];
@@ -131,23 +131,24 @@ export const updateSettings = async (req, res) => {
       }
     }
 
-    // Update evaluation settings
+    // Update evaluations settings
     if (req.body.evaluations) {
       if (!isDirector) {
         return res.status(403).json({ error: 'Only directors can update evaluation settings' });
       }
-      if (req.body.evaluations.scheduling) {
-        settings.evaluations = settings.evaluations || {};
-        settings.evaluations.scheduling = {
-          ...settings.evaluations.scheduling,
-          ...req.body.evaluations.scheduling
-        };
-      }
+      settings.evaluations = {
+        ...settings.evaluations,
+        ...req.body.evaluations
+      };
     }
 
-    // Update other settings
-    if (req.body.darkMode !== undefined) settings.darkMode = req.body.darkMode;
-    if (req.body.compactMode !== undefined) settings.compactMode = req.body.compactMode;
+    // Update personal preferences
+    if (req.body.darkMode !== undefined) {
+      settings.darkMode = req.body.darkMode;
+    }
+    if (req.body.compactMode !== undefined) {
+      settings.compactMode = req.body.compactMode;
+    }
 
     await settings.save();
     res.json(settings);
