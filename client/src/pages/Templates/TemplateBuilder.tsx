@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useQuery } from '@tanstack/react-query';
 
 
 interface Section {
@@ -43,7 +44,7 @@ interface Criterion {
   id: string;
   name: string;
   description: string;
-  ratingScale: '1-5' | '1-10' | 'yes-no';
+  gradingScale: string;
   required: boolean;
 }
 
@@ -65,6 +66,19 @@ interface TemplateFormData {
   sections: Section[];
   store?: string;
   isActive?: boolean;
+}
+
+interface GradingScale {
+  _id: string;
+  name: string;
+  description?: string;
+  grades: Array<{
+    value: number;
+    label: string;
+    description?: string;
+    color: string;
+  }>;
+  isDefault: boolean;
 }
 
 export default function TemplateBuilder() {
@@ -97,7 +111,7 @@ export default function TemplateBuilder() {
           id: `${Date.now()}-1`,
           name: 'Communication Skills',
           description: 'Ability to communicate clearly and effectively with customers',
-          ratingScale: '1-5',
+          gradingScale: '1-5',
           required: true
         }
       ]
@@ -148,7 +162,7 @@ export default function TemplateBuilder() {
                 id: criterion._id || Date.now().toString(),
                 name: criterion.name,
                 description: criterion.description || '',
-                ratingScale: criterion.ratingScale || '1-5',
+                gradingScale: criterion.gradingScale || '1-5',
                 required: criterion.required
               }))
             })),
@@ -222,6 +236,18 @@ export default function TemplateBuilder() {
     }
   }, [isLoading, user, navigate, toast]);
 
+  // Fetch available grading scales
+  const { data: gradingScales } = useQuery({
+    queryKey: ['gradingScales'],
+    queryFn: async () => {
+      const response = await api.get('/api/grading-scales');
+      return response.data;
+    }
+  });
+
+  // Get default scale
+  const defaultScale = gradingScales?.find((scale: GradingScale) => scale.isDefault);
+
   if (isLoading || !hasCheckedStore) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -248,7 +274,7 @@ export default function TemplateBuilder() {
               id: newCriterionId,
               name: 'Communication Skills',
               description: 'Ability to communicate clearly and effectively with customers',
-              ratingScale: '1-5',
+              gradingScale: '1-5',
               required: true
             }
           ]
@@ -270,7 +296,7 @@ export default function TemplateBuilder() {
                 id: Date.now().toString(),
                 name: '',
                 description: '',
-                ratingScale: '1-5',
+                gradingScale: '1-5',
                 required: true
               }
             ]
@@ -440,7 +466,7 @@ export default function TemplateBuilder() {
           criteria: section.criteria.map(criterion => ({
             name: criterion.name,
             description: criterion.description,
-            ratingScale: criterion.ratingScale,
+            gradingScale: criterion.gradingScale,
             required: criterion.required
           }))
         }))
@@ -504,6 +530,89 @@ export default function TemplateBuilder() {
         tags: formData.tags.filter(t => t !== tag)
       });
     }
+  };
+
+  const renderCriterionForm = (sectionIndex: number, criterionIndex: number, criterion: Criterion) => (
+    <div key={criterion.id} className="space-y-4 p-4 bg-gray-50 rounded-lg">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-4">
+          <div>
+            <Label htmlFor={`criterion-${sectionIndex}-${criterionIndex}-name`}>
+              Criterion Name
+            </Label>
+            <Input
+              id={`criterion-${sectionIndex}-${criterionIndex}-name`}
+              value={criterion.name}
+              onChange={(e) => handleCriterionChange(sectionIndex, criterionIndex, 'name', e.target.value)}
+              placeholder="Enter criterion name"
+            />
+          </div>
+          <div>
+            <Label htmlFor={`criterion-${sectionIndex}-${criterionIndex}-description`}>
+              Description
+            </Label>
+            <Textarea
+              id={`criterion-${sectionIndex}-${criterionIndex}-description`}
+              value={criterion.description}
+              onChange={(e) => handleCriterionChange(sectionIndex, criterionIndex, 'description', e.target.value)}
+              placeholder="Enter criterion description"
+            />
+          </div>
+          <div>
+            <Label htmlFor={`criterion-${sectionIndex}-${criterionIndex}-scale`}>
+              Grading Scale
+            </Label>
+            <select
+              id={`criterion-${sectionIndex}-${criterionIndex}-scale`}
+              value={criterion.gradingScale}
+              onChange={(e) => handleCriterionChange(sectionIndex, criterionIndex, 'gradingScale', e.target.value)}
+              className="w-full h-10 px-3 rounded-md border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+            >
+              <option value="">Select a grading scale</option>
+              {gradingScales?.map((scale: GradingScale) => (
+                <option key={scale._id} value={scale._id}>
+                  {scale.name}{scale.isDefault ? ' (Default)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={`criterion-${sectionIndex}-${criterionIndex}-required`}
+              checked={criterion.required}
+              onCheckedChange={(checked) => 
+                handleCriterionChange(sectionIndex, criterionIndex, 'required', checked)
+              }
+            />
+            <Label htmlFor={`criterion-${sectionIndex}-${criterionIndex}-required`}>
+              Required
+            </Label>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          onClick={() => handleRemoveCriterion(sectionIndex, criterionIndex)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const handleAddCriterion = (sectionIndex: number) => {
+    const newCriterion: Criterion = {
+      id: uuidv4(),
+      name: '',
+      description: '',
+      gradingScale: defaultScale?._id || '',
+      required: true
+    };
+
+    const updatedSections = [...sections];
+    updatedSections[sectionIndex].criteria.push(newCriterion);
+    setSections(updatedSections);
   };
 
   return (

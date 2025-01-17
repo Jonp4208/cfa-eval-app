@@ -16,6 +16,7 @@ import usersRoutes from './routes/users.js';
 import disciplinaryRoutes from './routes/disciplinary.js';
 import goalsRoutes from './routes/goals.js';
 import analyticsRoutes from './routes/analytics.js';
+import gradingScalesRouter from './routes/gradingScales.js';
 
 // Error Handler
 import { errorHandler } from './utils/errorHandler.js';
@@ -27,26 +28,16 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
-
+// CORS configuration
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: ['http://localhost:5173', 'http://localhost:4173'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -55,6 +46,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   console.log('Request URL:', req.url);
   console.log('Request Method:', req.method);
+  console.log('Request Headers:', req.headers);
   next();
 });
 
@@ -72,6 +64,7 @@ apiRouter.use('/users', usersRoutes);
 apiRouter.use('/disciplinary', disciplinaryRoutes);
 apiRouter.use('/goals', goalsRoutes);
 apiRouter.use('/analytics', analyticsRoutes);
+apiRouter.use('/grading-scales', gradingScalesRouter);
 
 // API error handling
 apiRouter.use(errorHandler);

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, ChevronLeft } from 'lucide-react';
+import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, ChevronLeft, Scale } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import UserAccessSettings from './components/UserAccessSettings';
 import EvaluationSettings from './components/EvaluationSettings';
@@ -16,6 +16,7 @@ import { settingsService } from '@/lib/services/settings';
 import api from '@/lib/axios';
 import { handleError } from '@/lib/utils/error-handler';
 import { useNavigate } from 'react-router-dom';
+import GradingScales from './components/GradingScales';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -213,6 +214,10 @@ const SettingsPage = () => {
                 <FileText className="h-4 w-4" />
                 <span>Evaluations</span>
               </TabsTrigger>
+              <TabsTrigger value="grading-scales" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
+                <Scale className="h-4 w-4" />
+                <span>Grading Scales</span>
+              </TabsTrigger>
               <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
                 <Bell className="h-4 w-4" />
                 <span>Notifications</span>
@@ -320,6 +325,10 @@ const SettingsPage = () => {
               onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
               isUpdating={updateSettingsMutation.isPending}
             />
+          </TabsContent>
+
+          <TabsContent value="grading-scales">
+            <GradingScales />
           </TabsContent>
 
           <TabsContent value="notifications">
