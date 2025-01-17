@@ -23,6 +23,7 @@ const SettingsPage = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isDirector = ['Store Director', 'Kitchen Director', 'Service Director'].includes(user?.position || '');
 
   // State to track form changes
   const [formState, setFormState] = useState({
@@ -186,68 +187,39 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* Alerts */}
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div className="p-4 bg-green-50 border border-green-200 text-green-600 rounded-xl text-sm">
-            {success}
-          </div>
-        )}
-
+        {/* Settings Content */}
         <Tabs defaultValue="general" className="space-y-6">
-          <div className="bg-white rounded-[20px] shadow-md p-4">
-            <TabsList className="w-full border-b justify-start gap-2 overflow-x-auto flex-nowrap pb-1">
-              <TabsTrigger value="general" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
-                <SettingsIcon className="h-4 w-4" />
-                <span>General</span>
+          <TabsList className="bg-white rounded-[20px] p-1 h-auto flex flex-wrap gap-2">
+            <TabsTrigger value="general" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
+              General
+            </TabsTrigger>
+            {isDirector && (
+              <TabsTrigger value="users" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
+                User Access
               </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
-                <Users className="h-4 w-4" />
-                <span>User Access</span>
+            )}
+            {isDirector && (
+              <TabsTrigger value="evaluation" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
+                Evaluation
               </TabsTrigger>
-              <TabsTrigger value="evaluations" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
-                <FileText className="h-4 w-4" />
-                <span>Evaluations</span>
-              </TabsTrigger>
-              <TabsTrigger value="grading-scales" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
-                <Scale className="h-4 w-4" />
-                <span>Grading Scales</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
-                <Bell className="h-4 w-4" />
-                <span>Notifications</span>
-              </TabsTrigger>
-              <TabsTrigger value="reports" className="flex items-center gap-2 data-[state=active]:text-[#E51636] data-[state=active]:border-[#E51636] whitespace-nowrap min-w-fit">
-                <BarChart className="h-4 w-4" />
-                <span>Reports</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+            )}
+          </TabsList>
 
-          <TabsContent value="general" className="space-y-6 mt-0">
+          <TabsContent value="general">
             <form onSubmit={handleSaveGeneral}>
               <Card className="bg-white rounded-[20px] shadow-md">
                 <CardHeader>
                   <CardTitle className="text-lg text-[#27251F]">Store Information</CardTitle>
-                  <CardDescription className="text-[#27251F]/60">
-                    Contact your administrator to update store information
-                  </CardDescription>
+                  <CardDescription className="text-[#27251F]/60">View and update your store details</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-[#27251F]/60">Store Name</label>
-                      <p className="text-[#27251F] font-medium">{settings?.storeName || 'Calhoun FSU'}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-[#27251F]/60">Store Number</label>
-                      <p className="text-[#27251F] font-medium">{settings?.storeNumber || '00727'}</p>
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]/60">Store Name</label>
+                    <p className="text-[#27251F] font-medium">{settings?.storeName || ''}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]/60">Store Number</label>
+                    <p className="text-[#27251F] font-medium">{settings?.storeNumber || ''}</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-[#27251F]/60">Location</label>
@@ -267,23 +239,47 @@ const SettingsPage = () => {
                       <p className="text-[#27251F] font-medium">{settings?.storeEmail || ''}</p>
                     </div>
                   </div>
-                  <div className="pt-4 border-t">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-[#27251F]/60">Vision Statement</label>
-                      <textarea
-                        value={formState.visionStatement}
-                        onChange={(e) => handleSettingChange('visionStatement', e.target.value)}
-                        placeholder="Enter your store's vision statement"
-                        className="w-full h-32 px-4 py-3 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent resize-none"
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]/60">Vision Statement</label>
+                    <Textarea
+                      value={formState.visionStatement}
+                      onChange={(e) => handleSettingChange('visionStatement', e.target.value)}
+                      className="focus-visible:ring-[#E51636]"
+                      rows={3}
+                      disabled={!isAdmin}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]/60">Mission Statement</label>
+                    <Textarea
+                      value={formState.missionStatement}
+                      onChange={(e) => handleSettingChange('missionStatement', e.target.value)}
+                      className="focus-visible:ring-[#E51636]"
+                      rows={3}
+                      disabled={!isAdmin}
+                    />
+                  </div>
+                  <div className="space-y-6 pt-4 border-t">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <label className="text-sm font-medium text-[#27251F]">Dark Mode</label>
+                        <p className="text-sm text-[#27251F]/60">Enable dark mode for the application</p>
+                      </div>
+                      <Switch
+                        checked={formState.darkMode}
+                        onCheckedChange={(checked) => handleSettingChange('darkMode', checked)}
+                        className="data-[state=checked]:bg-[#E51636]"
                       />
                     </div>
-                    <div className="space-y-2 mt-4">
-                      <label className="text-sm font-medium text-[#27251F]/60">Mission Statement</label>
-                      <textarea
-                        value={formState.missionStatement}
-                        onChange={(e) => handleSettingChange('missionStatement', e.target.value)}
-                        placeholder="Enter your store's mission statement"
-                        className="w-full h-32 px-4 py-3 rounded-xl border-gray-200 focus:ring-2 focus:ring-[#E51636] focus:border-transparent resize-none"
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <label className="text-sm font-medium text-[#27251F]">Compact Mode</label>
+                        <p className="text-sm text-[#27251F]/60">Show more content with less spacing</p>
+                      </div>
+                      <Switch
+                        checked={formState.compactMode}
+                        onCheckedChange={(checked) => handleSettingChange('compactMode', checked)}
+                        className="data-[state=checked]:bg-[#E51636]"
                       />
                     </div>
                   </div>
@@ -311,50 +307,37 @@ const SettingsPage = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="users">
-            <UserAccessSettings 
-              settings={settings?.userAccess}
-              onUpdate={(data) => updateSettingsMutation.mutate({ userAccess: data })}
-              isUpdating={updateSettingsMutation.isPending}
-            />
-          </TabsContent>
+          {isDirector && (
+            <TabsContent value="users">
+              <UserAccessSettings 
+                settings={settings?.userAccess}
+                onUpdate={(data) => updateSettingsMutation.mutate({ userAccess: data })}
+                isUpdating={updateSettingsMutation.isPending}
+              />
+            </TabsContent>
+          )}
 
-          <TabsContent value="evaluations">
-            <EvaluationSettings 
-              settings={settings?.evaluations}
-              onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
-              isUpdating={updateSettingsMutation.isPending}
-            />
-          </TabsContent>
-
-          <TabsContent value="grading-scales">
-            <GradingScales />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <Card className="bg-white rounded-[20px] shadow-md">
-              <CardHeader>
-                <CardTitle className="text-lg text-[#27251F]">Notification Preferences</CardTitle>
-                <CardDescription className="text-[#27251F]/60">Choose how you want to be notified</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Notification settings content */}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <Card className="bg-white rounded-[20px] shadow-md">
-              <CardHeader>
-                <CardTitle className="text-lg text-[#27251F]">Report Settings</CardTitle>
-                <CardDescription className="text-[#27251F]/60">Configure your reporting preferences</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Report settings content */}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {isDirector && (
+            <TabsContent value="evaluation">
+              <EvaluationSettings 
+                settings={settings?.evaluations}
+                onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
+                isUpdating={updateSettingsMutation.isPending}
+              />
+            </TabsContent>
+          )}
         </Tabs>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+            {success}
+          </div>
+        )}
       </div>
     </div>
   );

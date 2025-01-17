@@ -83,8 +83,17 @@ export const updateSettings = async (req, res) => {
       return res.status(400).json({ error: 'Store ID is required' });
     }
 
-    if (!req.user.role === 'admin') {
-      return res.status(403).json({ error: 'Only store admins can update settings' });
+    // Check for director-level access for sensitive settings
+    const isDirector = ['Store Director', 'Kitchen Director', 'Service Director'].includes(req.user.position);
+    if (!isDirector) {
+      // Only allow updating personal preferences if not a director
+      const allowedFields = ['darkMode', 'compactMode'];
+      const requestedFields = Object.keys(req.body);
+      const hasRestrictedFields = requestedFields.some(field => !allowedFields.includes(field));
+      
+      if (hasRestrictedFields) {
+        return res.status(403).json({ error: 'Only directors can update these settings' });
+      }
     }
 
     const settings = await Settings.findOne({ store: req.user.store });
@@ -92,8 +101,11 @@ export const updateSettings = async (req, res) => {
       return res.status(404).json({ error: 'Settings not found' });
     }
 
-    // Handle resetToDefault flag
+    // Handle resetToDefault flag - requires director access
     if (req.body.resetToDefault) {
+      if (!isDirector) {
+        return res.status(403).json({ error: 'Only directors can reset settings to default' });
+      }
       settings.userAccess = DEFAULT_USER_ACCESS;
       settings.evaluations = DEFAULT_EVALUATION_SETTINGS;
       await settings.save();
@@ -102,6 +114,9 @@ export const updateSettings = async (req, res) => {
 
     // Update specific settings
     if (req.body.userAccess) {
+      if (!isDirector) {
+        return res.status(403).json({ error: 'Only directors can update user access settings' });
+      }
       if (req.body.userAccess.roleManagement) {
         settings.userAccess.roleManagement = {
           ...settings.userAccess.roleManagement,
@@ -118,6 +133,9 @@ export const updateSettings = async (req, res) => {
 
     // Update evaluation settings
     if (req.body.evaluations) {
+      if (!isDirector) {
+        return res.status(403).json({ error: 'Only directors can update evaluation settings' });
+      }
       if (req.body.evaluations.scheduling) {
         settings.evaluations = settings.evaluations || {};
         settings.evaluations.scheduling = {
