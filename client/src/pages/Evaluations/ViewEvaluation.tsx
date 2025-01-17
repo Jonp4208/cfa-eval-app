@@ -48,16 +48,34 @@ interface Evaluation {
   };
 }
 
+interface Grade {
+  value: number;
+  label: string;
+  description?: string;
+  color: string;
+}
+
+interface GradingScale {
+  _id: string;
+  name: string;
+  description?: string;
+  grades: Grade[];
+  isDefault: boolean;
+}
+
+interface Question {
+  id: string;
+  text: string;
+  type: 'rating' | 'text';
+  required?: boolean;
+  gradingScale?: GradingScale;
+}
+
 interface Section {
   title: string;
   description?: string;
   order?: number;
-  questions: Array<{
-    id: string;
-    text: string;
-    type: 'rating' | 'text';
-    required?: boolean;
-  }>;
+  questions: Question[];
 }
 
 export default function ViewEvaluation() {
@@ -73,77 +91,29 @@ export default function ViewEvaluation() {
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  const getRatingText = (rating: number | string): string => {
+  const getRatingText = (rating: number | string, gradingScale?: GradingScale): string => {
+    if (!gradingScale) return 'No rating provided';
+    
     const ratingNum = Number(rating);
-    switch(ratingNum) {
-      case 1: return 'Poor';
-      case 2: return 'Fair';
-      case 3: return 'Good';
-      case 4: return 'Very Good';
-      case 5: return 'Excellent';
-      default: return 'No rating provided';
-    }
+    const grade = gradingScale.grades.find(g => g.value === ratingNum);
+    return grade ? grade.label : 'No rating provided';
   };
 
-  // Fetch evaluation data
+  const getRatingColor = (rating: number | string, gradingScale?: GradingScale): string => {
+    if (!gradingScale) return '#000000';
+    
+    const ratingNum = Number(rating);
+    const grade = gradingScale.grades.find(g => g.value === ratingNum);
+    return grade ? grade.color : '#000000';
+  };
+
+  // Fetch evaluation data with grading scales
   const { data: evaluation, isLoading, refetch } = useQuery({
     queryKey: ['evaluation', id],
     queryFn: async () => {
-      console.log('Fetching evaluation data...');
       const response = await api.get(`/api/evaluations/${id}`);
-      console.log('Full API Response:', response);
-      
-      const rawEvaluation = response.data.evaluation;
-      console.log('Raw Evaluation:', rawEvaluation);
-      
-      if (!rawEvaluation || !rawEvaluation.template) {
-        console.error('Invalid evaluation structure:', rawEvaluation);
-        throw new Error('Invalid evaluation data');
-      }
-      
-      // Get the template data, handling both local and production structures
-      const templateData = rawEvaluation.template._doc || rawEvaluation.template;
-      
-      // Create a clean version of the evaluation object that preserves the raw data
-      const transformedEvaluation = {
-        ...rawEvaluation,
-        template: {
-          ...templateData,
-          sections: (templateData.sections || []).map((section: any) => ({
-            title: section.title,
-            description: section.description,
-            order: section.order,
-            questions: (section.criteria || section.questions || []).map((criterion: any) => ({
-              id: criterion._id || criterion.id,
-              text: criterion.name || criterion.text,
-              description: criterion.description,
-              type: criterion.type || 'rating',
-              required: criterion.required
-            }))
-          }))
-        },
-        // Handle evaluation data, ensuring it's always an object and preserving the data
-        selfEvaluation: rawEvaluation.selfEvaluation instanceof Map 
-          ? Object.fromEntries(rawEvaluation.selfEvaluation)
-          : typeof rawEvaluation.selfEvaluation === 'object' && rawEvaluation.selfEvaluation !== null
-            ? { ...rawEvaluation.selfEvaluation }
-            : {},
-        managerEvaluation: rawEvaluation.managerEvaluation instanceof Map
-          ? Object.fromEntries(rawEvaluation.managerEvaluation)
-          : typeof rawEvaluation.managerEvaluation === 'object' && rawEvaluation.managerEvaluation !== null
-            ? { ...rawEvaluation.managerEvaluation }
-            : {},
-        // Ensure other fields are preserved
-        overallComments: rawEvaluation.overallComments || '',
-        developmentPlan: rawEvaluation.developmentPlan || '',
-        acknowledgement: rawEvaluation.acknowledgement || { acknowledged: false },
-        status: rawEvaluation.status || 'pending_self_evaluation'
-      };
-      
-      console.log('Transformed Evaluation:', transformedEvaluation);
-      return transformedEvaluation;
-    },
-    retry: false // Disable retries to better see errors
+      return response.data.evaluation;
+    }
   });
 
   // Initialize answers when evaluation data is loaded
@@ -451,9 +421,28 @@ export default function ViewEvaluation() {
                           <p className="text-sm font-medium text-[#27251F]/60 mb-2">{question.text}</p>
                           <div className="bg-[#27251F]/5 p-4 rounded-2xl text-[#27251F]">
                             {question.type === 'rating' ? (
-                              evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`] 
-                                ? `${evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`]} - ${getRatingText(evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`])}` 
-                                : 'No rating provided'
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ 
+                                    backgroundColor: getRatingColor(
+                                      evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`],
+                                      question.gradingScale
+                                    )
+                                  }}
+                                />
+                                <span>
+                                  {evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`]
+                                    ? `${evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`]} - ${
+                                        getRatingText(
+                                          evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`],
+                                          question.gradingScale
+                                        )
+                                      }`
+                                    : 'No rating provided'
+                                  }
+                                </span>
+                              </div>
                             ) : (
                               evaluation.selfEvaluation[`${sectionIndex}-${questionIndex}`] || 'No response provided'
                             )}
@@ -523,9 +512,9 @@ export default function ViewEvaluation() {
                               className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
                             >
                               <option value="">Select a rating</option>
-                              {[1, 2, 3, 4, 5].map(rating => (
-                                <option key={rating} value={rating}>
-                                  {rating} - {rating === 1 ? 'Poor' : rating === 2 ? 'Fair' : rating === 3 ? 'Good' : rating === 4 ? 'Very Good' : 'Excellent'}
+                              {question.gradingScale?.grades.map(grade => (
+                                <option key={grade.value} value={grade.value}>
+                                  {grade.value} - {grade.label}
                                 </option>
                               ))}
                             </select>

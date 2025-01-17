@@ -137,17 +137,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       badge: null
     },
     {
-      icon: BarChart,
-      label: 'Analytics',
-      href: '/analytics',
-      show: true,
-      badge: null
-    },
-    {
       icon: Settings,
       label: 'Settings',
       href: '/settings',
-      show: true,
+      show: isMobileMenuOpen,
       badge: null
     }
   ];

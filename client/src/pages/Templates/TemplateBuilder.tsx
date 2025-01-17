@@ -1,5 +1,5 @@
 // client/src/pages/Templates/TemplateBuilder.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, GripVertical, Trash2, Save, ArrowLeft } from 'lucide-react';
@@ -86,7 +86,9 @@ export default function TemplateBuilder() {
   const { id } = useParams();  // Get template ID from URL if editing
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
-  
+  const [hasCheckedStore, setHasCheckedStore] = useState(false);
+  const [isEditMode] = useState(!!id);  // Check if we're in edit mode
+
   // DnD sensors setup
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -94,9 +96,19 @@ export default function TemplateBuilder() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Fetch available grading scales
+  const { data: gradingScales } = useQuery({
+    queryKey: ['gradingScales'],
+    queryFn: async () => {
+      const response = await api.get('/api/grading-scales');
+      return response.data;
+    }
+  });
+
+  // Get default scale
+  const defaultScale = gradingScales?.find((scale: GradingScale) => scale.isDefault);
   
-  const [hasCheckedStore, setHasCheckedStore] = useState(false);
-  const [isEditMode] = useState(!!id);  // Check if we're in edit mode
   const [formData, setFormData] = useState<TemplateFormData>({
     name: '',
     description: '',
@@ -139,6 +151,27 @@ export default function TemplateBuilder() {
   });
 
   const availableTags = ['FOH', 'BOH', 'Leadership', 'General'];
+
+  // Initialize new criterion with default scale
+  const createNewCriterion = () => ({
+    id: Date.now().toString(),
+    name: '',
+    description: '',
+    gradingScale: defaultScale?._id || '1-5',
+    required: true
+  });
+
+  // Add this function to get scale name for display
+  const getScaleName = (scaleId: string) => {
+    if (!gradingScales) return 'Loading...';
+    const scale = gradingScales.find((s: GradingScale) => s._id === scaleId);
+    if (scale) return scale.name;
+    // Handle legacy scales
+    if (scaleId === '1-5') return '5 Point Scale';
+    if (scaleId === '1-10') return '10 Point Scale';
+    if (scaleId === 'yes-no') return 'Yes/No';
+    return 'Unknown Scale';
+  };
 
   // Fetch template data if in edit mode
   useEffect(() => {
@@ -235,47 +268,6 @@ export default function TemplateBuilder() {
       setHasCheckedStore(true);
     }
   }, [isLoading, user, navigate, toast]);
-
-  // Fetch available grading scales
-  const { data: gradingScales } = useQuery({
-    queryKey: ['gradingScales'],
-    queryFn: async () => {
-      const response = await api.get('/api/grading-scales');
-      return response.data;
-    }
-  });
-
-  // Get default scale
-  const defaultScale = gradingScales?.find((scale: GradingScale) => scale.isDefault);
-
-  // Initialize new criterion with default scale
-  const createNewCriterion = () => ({
-    id: Date.now().toString(),
-    name: '',
-    description: '',
-    gradingScale: defaultScale?._id || '1-5',
-    required: true
-  });
-
-  // Add this function to get scale name for display
-  const getScaleName = (scaleId: string) => {
-    if (!gradingScales) return 'Loading...';
-    const scale = gradingScales.find((s: GradingScale) => s._id === scaleId);
-    if (scale) return scale.name;
-    // Handle legacy scales
-    if (scaleId === '1-5') return '5 Point Scale';
-    if (scaleId === '1-10') return '10 Point Scale';
-    if (scaleId === 'yes-no') return 'Yes/No';
-    return 'Unknown Scale';
-  };
-
-  if (isLoading || !hasCheckedStore) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-      </div>
-    );
-  }
 
   const addSection = () => {
     const newSectionId = Date.now().toString();
@@ -553,70 +545,110 @@ export default function TemplateBuilder() {
     }
   };
 
-  const renderCriterionForm = (criterion: Criterion, sectionId: string, index: number) => (
-    <div className="space-y-4 p-4 border rounded-lg">
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium">Criterion {index + 1}</h4>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          onClick={() => handleRemoveCriterion(sectionId, criterion.id)}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-      
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor={`criterion-${criterion.id}-name`}>Name</Label>
-          <Input
-            id={`criterion-${criterion.id}-name`}
-            value={criterion.name}
-            onChange={(e) => handleCriterionChange(sectionId, criterion.id, 'name', e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor={`criterion-${criterion.id}-description`}>Description</Label>
-          <Textarea
-            id={`criterion-${criterion.id}-description`}
-            value={criterion.description}
-            onChange={(e) => handleCriterionChange(sectionId, criterion.id, 'description', e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor={`criterion-${criterion.id}-scale`}>Grading Scale</Label>
-          <select
-            id={`criterion-${criterion.id}-scale`}
-            value={criterion.gradingScale}
-            onChange={(e) => handleCriterionChange(sectionId, criterion.id, 'gradingScale', e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+  const handleCriterionChange = useCallback((sectionId: string, criterionId: string, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      sections: prev.sections.map(section => {
+        if (section.id === sectionId) {
+          return {
+            ...section,
+            criteria: section.criteria.map(criterion => {
+              if (criterion.id === criterionId) {
+                return {
+                  ...criterion,
+                  [field]: value
+                };
+              }
+              return criterion;
+            })
+          };
+        }
+        return section;
+      })
+    }));
+  }, []);
+
+  const handleRemoveCriterion = useCallback((sectionId: string, criterionId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sections: prev.sections.map(section => {
+        if (section.id === sectionId) {
+          return {
+            ...section,
+            criteria: section.criteria.filter(criterion => criterion.id !== criterionId)
+          };
+        }
+        return section;
+      })
+    }));
+  }, []);
+
+  const renderCriterionForm = useCallback((criterion: Criterion, sectionId: string, index: number) => {
+    return (
+      <div className="space-y-4 p-4 border rounded-lg">
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium">Criterion {index + 1}</h4>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => handleRemoveCriterion(sectionId, criterion.id)}
           >
-            {gradingScales?.map((scale: GradingScale) => (
-              <option key={scale._id} value={scale._id}>
-                {scale.name} {scale.isDefault && '(Default)'}
-              </option>
-            ))}
-          </select>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id={`criterion-${criterion.id}-required`}
-            checked={criterion.required}
-            onCheckedChange={(checked) => 
-              handleCriterionChange(sectionId, criterion.id, 'required', checked)
-            }
-          />
-          <Label htmlFor={`criterion-${criterion.id}-required`}>Required</Label>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor={`criterion-${criterion.id}-name`}>Name</Label>
+            <Input
+              id={`criterion-${criterion.id}-name`}
+              value={criterion.name}
+              onChange={(e) => handleCriterionChange(sectionId, criterion.id, 'name', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor={`criterion-${criterion.id}-description`}>Description</Label>
+            <Textarea
+              id={`criterion-${criterion.id}-description`}
+              value={criterion.description}
+              onChange={(e) => handleCriterionChange(sectionId, criterion.id, 'description', e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor={`criterion-${criterion.id}-scale`}>Grading Scale</Label>
+            <select
+              id={`criterion-${criterion.id}-scale`}
+              value={criterion.gradingScale}
+              onChange={(e) => handleCriterionChange(sectionId, criterion.id, 'gradingScale', e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              {gradingScales?.map((scale: GradingScale) => (
+                <option key={scale._id} value={scale._id}>
+                  {scale.name} {scale.isDefault && '(Default)'}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={`criterion-${criterion.id}-required`}
+              checked={criterion.required}
+              onCheckedChange={(checked) => 
+                handleCriterionChange(sectionId, criterion.id, 'required', checked)
+              }
+            />
+            <Label htmlFor={`criterion-${criterion.id}-required`}>Required</Label>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }, [gradingScales, handleCriterionChange, handleRemoveCriterion]);
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
@@ -730,6 +762,7 @@ export default function TemplateBuilder() {
                           onAddCriterion={() => addCriterion(section.id)}
                           onRemoveSection={() => removeSection(section.id)}
                           onRemoveCriterion={(criterionId) => removeCriterion(section.id, criterionId)}
+                          renderCriterionForm={renderCriterionForm}
                         />
                       ))}
                     </div>
