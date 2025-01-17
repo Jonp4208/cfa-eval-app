@@ -38,7 +38,7 @@ export const getGradingScale = async (req, res) => {
 export const createGradingScale = async (req, res) => {
   try {
     // Ensure user is a director
-    if (!req.user.roles.includes('director')) {
+    if (req.user.position !== 'Director') {
       return res.status(403).json({ message: 'Only directors can create grading scales' });
     }
 
@@ -64,7 +64,7 @@ export const createGradingScale = async (req, res) => {
 export const updateGradingScale = async (req, res) => {
   try {
     // Ensure user is a director
-    if (!req.user.roles.includes('director')) {
+    if (req.user.position !== 'Director') {
       return res.status(403).json({ message: 'Only directors can update grading scales' });
     }
 
@@ -96,7 +96,7 @@ export const updateGradingScale = async (req, res) => {
 export const deleteGradingScale = async (req, res) => {
   try {
     // Ensure user is a director
-    if (!req.user.roles.includes('director')) {
+    if (req.user.position !== 'Director') {
       return res.status(403).json({ message: 'Only directors can delete grading scales' });
     }
 
@@ -129,7 +129,7 @@ export const deleteGradingScale = async (req, res) => {
 export const setDefaultScale = async (req, res) => {
   try {
     // Ensure user is a director
-    if (!req.user.roles.includes('director')) {
+    if (req.user.position !== 'Director') {
       return res.status(403).json({ message: 'Only directors can set default grading scales' });
     }
 
