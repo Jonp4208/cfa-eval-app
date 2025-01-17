@@ -204,6 +204,11 @@ const SettingsPage = () => {
                 Evaluation
               </TabsTrigger>
             )}
+            {isDirector && (
+              <TabsTrigger value="grading-scales" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
+                Grading Scales
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="general">
@@ -325,6 +330,12 @@ const SettingsPage = () => {
                 onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
                 isUpdating={updateSettingsMutation.isPending}
               />
+            </TabsContent>
+          )}
+
+          {isDirector && (
+            <TabsContent value="grading-scales">
+              <GradingScales />
             </TabsContent>
           )}
         </Tabs>
