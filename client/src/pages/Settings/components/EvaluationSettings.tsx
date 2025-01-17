@@ -45,6 +45,30 @@ const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettin
                   />
                 </div>
 
+                {settings?.evaluations?.scheduling?.autoSchedule && (
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <label className="text-sm font-medium text-[#27251F]">Transition Handling</label>
+                      <p className="text-sm text-[#27251F]/60">How to handle existing evaluation cycles</p>
+                    </div>
+                    <Select 
+                      defaultValue={settings?.evaluations?.scheduling?.transitionMode}
+                      onValueChange={(value) => 
+                        onUpdate('scheduling', { transitionMode: value })
+                      }
+                    >
+                      <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
+                        <SelectValue placeholder="Select handling" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Start Next Period</SelectItem>
+                        <SelectItem value="complete_cycle">Complete Current Cycle</SelectItem>
+                        <SelectItem value="align_next">Align to Next Date</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center">
                   <div>
                     <label className="text-sm font-medium text-[#27251F]">Evaluation Frequency</label>
@@ -67,6 +91,46 @@ const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettin
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="flex justify-between items-center">
+                  <div>
+                    <label className="text-sm font-medium text-[#27251F]">Cycle Start Date</label>
+                    <p className="text-sm text-[#27251F]/60">When to start the evaluation cycle</p>
+                  </div>
+                  <Select 
+                    defaultValue={settings?.evaluations?.scheduling?.cycleStart}
+                    onValueChange={(value) => 
+                      onUpdate('scheduling', { cycleStart: value })
+                    }
+                  >
+                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
+                      <SelectValue placeholder="Select start date" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hire_date">Employee Start Date</SelectItem>
+                      <SelectItem value="calendar_year">Calendar Year (Jan 1)</SelectItem>
+                      <SelectItem value="fiscal_year">Fiscal Year (Oct 1)</SelectItem>
+                      <SelectItem value="custom">Custom Date</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {settings?.evaluations?.scheduling?.cycleStart === 'custom' && (
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <label className="text-sm font-medium text-[#27251F]">Custom Start Date</label>
+                      <p className="text-sm text-[#27251F]/60">Set specific date to start cycle</p>
+                    </div>
+                    <Input 
+                      type="date"
+                      value={settings?.evaluations?.scheduling?.customStartDate}
+                      onChange={(e) => 
+                        onUpdate('scheduling', { customStartDate: e.target.value })
+                      }
+                      className="w-[180px] h-12 rounded-xl border-gray-200"
+                    />
+                  </div>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>

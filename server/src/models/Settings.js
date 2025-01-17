@@ -33,6 +33,23 @@ const settingsSchema = new mongoose.Schema({
       }
     }
   },
+  evaluations: {
+    scheduling: {
+      autoSchedule: { type: Boolean, default: false },
+      frequency: { type: Number, default: 90 }, // Default to quarterly (90 days)
+      cycleStart: { 
+        type: String,
+        enum: ['hire_date', 'calendar_year', 'fiscal_year', 'custom'],
+        default: 'hire_date'
+      },
+      customStartDate: { type: Date },
+      transitionMode: {
+        type: String,
+        enum: ['immediate', 'complete_cycle', 'align_next'],
+        default: 'complete_cycle'
+      }
+    }
+  },
   darkMode: {
     type: Boolean,
     default: false

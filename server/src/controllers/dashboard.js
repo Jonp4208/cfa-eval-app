@@ -1,4 +1,4 @@
-import { User, Evaluation, Template, Disciplinary } from '../models/index.js';
+import { Settings, Store, User, Evaluation, Template, Disciplinary } from '../models/index.js';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req, res) => {
@@ -209,6 +209,15 @@ export const getTeamMemberDashboard = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Get next scheduled evaluation
+        const nextEvaluation = await Evaluation.findOne({
+            employee: user._id,
+            status: { $in: ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'] },
+            scheduledDate: { $gte: new Date() }
+        })
+        .sort({ scheduledDate: 1 })
+        .select('scheduledDate');
+
         // Get recent evaluations (last 3)
         const recentEvaluations = user.evaluations
             ? user.evaluations
@@ -256,9 +265,6 @@ export const getTeamMemberDashboard = async (req, res) => {
             )
             : 0;
 
-        // Get next scheduled evaluation
-        const nextEvaluation = "Coming soon"; // You'll need to implement this based on your scheduling logic
-
         // Get training data
         const training = []; // You'll need to implement this based on your training model
 
@@ -267,7 +273,7 @@ export const getTeamMemberDashboard = async (req, res) => {
             position: user.position,
             department: user.department,
             currentPerformance,
-            nextEvaluation,
+            nextEvaluation: nextEvaluation ? nextEvaluation.scheduledDate : null,
             activeGoals: activeGoals.length,
             recentEvaluations,
             goals: activeGoals,

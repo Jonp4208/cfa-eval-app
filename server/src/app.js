@@ -18,6 +18,9 @@ import goalsRoutes from './routes/goals.js';
 import analyticsRoutes from './routes/analytics.js';
 import gradingScalesRouter from './routes/gradingScales.js';
 
+// Services
+import { initCronJobs } from './services/cronService.js';
+
 // Error Handler
 import { errorHandler } from './utils/errorHandler.js';
 
@@ -27,6 +30,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Initialize cron jobs
+initCronJobs();
 
 // CORS configuration
 app.use(cors({

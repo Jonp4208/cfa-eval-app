@@ -24,6 +24,15 @@ const DEFAULT_USER_ACCESS = {
   }
 };
 
+const DEFAULT_EVALUATION_SETTINGS = {
+  scheduling: {
+    autoSchedule: false,
+    frequency: 90, // Default to quarterly
+    cycleStart: 'hire_date',
+    transitionMode: 'complete_cycle'
+  }
+};
+
 export const getSettings = async (req, res) => {
   try {
     if (!req.user.store) {
@@ -44,7 +53,8 @@ export const getSettings = async (req, res) => {
         store: req.user.store,
         darkMode: false,
         compactMode: false,
-        userAccess: DEFAULT_USER_ACCESS
+        userAccess: DEFAULT_USER_ACCESS,
+        evaluations: DEFAULT_EVALUATION_SETTINGS
       });
     }
     
@@ -85,6 +95,7 @@ export const updateSettings = async (req, res) => {
     // Handle resetToDefault flag
     if (req.body.resetToDefault) {
       settings.userAccess = DEFAULT_USER_ACCESS;
+      settings.evaluations = DEFAULT_EVALUATION_SETTINGS;
       await settings.save();
       return res.json(settings);
     }
@@ -101,6 +112,17 @@ export const updateSettings = async (req, res) => {
         settings.userAccess.evaluation = {
           ...settings.userAccess.evaluation,
           ...req.body.userAccess.evaluation
+        };
+      }
+    }
+
+    // Update evaluation settings
+    if (req.body.evaluations) {
+      if (req.body.evaluations.scheduling) {
+        settings.evaluations = settings.evaluations || {};
+        settings.evaluations.scheduling = {
+          ...settings.evaluations.scheduling,
+          ...req.body.evaluations.scheduling
         };
       }
     }
