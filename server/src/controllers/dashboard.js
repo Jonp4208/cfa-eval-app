@@ -189,21 +189,11 @@ const getActivityLogs = async (storeId) => {
 // Get team member dashboard data
 export const getTeamMemberDashboard = async (req, res) => {
     try {
-        console.log('Team member dashboard - req.user:', {
-            userId: req.user.userId,
-            _id: req.user._id,
-            role: req.user.role
-        });
-
         const user = await User.findById(req.user._id)
             .populate('store', 'name')
+            .populate('evaluator', 'name')
+            .populate('manager', 'name')
             .select('-password');
-
-        console.log('Team member dashboard - found user:', user ? {
-            _id: user._id,
-            name: user.name,
-            role: user.role
-        } : 'No user found');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -216,43 +206,8 @@ export const getTeamMemberDashboard = async (req, res) => {
             scheduledDate: { $gte: new Date() }
         })
         .sort({ scheduledDate: 1 })
-        .select('scheduledDate');
-
-        // Get recent evaluations (last 3)
-        const recentEvaluations = user.evaluations
-            ? user.evaluations
-                .sort((a, b) => b.date - a.date)
-                .slice(0, 3)
-                .map(evaluation => ({
-                    id: evaluation._id,
-                    type: evaluation.type,
-                    date: evaluation.date,
-                    score: evaluation.score
-                }))
-            : [];
-
-        // Get active goals
-        const activeGoals = user.development
-            ? user.development
-                .filter(goal => goal.status !== 'completed')
-                .map(goal => ({
-                    id: goal._id,
-                    name: goal.goal,
-                    progress: goal.progress
-                }))
-            : [];
-
-        // Get recent achievements (last 3)
-        const recentAchievements = user.recognition
-            ? user.recognition
-                .sort((a, b) => b.date - a.date)
-                .slice(0, 3)
-                .map(achievement => ({
-                    id: achievement._id,
-                    title: achievement.title,
-                    date: achievement.date
-                }))
-            : [];
+        .populate('template', 'name')
+        .select('scheduledDate template status');
 
         // Calculate current performance (average of last 3 evaluations)
         const currentPerformance = user.evaluations && user.evaluations.length > 0
@@ -260,28 +215,50 @@ export const getTeamMemberDashboard = async (req, res) => {
                 user.evaluations
                     .sort((a, b) => b.date - a.date)
                     .slice(0, 3)
-                    .reduce((sum, evaluation) => sum + evaluation.score, 0) / 
+                    .reduce((sum, eval) => sum + eval.score, 0) / 
                 Math.min(user.evaluations.length, 3)
             )
             : 0;
 
-        // Get training data
-        const training = []; // You'll need to implement this based on your training model
+        // Get active development goals
+        const activeGoals = user.development
+            ? user.development
+                .filter(goal => goal.status !== 'completed')
+                .map(goal => ({
+                    id: goal._id.toString(),
+                    name: goal.goal,
+                    progress: goal.progress || 0,
+                    targetDate: goal.targetDate
+                }))
+            : [];
+
+        // Get recent achievements/recognition
+        const recentAchievements = user.recognition
+            ? user.recognition
+                .sort((a, b) => b.date - a.date)
+                .slice(0, 3)
+                .map(achievement => ({
+                    id: achievement._id.toString(),
+                    title: achievement.title,
+                    date: achievement.date
+                }))
+            : [];
 
         const dashboardData = {
             name: user.name,
             position: user.position,
-            department: user.department,
+            departments: user.departments[0] || 'General',
             currentPerformance,
-            nextEvaluation: nextEvaluation ? nextEvaluation.scheduledDate : null,
+            nextEvaluation: nextEvaluation ? {
+                date: nextEvaluation.scheduledDate,
+                templateName: nextEvaluation.template?.name,
+                status: nextEvaluation.status
+            } : null,
             activeGoals: activeGoals.length,
-            recentEvaluations,
             goals: activeGoals,
-            achievements: recentAchievements,
-            training
+            achievements: recentAchievements
         };
 
-        console.log('Team member dashboard - sending data:', dashboardData);
         res.json(dashboardData);
     } catch (error) {
         console.error('Error getting team member dashboard:', error);
