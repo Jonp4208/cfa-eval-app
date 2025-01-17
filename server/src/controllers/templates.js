@@ -1,5 +1,6 @@
 import Template from '../models/Templates.js';
 import { User } from '../models/index.js';
+import GradingScale from '../models/GradingScale.js';
 
 // Get templates
 export const getTemplates = async (req, res) => {
@@ -86,10 +87,35 @@ export const createTemplate = async (req, res) => {
     try {
         const { name, description, sections } = req.body;
 
+        // Validate sections and criteria
+        if (!sections || !Array.isArray(sections)) {
+            return res.status(400).json({ message: 'Invalid sections data' });
+        }
+
+        // Get default grading scale
+        const defaultScale = await GradingScale.findOne({ 
+            store: req.user.store,
+            isDefault: true,
+            isActive: true
+        });
+
+        if (!defaultScale) {
+            return res.status(400).json({ message: 'No default grading scale found' });
+        }
+
+        // Process sections and ensure grading scale references are valid
+        const processedSections = sections.map(section => ({
+            ...section,
+            criteria: section.criteria.map(criterion => ({
+                ...criterion,
+                gradingScale: criterion.gradingScale || defaultScale._id
+            }))
+        }));
+
         const template = new Template({
             name,
             description,
-            sections,
+            sections: processedSections,
             store: req.user.store,
             createdBy: req.user._id
         });
@@ -118,12 +144,45 @@ export const createTemplate = async (req, res) => {
 // Update template
 export const updateTemplate = async (req, res) => {
     try {
+        const { name, description, sections } = req.body;
+
+        // Validate sections and criteria
+        if (!sections || !Array.isArray(sections)) {
+            return res.status(400).json({ message: 'Invalid sections data' });
+        }
+
+        // Get default grading scale
+        const defaultScale = await GradingScale.findOne({ 
+            store: req.user.store,
+            isDefault: true,
+            isActive: true
+        });
+
+        if (!defaultScale) {
+            return res.status(400).json({ message: 'No default grading scale found' });
+        }
+
+        // Process sections and ensure grading scale references are valid
+        const processedSections = sections.map(section => ({
+            ...section,
+            criteria: section.criteria.map(criterion => ({
+                ...criterion,
+                gradingScale: criterion.gradingScale || defaultScale._id
+            }))
+        }));
+
         const template = await Template.findOneAndUpdate(
             {
                 _id: req.params.id,
                 store: req.user.store
             },
-            { $set: req.body },
+            { 
+                $set: {
+                    name,
+                    description,
+                    sections: processedSections
+                }
+            },
             { new: true, runValidators: true }
         );
 

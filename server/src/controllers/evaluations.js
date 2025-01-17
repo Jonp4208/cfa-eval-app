@@ -16,6 +16,11 @@ export const createEvaluation = async (req, res) => {
             sectionResults
         } = req.body;
 
+        // Check if user is a manager or director
+        if (!['Director', 'Leader'].includes(req.user.position)) {
+            return res.status(403).json({ message: 'Access denied. Only managers and directors can create evaluations.' });
+        }
+
         console.log('Create evaluation request:', {
             body: req.body,
             user: req.user,
@@ -78,22 +83,27 @@ export const createEvaluation = async (req, res) => {
                 relatedModel: 'Evaluation'
             });
 
-            // Send email notification to employee
-            await sendEmail({
-                to: employee.email,
-                subject: 'New Evaluation Assigned',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h1 style="color: #E4002B;">New Evaluation Assigned</h1>
-                        <p>Hello ${employee.name},</p>
-                        <p>A new evaluation has been assigned to you. Please complete your self-evaluation by ${new Date(scheduledDate).toLocaleDateString()}.</p>
-                        <p><strong>Evaluator:</strong> ${req.user.name}</p>
-                        <p><strong>Due Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
-                        <p>Please log in to the Growth Hub platform to complete your self-evaluation.</p>
-                        <p>Best regards,<br>Growth Hub Team</p>
-                    </div>
-                `
-            });
+            // Try to send email notification, but don't fail if it errors
+            try {
+                await sendEmail({
+                    to: employee.email,
+                    subject: 'New Evaluation Assigned',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <h1 style="color: #E4002B;">New Evaluation Assigned</h1>
+                            <p>Hello ${employee.name},</p>
+                            <p>A new evaluation has been assigned to you. Please complete your self-evaluation by ${new Date(scheduledDate).toLocaleDateString()}.</p>
+                            <p><strong>Evaluator:</strong> ${req.user.name}</p>
+                            <p><strong>Due Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
+                            <p>Please log in to the Growth Hub platform to complete your self-evaluation.</p>
+                            <p>Best regards,<br>Growth Hub Team</p>
+                        </div>
+                    `
+                });
+            } catch (emailError) {
+                console.log('Email notification failed:', emailError);
+                // Continue execution - don't fail the evaluation creation
+            }
 
             // Get all managers in the store (except the creator)
             const managers = await User.find({
@@ -167,79 +177,25 @@ export const getEvaluations = async (req, res) => {
 // Get specific evaluation
 export const getEvaluation = async (req, res) => {
     try {
-        console.log('Get evaluation request:', {
-            evaluationId: req.params.evaluationId,
-            userId: req.user._id,
-            userRole: req.user.role,
-            storeId: req.user.store._id
-        });
-
-        // First try to find the evaluation without store filter
-        const evaluationWithoutStore = await Evaluation.findById(req.params.evaluationId);
-        
-        if (!evaluationWithoutStore) {
-            console.log('Evaluation does not exist:', {
-                requestedId: req.params.evaluationId
-            });
-            return res.status(404).json({ 
-                message: 'Evaluation not found',
-                details: 'The requested evaluation does not exist'
-            });
-        }
-
-        // Check store match
-        if (evaluationWithoutStore.store.toString() !== req.user.store._id.toString()) {
-            console.log('Store mismatch:', {
-                evaluationStore: evaluationWithoutStore.store,
-                userStore: req.user.store._id,
-                evaluationId: req.params.evaluationId,
-                employeeId: evaluationWithoutStore.employee,
-                evaluatorId: evaluationWithoutStore.evaluator
-            });
-            return res.status(403).json({ 
-                message: 'Access denied',
-                details: 'You do not have permission to view this evaluation'
-            });
-        }
-
-        // Get full evaluation with populated fields
-        const evaluation = await Evaluation.findOne({
-            _id: req.params.evaluationId,
-            store: req.user.store._id
+        const evaluation = await Evaluation.findOne({ 
+            _id: req.params.id,
+            $or: [
+                { employee: req.user._id },
+                { evaluator: req.user._id }
+            ]
         })
         .populate('employee', 'name position')
-        .populate('evaluator', 'name')
+        .populate('evaluator', 'name position')
         .populate({
             path: 'template',
-            select: 'name description sections',
             populate: {
-                path: 'sections',
-                select: 'title description criteria order',
-                populate: {
-                    path: 'criteria',
-                    select: 'name description ratingScale required'
-                }
+                path: 'sections.criteria.gradingScale',
+                model: 'GradingScale'
             }
         });
 
-        // Check if user has access
-        const isAdmin = req.user.role === 'admin';
-        const isEmployee = evaluation.employee._id.toString() === req.user._id.toString();
-        const isEvaluator = evaluation.evaluator._id.toString() === req.user._id.toString();
-
-        if (!isAdmin && !isEmployee && !isEvaluator) {
-            console.log('Access denied:', {
-                isAdmin,
-                isEmployee,
-                isEvaluator,
-                userId: req.user._id,
-                employeeId: evaluation.employee._id,
-                evaluatorId: evaluation.evaluator._id
-            });
-            return res.status(403).json({ 
-                message: 'Access denied',
-                details: 'You must be the employee, evaluator, or an admin to view this evaluation'
-            });
+        if (!evaluation) {
+            return res.status(404).json({ message: 'Evaluation not found' });
         }
 
         // Update legacy 'pending' status
@@ -261,8 +217,9 @@ export const getEvaluation = async (req, res) => {
                         id: criterion._id.toString(),
                         text: criterion.name,
                         description: criterion.description,
-                        type: criterion.ratingScale === 'yes-no' ? 'boolean' : 'rating',
-                        required: criterion.required
+                        type: criterion.gradingScale ? 'rating' : 'text',
+                        required: criterion.required,
+                        gradingScale: criterion.gradingScale
                     }))
                 }))
             },
@@ -276,11 +233,8 @@ export const getEvaluation = async (req, res) => {
 
         res.json({ evaluation: transformedEvaluation });
     } catch (error) {
-        console.error('Get evaluation error:', error);
-        res.status(500).json({ 
-            message: 'Error retrieving evaluation',
-            details: error.message
-        });
+        console.error('Error getting evaluation:', error);
+        res.status(500).json({ message: 'Error getting evaluation' });
     }
 };
 

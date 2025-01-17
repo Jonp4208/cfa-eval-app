@@ -65,6 +65,7 @@ export default function GradingScales() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingScale, setEditingScale] = useState<GradingScale | null>(null);
   const [grades, setGrades] = useState<Array<{ value: number }>>([{ value: 1 }]);
+  const [editingGrades, setEditingGrades] = useState<Grade[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -77,6 +78,29 @@ export default function GradingScales() {
   const removeGrade = () => {
     if (grades.length > 1) {
       setGrades(grades.slice(0, -1));
+    }
+  };
+
+  const addEditingGrade = () => {
+    if (editingGrades.length < 10) {
+      setEditingGrades([...editingGrades, { 
+        value: editingGrades.length + 1,
+        label: editingGrades.length === 0 ? "Poor" : 
+               editingGrades.length === editingGrades.length ? "Excellent" :
+               "Good",
+        description: "",
+        color: GRADE_COLORS[Math.floor((editingGrades.length) * (GRADE_COLORS.length / (editingGrades.length + 1)))]?.value || GRADE_COLORS[0].value
+      }]);
+    }
+  };
+
+  const removeEditingGrade = () => {
+    if (editingGrades.length > 1) {
+      const newGrades = editingGrades.slice(0, -1).map((grade, i) => ({
+        ...grade,
+        value: i + 1
+      }));
+      setEditingGrades(newGrades);
     }
   };
 
@@ -183,6 +207,16 @@ export default function GradingScales() {
     }
   });
 
+  // When opening the edit dialog, map the grades to ensure proper value sequence
+  const startEditing = (scale: GradingScale) => {
+    const mappedGrades = scale.grades.map((grade, i) => ({
+      ...grade,
+      value: i + 1
+    }));
+    setEditingGrades(mappedGrades);
+    setEditingScale(scale);
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -204,10 +238,10 @@ export default function GradingScales() {
               New Scale
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-h-[80vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Create New Grading Scale</DialogTitle>
-              <DialogDescription className="text-gray-500">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="space-y-2">
+              <DialogTitle>Create New Grading Scale</DialogTitle>
+              <DialogDescription>
                 Create a new grading scale for evaluations
               </DialogDescription>
             </DialogHeader>
@@ -225,28 +259,28 @@ export default function GradingScales() {
                 }))
               };
               createScale.mutate(data);
-            }} className="flex flex-col flex-1 overflow-hidden">
-              <div className="space-y-4 flex-1 overflow-y-auto pr-2">
+            }} className="space-y-3">
+              <div className="space-y-3">
                 <div>
-                  <Label htmlFor="name" className="font-medium">Name</Label>
+                  <Label htmlFor="name">Name</Label>
                   <Input id="name" name="name" required className="focus-visible:ring-[#E51636]" />
                 </div>
                 <div>
-                  <Label htmlFor="description" className="font-medium">Description</Label>
-                  <Textarea id="description" name="description" className="focus-visible:ring-[#E51636]" />
+                  <Label htmlFor="description">Description</Label>
+                  <Input id="description" name="description" className="focus-visible:ring-[#E51636]" />
                 </div>
-                <div className="space-y-4">
-                  <h4 className="font-medium">Grades ({grades.length} Point Scale)</h4>
-                  <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+                <div className="space-y-3">
+                  <h4>Grades ({grades.length} Point Scale)</h4>
+                  <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
                     {grades.map((grade, i) => (
-                      <div key={grade.value} className="p-4 border rounded-lg space-y-3 hover:border-[#E51636]/30 transition-colors">
-                        <div className="grid grid-cols-3 gap-3">
+                      <div key={grade.value} className="p-2 border rounded-lg space-y-2 hover:border-[#E51636]/30 transition-colors">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
-                            <Label className="font-medium">Value</Label>
+                            <Label>Value</Label>
                             <Input value={grade.value} disabled className="bg-gray-50" />
                           </div>
                           <div>
-                            <Label htmlFor={`grade-${grade.value}-label`} className="font-medium">Label</Label>
+                            <Label htmlFor={`grade-${grade.value}-label`}>Label</Label>
                             <Input 
                               id={`grade-${grade.value}-label`} 
                               name={`grade-${grade.value}-label`} 
@@ -261,19 +295,14 @@ export default function GradingScales() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`grade-${grade.value}-color`} className="font-medium">Color</Label>
+                            <Label htmlFor={`grade-${grade.value}-color`}>Color</Label>
                             <Select 
                               name={`grade-${grade.value}-color`} 
                               defaultValue={GRADE_COLORS[Math.floor(i * (GRADE_COLORS.length / grades.length))]?.value} 
                               required
                             >
-                              <SelectTrigger 
-                                className="focus:ring-[#E51636]"
-                                style={{ 
-                                  backgroundColor: `${GRADE_COLORS[Math.floor(i * (GRADE_COLORS.length / grades.length))]?.value}10` 
-                                }}
-                              >
-                                <SelectValue placeholder="Select a color" />
+                              <SelectTrigger className="focus:ring-[#E51636]">
+                                <SelectValue placeholder="Select" />
                               </SelectTrigger>
                               <SelectContent>
                                 {GRADE_COLORS.map((color) => (
@@ -284,7 +313,7 @@ export default function GradingScales() {
                                   >
                                     <div className="flex items-center gap-2">
                                       <div 
-                                        className="w-4 h-4 rounded-full" 
+                                        className="w-3 h-3 rounded-full" 
                                         style={{ backgroundColor: color.value }} 
                                       />
                                       <span>{color.label}</span>
@@ -296,49 +325,45 @@ export default function GradingScales() {
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor={`grade-${grade.value}-description`} className="font-medium">Description</Label>
+                          <Label htmlFor={`grade-${grade.value}-description`}>Description</Label>
                           <Input
                             id={`grade-${grade.value}-description`}
                             name={`grade-${grade.value}-description`}
                             className="focus-visible:ring-[#E51636]"
                           />
                         </div>
-                        <div className="flex justify-end gap-2 pt-2">
-                          {grades.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="hover:border-[#E51636] hover:text-[#E51636]"
-                              onClick={() => {
-                                const newGrades = [...grades];
-                                newGrades.splice(i, 1);
-                                setGrades(newGrades.map((g, idx) => ({ value: idx + 1 })));
-                              }}
-                            >
-                              <MinusCircle className="h-4 w-4 mr-1" />
-                              Remove Grade
-                            </Button>
-                          )}
-                          {i === grades.length - 1 && grades.length < 10 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="hover:border-[#E51636] hover:text-[#E51636]"
-                              onClick={addGrade}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Grade
-                            </Button>
-                          )}
-                        </div>
                       </div>
                     ))}
                   </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    {grades.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="hover:border-[#E51636] hover:text-[#E51636]"
+                        onClick={removeGrade}
+                      >
+                        <MinusCircle className="h-4 w-4 mr-1" />
+                        Remove Grade
+                      </Button>
+                    )}
+                    {grades.length < 10 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="hover:border-[#E51636] hover:text-[#E51636]"
+                        onClick={addGrade}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Grade
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-4 pt-4 mt-4 border-t">
+              <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button
                   type="button"
                   variant="outline"
@@ -398,7 +423,7 @@ export default function GradingScales() {
                     variant="outline"
                     size="sm"
                     className="hover:border-[#E51636] hover:text-[#E51636]"
-                    onClick={() => setEditingScale(scale)}
+                    onClick={() => startEditing(scale)}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -441,9 +466,14 @@ export default function GradingScales() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editingScale} onOpenChange={(open) => !open && setEditingScale(null)}>
-        <DialogContent>
-          <DialogHeader>
+      <Dialog open={!!editingScale} onOpenChange={(open) => {
+        if (!open) {
+          setEditingScale(null);
+          setEditingGrades([]);
+        }
+      }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="space-y-2">
             <DialogTitle>Edit Grading Scale</DialogTitle>
             <DialogDescription>
               Modify the grading scale settings
@@ -456,7 +486,7 @@ export default function GradingScales() {
               const data = {
                 name: formData.get('name') as string,
                 description: formData.get('description') as string,
-                grades: editingScale.grades.map((grade, i) => ({
+                grades: editingGrades.map((grade) => ({
                   value: grade.value,
                   label: formData.get(`grade-${grade.value}-label`) as string,
                   description: formData.get(`grade-${grade.value}-description`) as string,
@@ -465,7 +495,7 @@ export default function GradingScales() {
               };
               updateScale.mutate({ id: editingScale._id, data });
             }}>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
                   <Label htmlFor="edit-name">Name</Label>
                   <Input
@@ -473,66 +503,129 @@ export default function GradingScales() {
                     name="name"
                     defaultValue={editingScale.name}
                     required
+                    className="focus-visible:ring-[#E51636]"
                   />
                 </div>
                 <div>
                   <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
+                  <Input
                     id="edit-description"
                     name="description"
                     defaultValue={editingScale.description}
+                    className="focus-visible:ring-[#E51636]"
                   />
                 </div>
-                <div className="space-y-4">
-                  <h4 className="font-medium">Grades</h4>
-                  {editingScale.grades.map((grade) => (
-                    <div key={grade.value} className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label>Value</Label>
-                        <Input value={grade.value} disabled />
+                <div className="space-y-2">
+                  <h4>Grades ({editingGrades.length} Point Scale)</h4>
+                  <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
+                    {editingGrades.map((grade, i) => (
+                      <div key={grade.value} className="p-2 border rounded-lg space-y-2 hover:border-[#E51636]/30 transition-colors">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <Label>Value</Label>
+                            <Input value={i + 1} disabled className="bg-gray-50" />
+                          </div>
+                          <div>
+                            <Label htmlFor={`grade-${grade.value}-label`}>Label</Label>
+                            <Input
+                              id={`grade-${grade.value}-label`}
+                              name={`grade-${grade.value}-label`}
+                              defaultValue={grade.label || (
+                                i === 0 ? "Poor" :
+                                i === editingGrades.length - 1 ? "Excellent" :
+                                i === Math.floor(editingGrades.length / 2) ? "Good" :
+                                ""
+                              )}
+                              required
+                              className="focus-visible:ring-[#E51636]"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`grade-${grade.value}-color`}>Color</Label>
+                            <Select 
+                              name={`grade-${grade.value}-color`} 
+                              defaultValue={grade.color}
+                              required
+                            >
+                              <SelectTrigger className="focus:ring-[#E51636]">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {GRADE_COLORS.map((color) => (
+                                  <SelectItem 
+                                    key={color.value} 
+                                    value={color.value}
+                                    className="focus:bg-[#E51636]/10"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div 
+                                        className="w-3 h-3 rounded-full" 
+                                        style={{ backgroundColor: color.value }} 
+                                      />
+                                      <span>{color.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor={`grade-${grade.value}-description`}>Description</Label>
+                          <Input
+                            id={`grade-${grade.value}-description`}
+                            name={`grade-${grade.value}-description`}
+                            defaultValue={grade.description}
+                            className="focus-visible:ring-[#E51636]"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor={`grade-${grade.value}-label`}>Label</Label>
-                        <Input
-                          id={`grade-${grade.value}-label`}
-                          name={`grade-${grade.value}-label`}
-                          defaultValue={grade.label}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`grade-${grade.value}-color`}>Color</Label>
-                        <Input
-                          id={`grade-${grade.value}-color`}
-                          name={`grade-${grade.value}-color`}
-                          type="color"
-                          defaultValue={grade.color}
-                          required
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <Label htmlFor={`grade-${grade.value}-description`}>Description</Label>
-                        <Input
-                          id={`grade-${grade.value}-description`}
-                          name={`grade-${grade.value}-description`}
-                          defaultValue={grade.description}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    {editingGrades.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="hover:border-[#E51636] hover:text-[#E51636]"
+                        onClick={removeEditingGrade}
+                      >
+                        <MinusCircle className="h-4 w-4 mr-1" />
+                        Remove Grade
+                      </Button>
+                    )}
+                    {editingGrades.length < 10 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="hover:border-[#E51636] hover:text-[#E51636]"
+                        onClick={addEditingGrade}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Grade
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-end gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setEditingScale(null)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={updateScale.isPending}>
-                    {updateScale.isPending ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 mt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="hover:border-[#E51636] hover:text-[#E51636]"
+                  onClick={() => setEditingScale(null)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updateScale.isPending}
+                  className="bg-[#E51636] hover:bg-[#E51636]/90 text-white"
+                >
+                  {updateScale.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
               </div>
             </form>
           )}

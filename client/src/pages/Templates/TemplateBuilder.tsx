@@ -195,7 +195,7 @@ export default function TemplateBuilder() {
                 id: criterion._id || Date.now().toString(),
                 name: criterion.name,
                 description: criterion.description || '',
-                gradingScale: criterion.gradingScale || '1-5',
+                gradingScale: criterion.gradingScale || defaultScale?._id || '',
                 required: criterion.required
               }))
             })),
@@ -215,7 +215,7 @@ export default function TemplateBuilder() {
     };
 
     fetchTemplate();
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, defaultScale]);
 
   useEffect(() => {
     console.log('Auth check effect running', { 
@@ -309,7 +309,7 @@ export default function TemplateBuilder() {
                 id: Date.now().toString(),
                 name: '',
                 description: '',
-                gradingScale: '1-5',
+                gradingScale: defaultScale?._id || '',
                 required: true
               }
             ]

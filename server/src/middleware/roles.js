@@ -11,12 +11,8 @@ export const isStoreAdmin = (req, res, next) => {
 export const isManager = async (req, res, next) => {
   try {
     const managerPositions = [
-      'Store Director',
-      'Kitchen Director',
-      'Service Director',
-      'Store Leader',
-      'Training Leader',
-      'Shift Leader'
+      'Director',
+      'Leader'
     ];
 
     if (!managerPositions.includes(req.user.position)) {
