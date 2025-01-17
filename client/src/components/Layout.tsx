@@ -62,8 +62,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       try {
         const dashboardResponse = await api.get('/api/dashboard/stats');
         const pendingCount = dashboardResponse.data.pendingEvaluations || 0;
+        const upcomingCount = dashboardResponse.data.upcomingEvaluations?.length || 0;
         setPendingEvaluations(pendingCount);
-        setHasNotifications(pendingCount > 0);
+        setHasNotifications(pendingCount > 0 || upcomingCount > 0);
         setUpcomingEvaluations(dashboardResponse.data.upcomingEvaluations || []);
       } catch (error) {
         console.error('Error fetching data:', error);

@@ -8,6 +8,10 @@ export const getDashboardStats = async (req, res) => {
         // Get counts
         const pendingEvaluations = await Evaluation.countDocuments({ 
             store, 
+            $or: [
+                { employee: req.user._id },  // User is the employee
+                { evaluator: req.user._id }  // User is the evaluator
+            ],
             status: { 
                 $in: ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'] 
             }
