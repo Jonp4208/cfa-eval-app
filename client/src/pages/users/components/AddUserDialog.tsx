@@ -284,14 +284,14 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
             <div className="grid gap-2">
               <label htmlFor="manager" className="text-sm font-medium text-[#27251F]">Manager</label>
               <Select
-                value={formData.managerId}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, managerId: value }))}
+                value={formData.managerId || "none"}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, managerId: value === "none" ? null : value }))}
               >
                 <SelectTrigger id="manager" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
                   <SelectValue placeholder="Select manager" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Manager</SelectItem>
+                  <SelectItem value="none">No Manager</SelectItem>
                   {managers?.map((manager: User) => (
                     <SelectItem key={manager._id} value={manager._id}>
                       {manager.name}
