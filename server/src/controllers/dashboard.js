@@ -215,7 +215,7 @@ export const getTeamMemberDashboard = async (req, res) => {
                 user.evaluations
                     .sort((a, b) => b.date - a.date)
                     .slice(0, 3)
-                    .reduce((sum, eval) => sum + eval.score, 0) / 
+                    .reduce((sum, evaluation) => sum + evaluation.score, 0) / 
                 Math.min(user.evaluations.length, 3)
             )
             : 0;
