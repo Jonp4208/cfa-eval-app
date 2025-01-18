@@ -452,6 +452,17 @@ export default function Evaluations() {
                             Schedule Review
                           </Button>
                         )}
+                        {evaluation.status === 'in_review_session' && (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/evaluations/${evaluation._id}`);
+                            }}
+                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
+                          >
+                            Complete Review
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
