@@ -62,7 +62,7 @@ export default function Evaluations() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [view, setView] = useState<'all' | 'pending' | 'completed'>('all');
+  const [view, setView] = useState<'all' | 'pending' | 'completed'>('pending');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
