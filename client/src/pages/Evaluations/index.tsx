@@ -406,8 +406,7 @@ export default function Evaluations() {
               return (
                 <Card 
                   key={evaluation._id}
-                  className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 cursor-pointer"
-                  onClick={() => navigate(`/evaluations/${evaluation._id}`)}
+                  className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300"
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -438,11 +437,21 @@ export default function Evaluations() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusBadgeColor(evaluation.status)}`}>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(evaluation.status)}`}>
                           {getStatusDisplay(evaluation)}
                         </span>
-                        <ChevronRight className="w-5 h-5 text-[#27251F]/40" />
+                        {evaluation.status === 'pending_manager_review' && (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/evaluations/${evaluation._id}`);
+                            }}
+                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
+                          >
+                            Schedule Review
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>

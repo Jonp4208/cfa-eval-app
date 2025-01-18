@@ -9,6 +9,7 @@ import api from '@/lib/axios';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertCircle } from 'lucide-react';
 
 interface Evaluation {
   _id: string;
@@ -325,6 +326,16 @@ export default function ViewEvaluation() {
 
   const isEmployee = user?._id === evaluation.employee._id;
   const isManager = user?._id === evaluation.evaluator._id;
+  
+  // Add debug logging
+  console.log('Debug - Evaluation Display Conditions:', {
+    isManager,
+    status: evaluation.status,
+    showScheduleReview,
+    userId: user?._id,
+    evaluatorId: evaluation.evaluator._id
+  });
+
   const canEdit = (isEmployee && evaluation.status === 'pending_self_evaluation') ||
                  (isManager && evaluation.status === 'in_review_session');
 
@@ -503,9 +514,24 @@ export default function ViewEvaluation() {
             {isManager && evaluation.status === 'pending_manager_review' && !showScheduleReview && (
               <Card className="mb-8 bg-yellow-50 border-yellow-200 rounded-[20px]">
                 <CardContent className="p-6">
-                  <p className="text-center text-yellow-800 font-medium">
-                    Please schedule a review session with the employee to complete the evaluation together.
-                  </p>
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="flex items-center justify-center gap-2 text-yellow-800">
+                      <AlertCircle className="w-5 h-5" />
+                      <p className="text-center font-medium">
+                        Action Required: Schedule Review Session
+                      </p>
+                    </div>
+                    <p className="text-center text-yellow-700">
+                      Please schedule a review session with the employee to complete the evaluation together.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowScheduleReview(true)}
+                      className="inline-flex items-center justify-center px-6 py-3 bg-[#E51636] text-white font-medium rounded-xl hover:bg-[#E51636]/90 transition-colors"
+                    >
+                      Start Scheduling Review
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
             )}
