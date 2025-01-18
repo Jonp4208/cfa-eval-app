@@ -528,7 +528,7 @@ export default function ViewEvaluation() {
                             <select
                               value={answers[`${sectionIndex}-${questionIndex}`] || ''}
                               onChange={(e) => handleAnswerChange(sectionIndex, questionIndex, e.target.value)}
-                              className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                              className="max-w-[300px] h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent bg-white"
                             >
                               <option value="">Select a rating</option>
                               {question.gradingScale?.grades.map(grade => (
