@@ -30,6 +30,7 @@ interface TeamMemberDashboardData {
     evaluator: string | null;
     id: string | null;
     acknowledged?: boolean;
+    lastEvaluationDate?: string | null;
   };
   activeGoals: number;
   goals: Array<{
@@ -161,6 +162,11 @@ export default function TeamMemberDashboard() {
                       <p className="text-[#27251F]/60 mt-1">
                         {Math.ceil((new Date(dashboardData.nextEvaluation.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days away
                       </p>
+                      {dashboardData.nextEvaluation.lastEvaluationDate && (
+                        <p className="text-[#27251F]/60 mt-2 text-sm">
+                          Last evaluation: {new Date(dashboardData.nextEvaluation.lastEvaluationDate).toLocaleDateString()}
+                        </p>
+                      )}
                       {dashboardData.nextEvaluation.status === 'pending_self_evaluation' && (
                         <Button 
                           onClick={() => navigate(`/evaluations/${dashboardData.nextEvaluation.id}`)}
@@ -187,6 +193,11 @@ export default function TeamMemberDashboard() {
                     <>
                       <h3 className="text-3xl font-bold mt-2 text-[#27251F]">Not Scheduled</h3>
                       <p className="text-[#27251F]/60 mt-1">No upcoming evaluation</p>
+                      {dashboardData.nextEvaluation.lastEvaluationDate && (
+                        <p className="text-[#27251F]/60 mt-2 text-sm">
+                          Last evaluation: {new Date(dashboardData.nextEvaluation.lastEvaluationDate).toLocaleDateString()}
+                        </p>
+                      )}
                     </>
                   )}
                 </div>
