@@ -10,10 +10,9 @@ const criterionSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    ratingScale: {
-        type: String,
-        enum: ['1-5', '1-10', 'yes-no'],
-        default: '1-5'
+    gradingScale: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'GradingScale'
     },
     required: {
         type: Boolean,

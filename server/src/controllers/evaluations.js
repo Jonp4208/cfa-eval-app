@@ -3,6 +3,7 @@ import Evaluation from '../models/Evaluation.js';
 import Template from '../models/Templates.js';
 import Notification from '../models/Notification.js';
 import { sendEmail } from '../utils/email.js';
+import GradingScale from '../models/GradingScale.js';
 
 // Create new evaluation
 export const createEvaluation = async (req, res) => {
@@ -161,8 +162,8 @@ export const getEvaluations = async (req, res) => {
         
         const evaluations = await Evaluation.find(query)
             .populate('employee', 'name position')
-            .populate('evaluator', 'name')
-            .populate('template', 'name')
+            .populate('evaluator', 'name position')
+            .populate('template')
             .sort('-createdAt');
 
         console.log('Found evaluations:', evaluations);
@@ -178,7 +179,7 @@ export const getEvaluations = async (req, res) => {
 export const getEvaluation = async (req, res) => {
     try {
         const evaluation = await Evaluation.findOne({ 
-            _id: req.params.id,
+            _id: req.params.evaluationId,
             $or: [
                 { employee: req.user._id },
                 { evaluator: req.user._id }
@@ -190,7 +191,9 @@ export const getEvaluation = async (req, res) => {
             path: 'template',
             populate: {
                 path: 'sections.criteria.gradingScale',
-                model: 'GradingScale'
+                model: 'GradingScale',
+                match: { isActive: true },
+                select: 'name description grades isDefault'
             }
         });
 
@@ -204,24 +207,71 @@ export const getEvaluation = async (req, res) => {
             await evaluation.save();
         }
 
+        // Get default grading scale for any missing scales
+        const defaultScale = await GradingScale.findOne({ 
+            store: req.user.store,
+            isDefault: true,
+            isActive: true
+        });
+
         // Transform template data
+        console.log('Raw evaluation:', JSON.stringify({
+            id: evaluation._id,
+            template: {
+                id: evaluation.template._id,
+                sections: evaluation.template.sections.map(s => ({
+                    id: s._id,
+                    criteria: s.criteria.map(c => ({
+                        id: c._id,
+                        name: c.name,
+                        gradingScale: c.gradingScale || defaultScale
+                    }))
+                }))
+            }
+        }, null, 2));
+        
         const transformedEvaluation = {
             ...evaluation.toObject(),
             template: {
                 ...evaluation.template,
-                sections: evaluation.template.sections.map(section => ({
-                    title: section.title,
-                    description: section.description,
-                    order: section.order,
-                    questions: section.criteria.map(criterion => ({
-                        id: criterion._id.toString(),
-                        text: criterion.name,
-                        description: criterion.description,
-                        type: criterion.gradingScale ? 'rating' : 'text',
-                        required: criterion.required,
-                        gradingScale: criterion.gradingScale
-                    }))
-                }))
+                sections: evaluation.template.sections.map(section => {
+                    console.log('Processing section:', {
+                        title: section.title,
+                        criteriaCount: section.criteria.length,
+                        criteria: section.criteria.map(c => ({
+                            name: c.name,
+                            hasGradingScale: !!(c.gradingScale || defaultScale),
+                            gradingScaleId: (c.gradingScale || defaultScale)?._id
+                        }))
+                    });
+                    return {
+                        title: section.title,
+                        description: section.description,
+                        order: section.order,
+                        questions: section.criteria.map(criterion => {
+                            const scale = criterion.gradingScale || defaultScale;
+                            console.log('Processing criterion:', {
+                                name: criterion.name,
+                                hasGradingScale: !!scale,
+                                gradingScale: scale
+                            });
+                            return {
+                                id: criterion._id.toString(),
+                                text: criterion.name,
+                                description: criterion.description,
+                                type: scale ? 'rating' : 'text',
+                                required: criterion.required,
+                                gradingScale: scale ? {
+                                    id: scale._id,
+                                    name: scale.name,
+                                    description: scale.description,
+                                    grades: scale.grades,
+                                    isDefault: scale.isDefault
+                                } : null
+                            };
+                        })
+                    };
+                })
             },
             selfEvaluation: evaluation.selfEvaluation && evaluation.selfEvaluation.size > 0
                 ? Object.fromEntries(evaluation.selfEvaluation)
@@ -230,6 +280,8 @@ export const getEvaluation = async (req, res) => {
                 ? Object.fromEntries(evaluation.managerEvaluation)
                 : {}
         };
+
+        console.log('Transformed evaluation:', JSON.stringify(transformedEvaluation.template.sections, null, 2));
 
         res.json({ evaluation: transformedEvaluation });
     } catch (error) {
