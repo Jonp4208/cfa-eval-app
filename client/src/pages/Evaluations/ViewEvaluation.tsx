@@ -91,7 +91,6 @@ export default function ViewEvaluation() {
   const { user } = useAuth();
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [overallComments, setOverallComments] = useState('');
-  const [developmentPlan, setDevelopmentPlan] = useState('');
   const [reviewSessionDate, setReviewSessionDate] = useState<string>('');
   const [showScheduleReview, setShowScheduleReview] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
@@ -140,7 +139,6 @@ export default function ViewEvaluation() {
       else if (user?._id === evaluation.evaluator._id && evaluation.managerEvaluation) {
         setAnswers(evaluation.managerEvaluation);
         setOverallComments(evaluation.overallComments || '');
-        setDevelopmentPlan(evaluation.developmentPlan || '');
       }
     }
   }, [evaluation, user]);
@@ -197,8 +195,7 @@ export default function ViewEvaluation() {
     mutationFn: async () => {
       return api.post(`/api/evaluations/${id}/complete`, {
         managerEvaluation: answers,
-        overallComments,
-        developmentPlan
+        overallComments
       });
     },
     onSuccess: () => {
@@ -623,17 +620,6 @@ export default function ViewEvaluation() {
                           rows={3}
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
-                          Development Plan
-                        </label>
-                        <textarea
-                          value={developmentPlan}
-                          onChange={(e) => setDevelopmentPlan(e.target.value)}
-                          className="w-full p-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
-                          rows={3}
-                        />
-                      </div>
                     </div>
                   )}
 
@@ -778,15 +764,6 @@ export default function ViewEvaluation() {
                         <h3 className="font-medium text-[#27251F] mb-3">Overall Comments</h3>
                         <div className="bg-[#E51636]/5 p-4 rounded-xl text-[#27251F]">
                           {evaluation.overallComments}
-                        </div>
-                      </div>
-                    )}
-
-                    {evaluation.developmentPlan && (
-                      <div>
-                        <h3 className="font-medium text-[#27251F] mb-3">Development Plan</h3>
-                        <div className="bg-[#E51636]/5 p-4 rounded-xl text-[#27251F]">
-                          {evaluation.developmentPlan}
                         </div>
                       </div>
                     )}
