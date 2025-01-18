@@ -447,7 +447,11 @@ export default function Evaluations() {
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/evaluations/${evaluation._id}`);
+                              navigate(
+                                evaluation.status === 'pending_manager_review' 
+                                  ? `/evaluations/${evaluation._id}?showSchedule=true`
+                                  : `/evaluations/${evaluation._id}`
+                              );
                             }}
                             className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm w-full md:w-auto"
                           >

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,6 +86,7 @@ interface Section {
 export default function ViewEvaluation() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -95,6 +96,13 @@ export default function ViewEvaluation() {
   const [showScheduleReview, setShowScheduleReview] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Initialize showScheduleReview based on URL parameter
+  useEffect(() => {
+    if (searchParams.get('showSchedule') === 'true') {
+      setShowScheduleReview(true);
+    }
+  }, [searchParams]);
 
   const getRatingText = (rating: number | string, gradingScale?: GradingScale): string => {
     if (!gradingScale) return 'No rating provided';
