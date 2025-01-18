@@ -409,61 +409,52 @@ export default function Evaluations() {
                   className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300"
                 >
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                          evaluation.status === 'completed' 
-                            ? 'bg-green-100' 
-                            : evaluation.status === 'in_review_session'
-                            ? 'bg-purple-100'
-                            : 'bg-[#E51636]/10'
-                        }`}>
-                          <StatusIcon className={`w-6 h-6 ${
-                            evaluation.status === 'completed'
-                              ? 'text-green-600'
+                    <div className="flex flex-col">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex gap-4">
+                          <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                            evaluation.status === 'completed' 
+                              ? 'bg-green-100' 
                               : evaluation.status === 'in_review_session'
-                              ? 'text-purple-600'
-                              : 'text-[#E51636]'
-                          }`} />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
-                          <p className="text-sm text-[#27251F]/60 mt-1">{evaluation.template.name}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Calendar className="w-4 h-4 text-[#27251F]/40" />
-                            <span className={`text-sm ${dueStatus.class}`}>
-                              {dueStatus.text}
-                            </span>
+                              ? 'bg-purple-100'
+                              : 'bg-[#E51636]/10'
+                          }`}>
+                            <StatusIcon className={`w-6 h-6 ${
+                              evaluation.status === 'completed'
+                                ? 'text-green-600'
+                                : evaluation.status === 'in_review_session'
+                                ? 'text-purple-600'
+                                : 'text-[#E51636]'
+                            }`} />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
+                            <p className="text-sm text-[#27251F]/60 mt-1">{evaluation.template.name}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Calendar className="w-4 h-4 text-[#27251F]/40" />
+                              <span className={`text-sm ${dueStatus.class}`}>
+                                {dueStatus.text}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(evaluation.status)}`}>
                           {getStatusDisplay(evaluation)}
                         </span>
-                        {evaluation.status === 'pending_manager_review' && (
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/evaluations/${evaluation._id}`);
-                            }}
-                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
-                          >
-                            Schedule Review
-                          </Button>
-                        )}
-                        {evaluation.status === 'in_review_session' && (
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/evaluations/${evaluation._id}`);
-                            }}
-                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
-                          >
-                            Complete Review
-                          </Button>
-                        )}
                       </div>
+                      {(evaluation.status === 'pending_manager_review' || evaluation.status === 'in_review_session') && (
+                        <div className="mt-auto flex justify-center md:justify-end">
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/evaluations/${evaluation._id}`);
+                            }}
+                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm w-full md:w-auto"
+                          >
+                            {evaluation.status === 'pending_manager_review' ? 'Schedule Review' : 'Complete Review'}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
