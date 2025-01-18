@@ -158,7 +158,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
 
         // Set manager for new user if selected
         if (formData.managerId) {
-          await api.patch(`/api/users/${response.data.user._id}`, {
+          await api.patch(`/api/users/${response.data.user.id}`, {
             managerId: formData.managerId
           });
         }
