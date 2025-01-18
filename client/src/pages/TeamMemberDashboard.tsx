@@ -169,6 +169,11 @@ export default function TeamMemberDashboard() {
                           Complete Self-Evaluation →
                         </Button>
                       )}
+                      {dashboardData.nextEvaluation.status === 'pending_manager_review' && (
+                        <div className="mt-4 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-xl text-center">
+                          Pending Manager Review
+                        </div>
+                      )}
                       {dashboardData.nextEvaluation.status === 'completed' && !dashboardData.nextEvaluation.acknowledged && (
                         <Button 
                           onClick={() => navigate(`/evaluations/${dashboardData.nextEvaluation.id}`)}
