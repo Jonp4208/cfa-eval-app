@@ -1,9 +1,5 @@
-import { User, Store } from '../models/index.js';
-import Evaluation from '../models/Evaluation.js';
-import Template from '../models/Templates.js';
-import Notification from '../models/Notification.js';
+import { User, Evaluation, Template, Notification, GradingScale } from '../models/index.js';
 import { sendEmail } from '../utils/email.js';
-import GradingScale from '../models/GradingScale.js';
 
 // Create new evaluation
 export const createEvaluation = async (req, res) => {
@@ -142,31 +138,80 @@ export const createEvaluation = async (req, res) => {
 // Get all evaluations for store
 export const getEvaluations = async (req, res) => {
     try {
+        const showAll = req.query.showAll === 'true' && req.user.role === 'admin';
+        
         console.log('Getting evaluations for store:', {
             storeId: req.user.store._id,
-            user: req.user
+            userId: req.user._id,
+            userRole: req.user.role,
+            userPosition: req.user.position,
+            showAll
         });
         
-        // If user is admin, get all evaluations for the store
-        const query = req.user.role === 'admin' 
-            ? { store: req.user.store._id }
-            : { 
-                store: req.user.store._id,
-                $or: [
-                    { employee: req.user._id },
-                    { evaluator: req.user._id }
-                ]
-            };
-
-        console.log('Query:', query);
+        // First, get all employees where the current user is their direct manager
+        const managedEmployees = await User.find({ 
+            manager: req.user._id,
+            store: req.user.store._id 
+        });
         
-        const evaluations = await Evaluation.find(query)
-            .populate('employee', 'name position')
+        console.log('Direct reports found:', {
+            managerId: req.user._id,
+            managedEmployees: managedEmployees.map(emp => ({
+                id: emp._id,
+                name: emp.name,
+                manager: emp.manager
+            }))
+        });
+        
+        const managedEmployeeIds = managedEmployees.map(emp => emp._id);
+        
+        // Base query - always filter by store
+        let query = { store: req.user.store._id };
+        
+        // Add employee filter unless admin is requesting to see all
+        if (!showAll) {
+            query.employee = {
+                $in: [...managedEmployeeIds, req.user._id]
+            };
+        }
+
+        console.log('Final query:', JSON.stringify(query, null, 2));
+        
+        let evaluations = await Evaluation.find(query)
+            .populate({
+                path: 'employee',
+                select: 'name position manager',
+                populate: {
+                    path: 'manager',
+                    select: 'name _id'
+                }
+            })
             .populate('evaluator', 'name position')
             .populate('template')
             .sort('-createdAt');
 
-        console.log('Found evaluations:', evaluations);
+        // Filter out evaluations that shouldn't be shown, unless admin is requesting to see all
+        if (!showAll) {
+            evaluations = evaluations.filter(evaluation => 
+                evaluation.employee?.manager?._id.toString() === req.user._id.toString() || 
+                evaluation.employee?._id.toString() === req.user._id.toString()
+            );
+        }
+
+        // Log final filtered evaluations
+        console.log('Final filtered evaluations:', evaluations.map(evaluation => ({
+            id: evaluation._id,
+            employeeName: evaluation.employee?.name,
+            employeeId: evaluation.employee?._id,
+            employeeManagerId: evaluation.employee?.manager?._id,
+            employeeManagerName: evaluation.employee?.manager?.name,
+            evaluatorName: evaluation.evaluator?.name,
+            evaluatorId: evaluation.evaluator?._id,
+            isVisible: showAll || 
+                evaluation.employee?.manager?._id.toString() === req.user._id.toString() || 
+                evaluation.employee?._id.toString() === req.user._id.toString()
+        })));
+
         res.json({ evaluations });
 
     } catch (error) {
