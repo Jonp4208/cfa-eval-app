@@ -217,14 +217,23 @@ export const getTeamMemberDashboard = async (req, res) => {
                     }
                 },
                 {
-                    scheduledDate: { $exists: true }
+                    scheduledDate: { $exists: true, $gt: new Date() }
                 }
             ]
         })
         .sort({ scheduledDate: 1, createdAt: -1 })
         .populate('template', 'name')
         .populate('evaluator', 'name')
-        .select('scheduledDate template status evaluator createdAt');
+        .select('scheduledDate completedDate template status evaluator createdAt acknowledged');
+
+        // Get the last completed evaluation
+        const lastCompletedEvaluation = await Evaluation.findOne({
+            employee: user._id,
+            status: 'completed',
+            completedDate: { $exists: true }
+        })
+        .sort({ completedDate: -1 })
+        .select('completedDate');
 
         // Calculate current performance from completed evaluations
         const completedEvaluations = user.evaluations?.filter(e => e.status === 'completed') || [];
@@ -276,13 +285,17 @@ export const getTeamMemberDashboard = async (req, res) => {
                 templateName: nextEvaluation.template?.name || 'General Evaluation',
                 status: nextEvaluation.status,
                 evaluator: nextEvaluation.evaluator?.name,
-                id: nextEvaluation._id
+                id: nextEvaluation._id,
+                acknowledged: nextEvaluation.acknowledged || false,
+                lastEvaluationDate: lastCompletedEvaluation?.completedDate || null
             } : {
                 date: null,
                 templateName: 'Not Scheduled',
                 status: 'not_scheduled',
                 evaluator: null,
-                id: null
+                id: null,
+                acknowledged: false,
+                lastEvaluationDate: lastCompletedEvaluation?.completedDate || null
             },
             evaluator: user.evaluator?.name,
             manager: user.manager?.name,
