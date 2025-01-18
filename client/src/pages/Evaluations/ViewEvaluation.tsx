@@ -181,7 +181,7 @@ export default function ViewEvaluation() {
         description: 'Review session scheduled successfully',
       });
       setShowScheduleReview(false);
-      refetch();
+      navigate('/evaluations');
     },
     onError: (error: any) => {
       toast({
