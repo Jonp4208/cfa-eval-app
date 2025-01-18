@@ -181,13 +181,13 @@ export const getEvaluation = async (req, res) => {
         console.log('Getting evaluation:', {
             evaluationId: req.params.evaluationId,
             userId: req.user._id,
-            userStore: req.user.store,
+            userStore: req.user.store._id,
             userPosition: req.user.position
         });
 
         const evaluation = await Evaluation.findOne({ 
             _id: req.params.evaluationId,
-            store: req.user.store,
+            store: req.user.store._id,
             $or: [
                 { employee: req.user._id },
                 { evaluator: req.user._id }
@@ -225,7 +225,7 @@ export const getEvaluation = async (req, res) => {
 
         // Get default grading scale for any missing scales
         const defaultScale = await GradingScale.findOne({ 
-            store: req.user.store,
+            store: req.user.store._id,
             isDefault: true,
             isActive: true
         });
@@ -301,7 +301,14 @@ export const getEvaluation = async (req, res) => {
 
         res.json({ evaluation: transformedEvaluation });
     } catch (error) {
-        console.error('Error getting evaluation:', error);
+        console.error('Error getting evaluation:', {
+            error: error.message,
+            stack: error.stack,
+            evaluationId: req.params.evaluationId,
+            userId: req.user._id,
+            userStore: req.user.store._id,
+            userPosition: req.user.position
+        });
         res.status(500).json({ message: 'Error getting evaluation' });
     }
 };
