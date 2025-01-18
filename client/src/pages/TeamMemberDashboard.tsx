@@ -161,6 +161,22 @@ export default function TeamMemberDashboard() {
                       <p className="text-[#27251F]/60 mt-1">
                         {Math.ceil((new Date(dashboardData.nextEvaluation.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days away
                       </p>
+                      {dashboardData.nextEvaluation.status === 'pending_self_evaluation' && (
+                        <Button 
+                          onClick={() => navigate(`/evaluations/${dashboardData.nextEvaluation.id}`)}
+                          className="mt-4 bg-[#4CD964] text-white hover:bg-[#3CC954] w-full"
+                        >
+                          Complete Self-Evaluation →
+                        </Button>
+                      )}
+                      {dashboardData.nextEvaluation.status === 'completed' && !dashboardData.nextEvaluation.acknowledged && (
+                        <Button 
+                          onClick={() => navigate(`/evaluations/${dashboardData.nextEvaluation.id}`)}
+                          className="mt-4 bg-[#4CD964] text-white hover:bg-[#3CC954] w-full"
+                        >
+                          Review & Acknowledge →
+                        </Button>
+                      )}
                     </>
                   ) : (
                     <>
