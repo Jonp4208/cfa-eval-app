@@ -6,8 +6,6 @@ dotenv.config();
 
 // MongoDB Connection with retry options
 mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
   family: 4,

@@ -1,0 +1,20 @@
+[33m8982832[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m Fix evaluation creation and population of related fields. Update client to handle multiple evaluations.
+[33m1558f99[m Updated evaluation cancellation to delete evaluations instead of marking inactive
+[33m57754b0[m Fixed evaluation status display to not show overdue for completed evaluations
+[33m894aa73[m Enhanced notifications: Added alert bell notifications with priority levels and toast notifications for evaluations
+[33m9689dbe[m Multiple updates: Fixed grading scales dialog, template builder integration, role checks, email config, and position checks
+[33me85917d[m Updated email configuration to use Gmail SMTP
+[33m9c24ea7[m Added Grading Scales tab to settings page
+[33md55ac28[m Fixed director role check to use correct position name
+[33m51bc19a[m Fixed missing Textarea import in Settings page
+[33me25a6cf[m Added role-based access control for settings: Only directors can access user access and evaluation settings, while all users can manage personal preferences
+[33md05a3ec[m Added node-cron dependency
+[33m908a6da[m Added automatic evaluation scheduling and next evaluation display on dashboard
+[33m4191d96[m Update TemplateBuilder to support custom rating scales
+[33mb4658c5[m Update template builder to support custom grading scales
+[33m7f9343e[m Fix director permission check in grading scales controller
+[33mfd42809[m Add custom grading scales feature with UI and backend support
+[33m27c0067[m feat: Update mobile navigation to include Settings and streamline navigation items
+[33m029019c[m fix: Update notification system to only show relevant notifications for current user
+[33md1fa6c2[m fix: Update Select component to use 'none' value instead of empty string for No Manager option
+[33m896240c[m Add manager assignment to user edit dialog
