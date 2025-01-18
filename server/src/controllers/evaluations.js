@@ -178,19 +178,17 @@ export const getEvaluations = async (req, res) => {
 // Get specific evaluation
 export const getEvaluation = async (req, res) => {
     try {
-        const evaluationId = req.params.id || req.params.evaluationId;
+        const evaluationId = req.params.evaluationId;
+        
+        if (!evaluationId) {
+            console.error('Missing evaluation ID in request params:', req.params);
+            return res.status(400).json({ message: 'Evaluation ID is required' });
+        }
+
         console.log('Fetching evaluation:', {
             evaluationId,
             userId: req.user._id,
-            userStore: req.user.store._id,
-            query: {
-                _id: evaluationId,
-                store: req.user.store._id,
-                $or: [
-                    { employee: req.user._id },
-                    { evaluator: req.user._id }
-                ]
-            }
+            userStore: req.user.store._id
         });
         
         const evaluation = await Evaluation.findOne({
@@ -201,14 +199,16 @@ export const getEvaluation = async (req, res) => {
                 { evaluator: req.user._id }
             ]
         })
-        .populate('template')
-        .populate('employee', 'firstName lastName email')
-        .populate('evaluator', 'firstName lastName email')
         .populate({
-            path: 'sections.criteria.gradingScale',
-            model: 'GradingScale',
-            select: 'name description grades isDefault'
-        });
+            path: 'template',
+            populate: {
+                path: 'sections.criteria.gradingScale',
+                model: 'GradingScale',
+                select: 'name description grades isDefault'
+            }
+        })
+        .populate('employee', 'firstName lastName email')
+        .populate('evaluator', 'firstName lastName email');
 
         console.log('Evaluation query result:', {
             found: !!evaluation,
@@ -220,6 +220,11 @@ export const getEvaluation = async (req, res) => {
         });
 
         if (!evaluation) {
+            console.error('Evaluation not found:', {
+                evaluationId,
+                userId: req.user._id,
+                userStore: req.user.store._id
+            });
             return res.status(404).json({ message: 'Evaluation not found' });
         }
 
