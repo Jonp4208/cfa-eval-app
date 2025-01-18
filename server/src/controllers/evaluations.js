@@ -178,8 +178,16 @@ export const getEvaluations = async (req, res) => {
 // Get specific evaluation
 export const getEvaluation = async (req, res) => {
     try {
+        console.log('Getting evaluation:', {
+            evaluationId: req.params.evaluationId,
+            userId: req.user._id,
+            userStore: req.user.store,
+            userPosition: req.user.position
+        });
+
         const evaluation = await Evaluation.findOne({ 
             _id: req.params.evaluationId,
+            store: req.user.store,
             $or: [
                 { employee: req.user._id },
                 { evaluator: req.user._id }
@@ -195,6 +203,14 @@ export const getEvaluation = async (req, res) => {
                 match: { isActive: true },
                 select: 'name description grades isDefault'
             }
+        });
+
+        console.log('Evaluation query result:', {
+            found: !!evaluation,
+            evaluationId: evaluation?._id,
+            employeeId: evaluation?.employee?._id,
+            evaluatorId: evaluation?.evaluator?._id,
+            storeId: evaluation?.store
         });
 
         if (!evaluation) {
