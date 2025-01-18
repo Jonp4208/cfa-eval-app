@@ -14,12 +14,16 @@ interface Evaluation {
   _id: string;
   employee: {
     _id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
+    email: string;
     position: string;
   };
   evaluator: {
     _id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
+    email: string;
   };
   template: {
     _id: string;
@@ -288,6 +292,12 @@ export default function ViewEvaluation() {
     return <div className="text-center py-4">Evaluation not found</div>;
   }
 
+  console.log('Evaluation data:', {
+    employee: evaluation.employee,
+    evaluator: evaluation.evaluator,
+    status: evaluation.status
+  });
+
   const isEmployee = user?._id === evaluation.employee._id;
   const isManager = user?._id === evaluation.evaluator._id;
   const canEdit = (isEmployee && evaluation.status === 'pending_self_evaluation') ||
@@ -302,11 +312,12 @@ export default function ViewEvaluation() {
           <div className="relative">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">{evaluation.template.name}</h1>
-                <div className="text-white/80 mt-2 space-y-1">
-                  <p className="text-lg">Evaluation for {evaluation.employee.name}</p>
-                  <p className="text-base">Evaluator: {evaluation.evaluator.name}</p>
-                </div>
+                <h1 className="text-3xl md:text-4xl font-bold">
+                  Evaluation for {evaluation?.employee?.email?.split('@')[0] || 'Loading...'}
+                </h1>
+                <p className="text-white/80 mt-2 text-lg">
+                  Evaluator: {evaluation?.evaluator?.email?.split('@')[0] || 'Loading...'}
+                </p>
               </div>
               <Button
                 variant="ghost"
@@ -330,36 +341,44 @@ export default function ViewEvaluation() {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Employee</h3>
-                  <p className="text-[#27251F] text-lg font-medium">{evaluation.employee.name}</p>
+                  <p className="text-[#27251F] text-lg font-medium">
+                    {evaluation?.employee?.email?.split('@')[0] || 'Loading...'}
+                  </p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Position</h3>
-                  <p className="text-[#27251F] text-lg font-medium">{evaluation.employee.position}</p>
+                  <p className="text-[#27251F] text-lg font-medium">
+                    {evaluation?.employee?.position || 'Team Member'}
+                  </p>
                 </div>
               </div>
               <div className="space-y-6">
                 <div>
                   <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Status</h3>
                   <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                    evaluation.status === 'completed' 
+                    evaluation?.status === 'completed' 
                       ? 'bg-green-100 text-green-800'
-                      : evaluation.status === 'in_review_session'
+                      : evaluation?.status === 'in_review_session'
                       ? 'bg-purple-100 text-purple-800'
-                      : evaluation.status === 'pending_manager_review'
+                      : evaluation?.status === 'pending_manager_review'
                       ? 'bg-yellow-100 text-yellow-800'
                       : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {evaluation.status.replace(/_/g, ' ').replace(/\b\w/g, (letter: string) => letter.toUpperCase())}
+                    {evaluation?.status?.replace(/_/g, ' ').replace(/\b\w/g, (letter: string) => letter.toUpperCase()) || 'Loading...'}
                   </span>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Scheduled Date</h3>
-                  <p className="text-[#27251F] text-lg font-medium">{new Date(evaluation.scheduledDate).toLocaleDateString()}</p>
+                  <p className="text-[#27251F] text-lg font-medium">
+                    {evaluation?.scheduledDate ? new Date(evaluation.scheduledDate).toLocaleDateString() : 'Loading...'}
+                  </p>
                 </div>
-                {evaluation.reviewSessionDate && (
+                {evaluation?.reviewSessionDate && (
                   <div>
                     <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Review Session Date</h3>
-                    <p className="text-[#27251F] text-lg font-medium">{new Date(evaluation.reviewSessionDate).toLocaleDateString()}</p>
+                    <p className="text-[#27251F] text-lg font-medium">
+                      {new Date(evaluation.reviewSessionDate).toLocaleDateString()}
+                    </p>
                   </div>
                 )}
               </div>
