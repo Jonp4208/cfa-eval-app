@@ -471,7 +471,7 @@ export default function ViewEvaluation() {
                   {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
                     <div key={sectionIndex} className="mb-8 last:mb-0">
                       <h3 className="text-lg font-medium text-[#27251F] mb-4">{section.title}</h3>
-                      {section.questions.map((question: { text: string; type: 'rating' | 'text' }, questionIndex: number) => (
+                      {section.questions.map((question: Question, questionIndex: number) => (
                         <div key={questionIndex} className="mb-6 last:mb-0">
                           <p className="text-sm font-medium text-[#27251F]/60 mb-2">{question.text}</p>
                           <div className="bg-[#27251F]/5 p-4 rounded-2xl text-[#27251F]">
@@ -570,7 +570,7 @@ export default function ViewEvaluation() {
                   {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
                     <div key={sectionIndex} className="mb-8">
                       <h3 className="font-medium text-[#27251F] mb-4">{section.title}</h3>
-                      {section.questions.map((question: { text: string; type: 'rating' | 'text' }, questionIndex: number) => (
+                      {section.questions.map((question: Question, questionIndex: number) => (
                         <div key={questionIndex} className="mb-6">
                           <label className="block text-sm text-[#27251F]/60 mb-2">
                             {question.text}
@@ -696,7 +696,7 @@ export default function ViewEvaluation() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-6">
-                        {section.questions.map((question: { text: string; type: 'rating' | 'text' }, questionIndex: number) => {
+                        {section.questions.map((question: Question, questionIndex: number) => {
                           const answerKey = `${sectionIndex}-${questionIndex}`;
                           // Access the raw evaluation data directly
                           const selfAnswer = evaluation.selfEvaluation[answerKey];
