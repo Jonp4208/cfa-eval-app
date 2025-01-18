@@ -89,11 +89,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     },
     {
       icon: Users,
-      label: 'Team Members',
-      href: '/users',
+      label: user?.position === 'Team Member' ? 'ME' : 'Team Members',
+      href: user?.position === 'Team Member' ? `/users/${user?._id}` : '/users',
       show: true,
       badge: null,
-      submenu: [
+      submenu: user?.position === 'Team Member' ? [
+        {
+          icon: ClipboardList,
+          label: 'My Evaluations',
+          href: '/evaluations',
+          badge: pendingEvaluations > 0 ? pendingEvaluations.toString() : null,
+          color: pendingEvaluations > 0 ? 'text-red-600' : undefined
+        },
+        {
+          icon: AlertTriangle,
+          label: 'My Disciplinary',
+          href: '/disciplinary',
+          badge: newDisciplinaryItems > 0 ? newDisciplinaryItems.toString() : null,
+          color: newDisciplinaryItems > 0 ? 'text-red-600' : undefined
+        },
+        {
+          icon: ClipboardList,
+          label: 'My Training',
+          href: '/future',
+          badge: null
+        }
+      ] : [
         {
           icon: Users,
           label: 'View All',

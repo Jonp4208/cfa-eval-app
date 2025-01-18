@@ -2,10 +2,12 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Users, TrendingUp, ClipboardList, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function MobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const navItems = [
     {
@@ -15,12 +17,12 @@ export function MobileNav() {
     },
     {
       icon: Users,
-      label: 'Team',
-      href: '/users',
+      label: user?.position === 'Team Member' ? 'ME' : 'Team',
+      href: user?.position === 'Team Member' ? `/users/${user?._id}` : '/users',
     },
     {
       icon: ClipboardList,
-      label: 'Evaluations',
+      label: user?.position === 'Team Member' ? 'My Evaluations' : 'Evaluations',
       href: '/evaluations',
     },
     {
