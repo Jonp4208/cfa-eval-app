@@ -195,7 +195,11 @@ export default function Evaluations() {
     }
   };
 
-  const getDueStatus = (date: string) => {
+  const getDueStatus = (date: string, status: string, completedDate?: string) => {
+    if (status === 'completed' && completedDate) {
+      return { text: `Completed ${new Date(completedDate).toLocaleDateString()}`, class: 'text-green-600' };
+    }
+
     const dueDate = new Date(date);
     const today = new Date();
     const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -402,7 +406,7 @@ export default function Evaluations() {
             // Evaluation cards
             filteredEvaluations?.map((evaluation: Evaluation) => {
               const StatusIcon = getStatusIcon(evaluation.status);
-              const dueStatus = getDueStatus(evaluation.scheduledDate);
+              const dueStatus = getDueStatus(evaluation.scheduledDate, evaluation.status, evaluation.completedDate);
               return (
                 <Card 
                   key={evaluation._id}
