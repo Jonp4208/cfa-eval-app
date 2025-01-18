@@ -637,10 +637,10 @@ router.get('/team-dynamics', auth, async (req, res) => {
         });
 
         // Calculate averages
-        const evalCount = shiftEvals.length;
-        teamMetrics.teamwork = Math.round((teamMetrics.teamwork / evalCount) * 20);
-        teamMetrics.efficiency = Math.round((teamMetrics.efficiency / evalCount) * 20);
-        teamMetrics.morale = Math.round((teamMetrics.morale / evalCount) * 20);
+        const evaluationCount = shiftEvals.length;
+        teamMetrics.teamwork = Math.round((teamMetrics.teamwork / evaluationCount) * 20);
+        teamMetrics.efficiency = Math.round((teamMetrics.efficiency / evaluationCount) * 20);
+        teamMetrics.morale = Math.round((teamMetrics.morale / evaluationCount) * 20);
 
         // Add highlights and improvements based on scores
         if (teamMetrics.teamwork >= 80) {

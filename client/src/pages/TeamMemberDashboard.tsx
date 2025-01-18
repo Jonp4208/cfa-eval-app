@@ -21,34 +21,25 @@ import {
 interface TeamMemberDashboardData {
   name: string;
   position: string;
-  department: string;
-  currentPerformance: number;
-  nextEvaluation: string;
-  activeGoals: number;
-  training: {
-    required: Array<{
-      id: string;
-      name: string;
-      progress: number;
-      dueDate: string;
-    }>;
+  departments: string[];
+  currentPerformance: number | null;
+  nextEvaluation: {
+    date: string | null;
+    templateName: string;
+    status: string;
+    evaluator: string | null;
+    id: string | null;
   };
-  achievements: Array<{
-    id: string;
-    title: string;
-    date: string;
-    type: 'award' | 'milestone' | 'certification';
-  }>;
+  activeGoals: number;
   goals: Array<{
     id: string;
     name: string;
     progress: number;
-    dueDate: string;
+    targetDate: string;
   }>;
-  schedule: Array<{
+  achievements: Array<{
     id: string;
-    type: 'Training' | 'Evaluation' | 'Meeting';
-    name: string;
+    title: string;
     date: string;
   }>;
 }
@@ -77,9 +68,15 @@ export default function TeamMemberDashboard() {
   const dashboardData = {
     name: data?.name || 'Team Member',
     position: data?.position || 'Position',
-    department: data?.department || 'Department',
+    departments: data?.departments || [],
     currentPerformance: data?.currentPerformance || 0,
-    nextEvaluation: data?.nextEvaluation || '',
+    nextEvaluation: data?.nextEvaluation || {
+      date: null,
+      templateName: '',
+      status: '',
+      evaluator: null,
+      id: null
+    },
     activeGoals: data?.activeGoals || 0,
     goals: data?.goals || [],
     training: {
@@ -99,7 +96,7 @@ export default function TeamMemberDashboard() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">Welcome back, {dashboardData.name}!</h1>
-                <p className="text-white/80 mt-2 text-lg">{dashboardData.position} • {dashboardData.department}</p>
+                <p className="text-white/80 mt-2 text-lg">{dashboardData.position} • {dashboardData.departments.join(', ')}</p>
               </div>
               <Button 
                 className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
@@ -140,13 +137,13 @@ export default function TeamMemberDashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-[#27251F]/60 font-medium">Next Evaluation</p>
-                  {dashboardData.nextEvaluation && !isNaN(new Date(dashboardData.nextEvaluation).getTime()) ? (
+                  {dashboardData.nextEvaluation.date ? (
                     <>
                       <h3 className="text-3xl font-bold mt-2 text-[#27251F]">
-                        {new Date(dashboardData.nextEvaluation).toLocaleDateString()}
+                        {new Date(dashboardData.nextEvaluation.date).toLocaleDateString()}
                       </h3>
                       <p className="text-[#27251F]/60 mt-1">
-                        {Math.ceil((new Date(dashboardData.nextEvaluation).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days away
+                        {Math.ceil((new Date(dashboardData.nextEvaluation.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days away
                       </p>
                     </>
                   ) : (
@@ -201,7 +198,7 @@ export default function TeamMemberDashboard() {
                         <div className="flex justify-between mb-2">
                           <div>
                             <h3 className="font-medium text-[#27251F]">{goal.name}</h3>
-                            <p className="text-sm text-[#27251F]/60">Due {new Date(goal.dueDate).toLocaleDateString()}</p>
+                            <p className="text-sm text-[#27251F]/60">Due {new Date(goal.targetDate).toLocaleDateString()}</p>
                           </div>
                           <span className="text-sm font-medium text-[#27251F]">{goal.progress}%</span>
                         </div>

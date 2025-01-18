@@ -190,35 +190,52 @@ const getActivityLogs = async (storeId) => {
 export const getTeamMemberDashboard = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
-            .populate('store', 'name')
+            .populate('store', 'name storeNumber location')
             .populate('evaluator', 'name')
             .populate('manager', 'name')
-            .select('-password');
+            .populate({
+                path: 'evaluations',
+                select: 'score date status template evaluator',
+                populate: [
+                    { path: 'template', select: 'name' },
+                    { path: 'evaluator', select: 'name' }
+                ]
+            })
+            .select('name position departments positionType status evaluations development recognition');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Get next scheduled evaluation
+        // Get next scheduled evaluation - include draft evaluations too
         const nextEvaluation = await Evaluation.findOne({
             employee: user._id,
-            status: { $in: ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'] },
-            scheduledDate: { $gte: new Date() }
+            $or: [
+                { 
+                    status: { 
+                        $in: ['scheduled', 'draft', 'pending_self_evaluation', 'pending_manager_review', 'in_review_session'] 
+                    }
+                },
+                {
+                    scheduledDate: { $exists: true }
+                }
+            ]
         })
-        .sort({ scheduledDate: 1 })
+        .sort({ scheduledDate: 1, createdAt: -1 })
         .populate('template', 'name')
-        .select('scheduledDate template status');
+        .populate('evaluator', 'name')
+        .select('scheduledDate template status evaluator createdAt');
 
-        // Calculate current performance (average of last 3 evaluations)
-        const currentPerformance = user.evaluations && user.evaluations.length > 0
+        // Calculate current performance from completed evaluations
+        const completedEvaluations = user.evaluations?.filter(e => e.status === 'completed') || [];
+        const currentPerformance = completedEvaluations.length > 0
             ? Math.round(
-                user.evaluations
-                    .sort((a, b) => b.date - a.date)
+                completedEvaluations
                     .slice(0, 3)
-                    .reduce((sum, evaluation) => sum + evaluation.score, 0) / 
-                Math.min(user.evaluations.length, 3)
+                    .reduce((sum, evaluation) => sum + (evaluation.score || 0), 0) / 
+                Math.min(completedEvaluations.length, 3)
             )
-            : 0;
+            : null;
 
         // Get active development goals
         const activeGoals = user.development
@@ -246,17 +263,40 @@ export const getTeamMemberDashboard = async (req, res) => {
 
         const dashboardData = {
             name: user.name,
-            position: user.position,
-            departments: user.departments[0] || 'General',
+            position: user.position || 'Team Member',
+            departments: user.departments || ['General'],
+            store: {
+                name: user.store?.name,
+                number: user.store?.storeNumber,
+                location: user.store?.location
+            },
             currentPerformance,
             nextEvaluation: nextEvaluation ? {
-                date: nextEvaluation.scheduledDate,
-                templateName: nextEvaluation.template?.name,
-                status: nextEvaluation.status
-            } : null,
+                date: nextEvaluation.scheduledDate || nextEvaluation.createdAt,
+                templateName: nextEvaluation.template?.name || 'General Evaluation',
+                status: nextEvaluation.status,
+                evaluator: nextEvaluation.evaluator?.name,
+                id: nextEvaluation._id
+            } : {
+                date: null,
+                templateName: 'Not Scheduled',
+                status: 'not_scheduled',
+                evaluator: null,
+                id: null
+            },
+            evaluator: user.evaluator?.name,
+            manager: user.manager?.name,
             activeGoals: activeGoals.length,
             goals: activeGoals,
-            achievements: recentAchievements
+            achievements: recentAchievements,
+            recentEvaluations: completedEvaluations
+                .slice(0, 3)
+                .map(evaluation => ({
+                    date: evaluation.date,
+                    score: evaluation.score,
+                    template: evaluation.template?.name,
+                    evaluator: evaluation.evaluator?.name
+                }))
         };
 
         res.json(dashboardData);
