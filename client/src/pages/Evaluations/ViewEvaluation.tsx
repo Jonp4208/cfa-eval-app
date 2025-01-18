@@ -139,22 +139,22 @@ export default function ViewEvaluation() {
   // Submit self-evaluation mutation
   const submitSelfEvaluation = useMutation({
     mutationFn: async () => {
-      return api.post(`/api/evaluations/${id}/self-evaluation`, {
+      await api.post(`/api/evaluations/${id}/self-evaluation`, {
         selfEvaluation: answers
       });
     },
     onSuccess: () => {
       toast({
-        title: 'Success',
-        description: 'Self-evaluation submitted successfully',
+        title: "Success",
+        description: "Your self-evaluation has been submitted successfully.",
       });
-      refetch();
+      navigate('/dashboard');
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit self-evaluation',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to submit evaluation. Please try again.",
+        variant: "destructive",
       });
     }
   });
@@ -283,6 +283,31 @@ export default function ViewEvaluation() {
     setValidationErrors(errors);
     return errors.length === 0;
   };
+
+  // Submit manager evaluation mutation
+  const submitManagerEvaluation = useMutation({
+    mutationFn: async () => {
+      await api.post(`/api/evaluations/${id}/manager-evaluation`, {
+        managerEvaluation: answers,
+        overallComments,
+        developmentPlan
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Your evaluation has been submitted successfully.",
+      });
+      navigate('/dashboard');
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to submit evaluation. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   if (isLoading) {
     return <div className="text-center py-4">Loading evaluation...</div>;
