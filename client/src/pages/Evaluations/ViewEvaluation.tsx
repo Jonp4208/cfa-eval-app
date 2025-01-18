@@ -193,24 +193,52 @@ export default function ViewEvaluation() {
   // Complete manager evaluation mutation
   const completeManagerEvaluation = useMutation({
     mutationFn: async () => {
-      return api.post(`/api/evaluations/${id}/complete`, {
+      const response = await api.post(`/api/evaluations/${id}/complete`, {
         managerEvaluation: answers,
         overallComments
       });
+      return response.data;
     },
     onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Evaluation completed successfully',
-      });
-      refetch();
+      // Create a custom notification element
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Review Completed Successfully</span>
+      `;
+      document.body.appendChild(notification);
+
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+
+      // Navigate back to evaluations page after a short delay
+      setTimeout(() => {
+        navigate('/evaluations');
+      }, 1000);
     },
     onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to complete evaluation',
-        variant: 'destructive',
-      });
+      // Only show error notification if there's an actual error response
+      if (error.response) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
+        notification.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>${error.response?.data?.message || 'Failed to complete evaluation'}</span>
+        `;
+        document.body.appendChild(notification);
+
+        // Remove the notification after 3 seconds
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      }
     }
   });
 
@@ -238,15 +266,22 @@ export default function ViewEvaluation() {
   // Save draft mutation
   const saveDraft = useMutation({
     mutationFn: async () => {
-      return api.post(`/api/evaluations/${id}/save-draft`, {
-        [isEmployee ? 'selfEvaluation' : 'managerEvaluation']: answers
-      });
+      const payload = isEmployee 
+        ? { selfEvaluation: answers }
+        : { 
+            managerEvaluation: answers,
+            overallComments 
+          };
+      
+      const response = await api.post(`/api/evaluations/${id}/save-draft`, payload);
+      return response.data;
     },
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Draft saved successfully',
       });
+      navigate('/evaluations');
     },
     onError: (error: any) => {
       toast({
@@ -295,8 +330,7 @@ export default function ViewEvaluation() {
     mutationFn: async () => {
       await api.post(`/api/evaluations/${id}/manager-evaluation`, {
         managerEvaluation: answers,
-        overallComments,
-        developmentPlan
+        overallComments
       });
     },
     onSuccess: () => {
