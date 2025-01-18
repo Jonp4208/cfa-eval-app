@@ -653,3 +653,68 @@ export const markNotificationViewed = async (req, res) => {
         });
     }
 };
+
+// Save evaluation draft
+export const saveDraft = async (req, res) => {
+    try {
+        console.log('Save draft request:', {
+            body: req.body,
+            evaluationId: req.params.evaluationId,
+            userId: req.user._id,
+            userStore: req.user.store._id
+        });
+
+        const { managerEvaluation, overallComments } = req.body;
+
+        const evaluation = await Evaluation.findOne({
+            _id: req.params.evaluationId,
+            evaluator: req.user._id,
+            store: req.user.store._id,
+            status: { $in: ['pending_manager_review', 'in_review_session'] }
+        });
+
+        if (!evaluation) {
+            console.error('Evaluation not found or not in valid state:', {
+                evaluationId: req.params.evaluationId,
+                userId: req.user._id,
+                userStore: req.user.store._id
+            });
+            return res.status(404).json({ message: 'Evaluation not found or not in valid state for saving draft' });
+        }
+
+        // Convert the evaluation data to a Map if provided
+        if (managerEvaluation) {
+            evaluation.managerEvaluation = new Map(Object.entries(managerEvaluation));
+        }
+        if (overallComments !== undefined) {
+            evaluation.overallComments = overallComments;
+        }
+
+        await evaluation.save();
+        
+        console.log('Draft saved successfully:', {
+            evaluationId: evaluation._id,
+            status: evaluation.status,
+            managerEvaluation: Object.fromEntries(evaluation.managerEvaluation || new Map()),
+            overallComments: evaluation.overallComments
+        });
+
+        res.json({ 
+            message: 'Draft saved successfully',
+            evaluation: {
+                ...evaluation.toObject(),
+                managerEvaluation: Object.fromEntries(evaluation.managerEvaluation || new Map())
+            }
+        });
+
+    } catch (error) {
+        console.error('Save draft error:', {
+            error: error.message,
+            stack: error.stack,
+            evaluationId: req.params.evaluationId,
+            userId: req.user._id,
+            userStore: req.user.store._id
+        });
+        res.status(500).json({ message: 'Error saving draft' });
+    }
+};
