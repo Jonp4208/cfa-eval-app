@@ -176,77 +176,77 @@ export default function DisciplinaryPage() {
           </Card>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <Input
-              type="text"
-              placeholder="Search by employee, position, department..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 pl-10 pr-4 rounded-xl bg-white border-gray-200 hover:border-gray-300 focus:border-red-600 focus:ring-red-600"
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
+        {/* Search and Filters Card */}
+        <Card className="bg-white">
+          <CardContent className="p-4">
+            <div className="flex flex-col lg:flex-row gap-4 items-center">
+              <div className="flex-1 relative w-full">
+                <Input
+                  type="text"
+                  placeholder="Search by employee, position, department..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-12 pl-10 pr-4 w-full bg-white border-gray-200"
+                />
+                <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+              </div>
 
-          {/* Filters */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <Filter className="w-5 h-5 text-[#27251F]/40 flex-shrink-0" />
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              onClick={() => setFilter('all')}
-              className={`flex-shrink-0 h-10 px-4 rounded-xl ${
-                filter === 'all' 
-                  ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                  : 'hover:bg-gray-100 border-gray-200'
-              }`}
-            >
-              All
-            </Button>
-            <Button
-              variant={filter === 'open' ? 'default' : 'outline'}
-              onClick={() => setFilter('open')}
-              className={`flex-shrink-0 h-10 px-4 rounded-xl ${
-                filter === 'open' 
-                  ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                  : 'hover:bg-gray-100 border-gray-200'
-              }`}
-            >
-              Open
-            </Button>
-            <Button
-              variant={filter === 'followup' ? 'default' : 'outline'}
-              onClick={() => setFilter('followup')}
-              className={`flex-shrink-0 h-10 px-4 rounded-xl ${
-                filter === 'followup' 
-                  ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                  : 'hover:bg-gray-100 border-gray-200'
-              }`}
-            >
-              Needs Follow-up
-            </Button>
-            <Button
-              variant={filter === 'resolved' ? 'default' : 'outline'}
-              onClick={() => setFilter('resolved')}
-              className={`flex-shrink-0 h-10 px-4 rounded-xl ${
-                filter === 'resolved' 
-                  ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                  : 'hover:bg-gray-100 border-gray-200'
-              }`}
-            >
-              Resolved
-            </Button>
-          </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={filter === 'all' ? 'default' : 'outline'}
+                  onClick={() => setFilter('all')}
+                  className={`h-12 px-6 ${
+                    filter === 'all' 
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={filter === 'open' ? 'default' : 'outline'}
+                  onClick={() => setFilter('open')}
+                  className={`h-12 px-6 ${
+                    filter === 'open' 
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  Open
+                </Button>
+                <Button
+                  variant={filter === 'followup' ? 'default' : 'outline'}
+                  onClick={() => setFilter('followup')}
+                  className={`h-12 px-6 ${
+                    filter === 'followup' 
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  Needs Follow-up
+                </Button>
+                <Button
+                  variant={filter === 'resolved' ? 'default' : 'outline'}
+                  onClick={() => setFilter('resolved')}
+                  className={`h-12 px-6 ${
+                    filter === 'resolved' 
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                      : 'hover:bg-gray-100'
+                  }`}
+                >
+                  Resolved
+                </Button>
+              </div>
 
-          <Button 
-            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-10 px-4 rounded-xl flex items-center gap-2"
-            onClick={handleNewIncident}
-          >
-            <FileText className="w-4 h-4" />
-            New Incident
-          </Button>
-        </div>
+              <Button 
+                className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6"
+                onClick={handleNewIncident}
+              >
+                New Incident
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Incidents List */}
         <div className="space-y-4">
