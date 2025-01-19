@@ -13,8 +13,13 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['disciplinary', 'evaluation', 'goal', 'recognition', 'system'],
+    enum: ['disciplinary', 'evaluation', 'goal', 'recognition', 'system', 'reminder'],
     required: true
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'urgent'],
+    default: 'medium'
   },
   title: {
     type: String,
@@ -27,6 +32,17 @@ const notificationSchema = new mongoose.Schema({
   read: {
     type: Boolean,
     default: false
+  },
+  readAt: {
+    type: Date
+  },
+  acknowledgedAt: {
+    type: Date
+  },
+  notificationPreferences: {
+    email: { type: Boolean, default: true },
+    inApp: { type: Boolean, default: true },
+    push: { type: Boolean, default: false }
   },
   relatedId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -48,6 +64,15 @@ const notificationSchema = new mongoose.Schema({
 // Index for faster queries
 notificationSchema.index({ user: 1, read: 1 });
 notificationSchema.index({ store: 1, createdAt: -1 });
+notificationSchema.index({ priority: 1, createdAt: -1 });
+
+// Pre-save middleware to set readAt when read is true
+notificationSchema.pre('save', function(next) {
+  if (this.isModified('read') && this.read && !this.readAt) {
+    this.readAt = new Date();
+  }
+  next();
+});
 
 const Notification = mongoose.model('Notification', notificationSchema);
 export default Notification; 
