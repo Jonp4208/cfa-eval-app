@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, AlertCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,13 +17,22 @@ export function Notification({
   onClose,
   duration = 5000,
 }: NotificationProps) {
+  const [isClosing, setIsClosing] = useState(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      onClose();
+      handleClose();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onClose]);
+  }, [duration]);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 300); // Match the animation duration
+  };
 
   const icons = {
     success: <CheckCircle2 className="h-5 w-5 text-green-500" />,
@@ -51,7 +60,8 @@ export function Notification({
 
   return (
     <div className={cn(
-      'fixed top-4 right-4 w-96 rounded-lg border p-4 shadow-lg animate-slide-in',
+      'fixed top-4 right-4 w-96 rounded-lg border p-4 shadow-lg',
+      isClosing ? 'animate-slide-out' : 'animate-slide-in',
       backgrounds[type]
     )}>
       <div className="flex items-start gap-3">
@@ -69,7 +79,7 @@ export function Notification({
           )}
         </div>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className={cn(
             'flex-shrink-0 rounded-lg p-1 hover:bg-white/25 transition-colors',
             titles[type]
@@ -82,7 +92,7 @@ export function Notification({
   );
 }
 
-export function NotificationContainer({ notifications }: { 
+interface NotificationContainerProps {
   notifications: Array<{
     id: string;
     type: 'success' | 'error' | 'info';
@@ -90,7 +100,9 @@ export function NotificationContainer({ notifications }: {
     message?: string;
   }>;
   onClose: (id: string) => void;
-}) {
+}
+
+export function NotificationContainer({ notifications, onClose }: NotificationContainerProps) {
   return (
     <div className="fixed top-0 right-0 z-50 p-4 space-y-4">
       {notifications.map((notification) => (
@@ -99,7 +111,7 @@ export function NotificationContainer({ notifications }: {
           type={notification.type}
           title={notification.title}
           message={notification.message}
-          onClose={() => notifications.onClose(notification.id)}
+          onClose={() => onClose(notification.id)}
         />
       ))}
     </div>
