@@ -62,11 +62,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const fetchData = async () => {
       try {
         const dashboardResponse = await api.get('/api/dashboard/stats');
-        const pendingCount = dashboardResponse.data.pendingEvaluations || 0;
-        const upcomingCount = dashboardResponse.data.upcomingEvaluations?.length || 0;
-        setPendingEvaluations(pendingCount);
-        setHasNotifications(pendingCount > 0 || upcomingCount > 0);
-        setUpcomingEvaluations(dashboardResponse.data.upcomingEvaluations || []);
+        // If there are any unread notifications, they will be in upcomingEvaluations
+        const notifications = dashboardResponse.data.upcomingEvaluations || [];
+        setUpcomingEvaluations(notifications);
+        // Set hasNotifications directly based on whether there are any notifications
+        setHasNotifications(notifications.length > 0);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -180,24 +180,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       console.log('Successfully marked notification as read');
 
-      // Update local state to remove the notification
+      // Update local state
       setUpcomingEvaluations(prev => {
-        console.log('Updating notifications state:', {
-          before: prev.length,
-          after: prev.filter(e => e.notificationId !== evaluation.notificationId).length
-        });
-        return prev.filter(e => e.notificationId !== evaluation.notificationId);
-      });
-
-      // Update the notification badge count
-      setHasNotifications(prev => {
-        const remainingNotifications = upcomingEvaluations.length - 1;
-        console.log('Updating notification badge:', {
-          previousState: prev,
-          remainingNotifications,
-          willShow: remainingNotifications > 0
-        });
-        return remainingNotifications > 0;
+        const updatedNotifications = prev.filter(e => e.notificationId !== evaluation.notificationId);
+        // Set hasNotifications based on whether there are any remaining notifications
+        setHasNotifications(updatedNotifications.length > 0);
+        return updatedNotifications;
       });
 
       toast({
