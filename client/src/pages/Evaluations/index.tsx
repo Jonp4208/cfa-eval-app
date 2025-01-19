@@ -410,7 +410,8 @@ export default function Evaluations() {
               return (
                 <Card 
                   key={evaluation._id}
-                  className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300"
+                  className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  onClick={() => navigate(`/evaluations/${evaluation._id}`)}
                 >
                   <CardContent className="p-6">
                     <div className="flex flex-col">
@@ -442,9 +443,21 @@ export default function Evaluations() {
                             </div>
                           </div>
                         </div>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(evaluation.status)}`}>
-                          {getStatusDisplay(evaluation)}
-                        </span>
+                        <div className="flex items-start gap-2">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(evaluation.status)}`}>
+                            {getStatusDisplay(evaluation)}
+                          </span>
+                          {(user?._id === evaluation.evaluator._id) && evaluation.status !== 'completed' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => handleDelete(e, evaluation._id)}
+                              className="h-8 w-8 text-[#E51636] hover:text-[#E51636]/90 hover:bg-[#E51636]/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       {(evaluation.status === 'pending_manager_review' || evaluation.status === 'in_review_session') && (
                         <div className="mt-auto flex justify-center md:justify-end">
