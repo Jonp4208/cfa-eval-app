@@ -17,9 +17,11 @@ import { useNavigate } from 'react-router-dom';
 import disciplinaryService, { DisciplinaryIncident } from '@/services/disciplinaryService';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function DisciplinaryPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [filter, setFilter] = useState('all');
   const [incidents, setIncidents] = useState<DisciplinaryIncident[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,6 +95,10 @@ export default function DisciplinaryPage() {
 
   const handleViewDetails = (id: string) => {
     navigate(`/disciplinary/${id}`);
+  };
+
+  const handleAcknowledge = async (incidentId: string) => {
+    navigate(`/disciplinary/${incidentId}`);
   };
 
   if (loading) {
@@ -300,6 +306,21 @@ export default function DisciplinaryPage() {
                     <span>Date: {new Date(incident.date).toLocaleDateString()}</span>
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
+                    {user?._id === incident.employee._id && 
+                     incident.status === 'Pending Acknowledgment' && (
+                      <Button 
+                        variant="default"
+                        size="sm" 
+                        className="flex items-center gap-2 flex-1 sm:flex-initial justify-center h-10 px-4 rounded-xl bg-[#E51636] hover:bg-[#E51636]/90 text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAcknowledge(incident._id);
+                        }}
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Acknowledge
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm" 
