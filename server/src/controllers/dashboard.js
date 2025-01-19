@@ -3,7 +3,7 @@ import { Settings, Store, User, Evaluation, Template, Disciplinary, Notification
 // Get dashboard statistics
 export const getDashboardStats = async (req, res) => {
     try {
-        const { store } = req.user;
+        const { store, role, isAdmin } = req.user;
 
         // Get counts
         const pendingEvaluations = await Evaluation.countDocuments({ 
@@ -40,38 +40,31 @@ export const getDashboardStats = async (req, res) => {
         console.log('Querying disciplinary incidents for store:', store);
         
         // Build query based on user role
-        let query = { store };
+        let disciplinaryQuery = { store };
         
-        // If user is not an admin and not a manager, only show their own incidents
-        if (!req.user.isAdmin && req.user.role !== 'manager') {
-            query.employee = req.user._id;
+        // If user is not an admin/manager/evaluator, only show their own incidents
+        if (!isAdmin && !['manager', 'evaluator'].includes(role)) {
+            disciplinaryQuery.employee = req.user._id;
         }
 
-        // Get all incidents first, then filter on the client side like the disciplinary page does
-        const allDisciplinaryIncidents = await Disciplinary.find(query)
-            .populate('employee', 'name position department')
-            .populate('supervisor', 'name')
-            .populate('createdBy', 'name')
-            .sort('-createdAt');
-
-        // Use the same filtering logic as the disciplinary page
-        const openDisciplinaryIncidents = allDisciplinaryIncidents.filter(i => 
-            i.status === 'Open' || 
-            i.status === 'Pending Acknowledgment' || 
-            i.status === 'In Progress' || 
-            i.status === 'Pending Follow-up'
-        ).length;
-
-        // Get recent disciplinary incidents (last 7 days)
-        const recentDisciplinaryIncidents = allDisciplinaryIncidents
-            .filter(i => new Date(i.date) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
-            .slice(0, 5);
+        const openDisciplinaryIncidents = await Disciplinary.countDocuments({
+            ...disciplinaryQuery,
+            status: { $ne: 'Resolved' }
+        });
 
         // Count resolved incidents this month
-        const resolvedDisciplinaryThisMonth = allDisciplinaryIncidents.filter(i => 
-            i.status === 'Resolved' && 
-            new Date(i.date) >= new Date(now.getFullYear(), now.getMonth(), 1)
-        ).length;
+        const resolvedDisciplinaryThisMonth = await Disciplinary.countDocuments({
+            ...disciplinaryQuery,
+            status: 'Resolved',
+            date: { $gte: new Date(now.getFullYear(), now.getMonth(), 1) }
+        });
+
+        // Get recent disciplinary incidents
+        const recentDisciplinaryIncidents = await Disciplinary.find(disciplinaryQuery)
+            .populate('employee', 'name')
+            .populate('supervisor', 'name')
+            .sort('-date')
+            .limit(5);
 
         console.log('Open disciplinary incidents count:', openDisciplinaryIncidents);
 
@@ -86,37 +79,27 @@ export const getDashboardStats = async (req, res) => {
             isActive: true  // Note: our model uses isActive, not active
         });
 
-        // Get upcoming evaluations with their notifications
-        const notifications = await Notification.find({
-            user: req.user._id,
-            type: 'evaluation',
-            read: false,
-            relatedModel: 'Evaluation'
-        }).populate({
-            path: 'relatedId',
-            model: 'Evaluation',
-            populate: [
-                { 
-                    path: 'employee',
-                    select: 'name'
-                },
-                { 
-                    path: 'template',
-                    select: 'name'
-                }
-            ]
-        }).sort({ createdAt: -1 }).limit(5);
+        // Get upcoming evaluations for next 7 days
+        const sevenDaysFromNow = new Date();
+        sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
-        const upcomingEvaluations = notifications
-            .filter(notification => notification.relatedId) // Filter out any notifications with deleted evaluations
-            .map(notification => ({
-                _id: notification.relatedId._id,
-                employeeName: notification.relatedId.employee?.name || 'Unknown Employee',
-                templateName: notification.relatedId.template?.name || 'No Template',
-                scheduledDate: notification.relatedId.scheduledDate,
-                notificationId: notification._id,
-                message: notification.message // Include the notification message
-            }));
+        // Build query for upcoming evaluations based on role
+        let evaluationQuery = {
+            store,
+            scheduledDate: { $gte: now, $lte: sevenDaysFromNow },
+            status: { $ne: 'completed' }
+        };
+
+        // If not admin/manager/evaluator, only show own evaluations
+        if (!isAdmin && !['manager', 'evaluator'].includes(role)) {
+            evaluationQuery.employee = req.user._id;
+        }
+
+        const upcomingEvaluations = await Evaluation.find(evaluationQuery)
+            .populate('employee', 'name')
+            .populate('template', 'name')
+            .sort('scheduledDate')
+            .limit(5);
 
         // Get recent activity
         const recentActivity = await Evaluation.find({
@@ -138,11 +121,9 @@ export const getDashboardStats = async (req, res) => {
             resolvedDisciplinaryThisMonth,
             upcomingEvaluations: upcomingEvaluations.map(evaluation => ({
                 _id: evaluation._id,
-                employeeName: evaluation.employeeName,
-                templateName: evaluation.templateName,
-                scheduledDate: evaluation.scheduledDate,
-                notificationId: evaluation.notificationId,
-                message: evaluation.message
+                employeeName: evaluation.employee?.name || 'Unknown Employee',
+                templateName: evaluation.template?.name || 'No Template',
+                scheduledDate: evaluation.scheduledDate
             })),
             recentActivity: recentActivity.map(activity => ({
                 id: activity._id,
@@ -163,9 +144,9 @@ export const getDashboardStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Dashboard stats error:', error);
+        console.error('Error getting dashboard stats:', error);
         res.status(500).json({ 
-            message: 'Error fetching dashboard statistics',
+            message: 'Error getting dashboard stats',
             error: error.message 
         });
     }
