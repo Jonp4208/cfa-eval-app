@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { handleAsync } from '../utils/errorHandler.js';
 import { ApiError } from '../utils/ApiError.js';
+import { sendEmail } from '../utils/emailSender.js';
 
 // Get all disciplinary incidents
 export const getAllIncidents = handleAsync(async (req, res) => {
@@ -191,7 +192,10 @@ export const acknowledgeIncident = handleAsync(async (req, res) => {
     _id: id,
     employee: req.user._id,
     'acknowledgment.acknowledged': { $ne: true }
-  });
+  })
+  .populate('employee', 'name position')
+  .populate('supervisor', 'name')
+  .populate('store', 'name storeEmail');
 
   if (!incident) {
     throw new ApiError(404, 'Incident not found or already acknowledged');
@@ -223,7 +227,62 @@ export const acknowledgeIncident = handleAsync(async (req, res) => {
     relatedModel: 'Disciplinary'
   });
 
-  res.json(incident);
+  // Send email to store if store email is configured
+  if (incident.store.storeEmail) {
+    try {
+      await sendEmail({
+        to: incident.store.storeEmail,
+        subject: `Disciplinary Incident Acknowledged - ${incident.employee.name}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+              <h1 style="color: white; margin: 0;">Disciplinary Incident Acknowledgment</h1>
+            </div>
+            
+            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+              <h2 style="color: #333; margin-top: 0;">Incident Details</h2>
+              <p><strong>Employee:</strong> ${incident.employee.name} (${incident.employee.position})</p>
+              <p><strong>Supervisor:</strong> ${incident.supervisor.name}</p>
+              <p><strong>Acknowledgment Date:</strong> ${new Date().toLocaleDateString()}</p>
+              <p><strong>Type:</strong> ${incident.type}</p>
+              <p><strong>Severity:</strong> ${incident.severity}</p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+              <h2 style="color: #333;">Incident Information</h2>
+              <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h3 style="color: #333; margin-top: 0;">Description</h3>
+                <p style="margin-bottom: 20px;">${incident.description}</p>
+
+                <h3 style="color: #333;">Action Taken</h3>
+                <p style="margin-bottom: 20px;">${incident.actionTaken}</p>
+
+                ${incident.acknowledgment.comments ? `
+                  <h3 style="color: #333;">Employee Comments</h3>
+                  <p style="margin-bottom: 20px;">${incident.acknowledgment.comments}</p>
+                ` : ''}
+
+                ${incident.acknowledgment.rating ? `
+                  <h3 style="color: #333;">Fairness Rating</h3>
+                  <p>${incident.acknowledgment.rating} out of 5</p>
+                ` : ''}
+              </div>
+            </div>
+
+            <p style="margin-top: 30px;">
+              For more details, please log in to the Growth Hub platform.
+            </p>
+            <p>Best regards,<br>Growth Hub Team</p>
+          </div>
+        `
+      });
+    } catch (emailError) {
+      console.error('Failed to send store notification email:', emailError);
+      // Continue execution - don't fail the acknowledgment
+    }
+  }
+
+  res.json({ incident });
 });
 
 // Add follow-up
