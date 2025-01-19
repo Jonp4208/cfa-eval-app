@@ -472,13 +472,6 @@ export default function Evaluations() {
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            {React.createElement(StatusIcon, { className: `w-6 h-6 ${
-                              evaluation.status === 'completed'
-                                ? 'text-green-600'
-                                : evaluation.status === 'in_review_session'
-                                ? 'text-purple-600'
-                                : 'text-[#E51636]'
-                            }` })}
                             <span>{getStatusDisplay(evaluation)}</span>
                           </div>
                           {evaluation.status === 'completed' && (
