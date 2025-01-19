@@ -1,4 +1,4 @@
-import { Settings, Store, User, Evaluation, Template, Disciplinary } from '../models/index.js';
+import { Settings, Store, User, Evaluation, Template, Disciplinary, Notification } from '../models/index.js';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req, res) => {
@@ -68,29 +68,37 @@ export const getDashboardStats = async (req, res) => {
             isActive: true  // Note: our model uses isActive, not active
         });
 
-        // Get upcoming evaluations
-        const upcomingEvaluations = await Evaluation.find({
-            store,
-            $or: [
-                { employee: req.user._id },  // User is the employee
-                { evaluator: req.user._id }  // User is the evaluator
-            ],
-            notificationViewed: {
-                $not: {
-                    $elemMatch: {
-                        user: req.user._id
-                    }
+        // Get upcoming evaluations with their notifications
+        const notifications = await Notification.find({
+            user: req.user._id,
+            type: 'evaluation',
+            read: false,
+            relatedModel: 'Evaluation'
+        }).populate({
+            path: 'relatedId',
+            model: 'Evaluation',
+            populate: [
+                { 
+                    path: 'employee',
+                    select: 'name'
+                },
+                { 
+                    path: 'template',
+                    select: 'name'
                 }
-            },
-            status: { 
-                $in: ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'] 
-            },
-            scheduledDate: { $gte: new Date() }
-        })
-        .populate('employee', 'name')
-        .populate('template', 'name')
-        .sort({ scheduledDate: 1 })
-        .limit(5);
+            ]
+        }).sort({ createdAt: -1 }).limit(5);
+
+        const upcomingEvaluations = notifications
+            .filter(notification => notification.relatedId) // Filter out any notifications with deleted evaluations
+            .map(notification => ({
+                _id: notification.relatedId._id,
+                employeeName: notification.relatedId.employee?.name || 'Unknown Employee',
+                templateName: notification.relatedId.template?.name || 'No Template',
+                scheduledDate: notification.relatedId.scheduledDate,
+                notificationId: notification._id,
+                message: notification.message // Include the notification message
+            }));
 
         // Get recent activity
         const recentActivity = await Evaluation.find({
@@ -112,9 +120,11 @@ export const getDashboardStats = async (req, res) => {
             resolvedDisciplinaryThisMonth,
             upcomingEvaluations: upcomingEvaluations.map(evaluation => ({
                 _id: evaluation._id,
-                employeeName: evaluation.employee?.name || 'Unknown Employee',
-                templateName: evaluation.template?.name || 'No Template',
-                scheduledDate: evaluation.scheduledDate
+                employeeName: evaluation.employeeName,
+                templateName: evaluation.templateName,
+                scheduledDate: evaluation.scheduledDate,
+                notificationId: evaluation.notificationId,
+                message: evaluation.message
             })),
             recentActivity: recentActivity.map(activity => ({
                 id: activity._id,

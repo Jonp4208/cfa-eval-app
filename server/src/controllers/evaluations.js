@@ -74,8 +74,9 @@ export const createEvaluation = async (req, res) => {
                 user: employee._id,
                 store: req.user.store._id,
                 type: 'evaluation',
-                title: 'New Evaluation Assigned',
-                message: `You have a new evaluation scheduled for ${new Date(scheduledDate).toLocaleDateString()}. Please complete your self-evaluation.`,
+                priority: 'high',
+                title: 'New Evaluation Scheduled',
+                message: `An evaluation has been scheduled for ${new Date(scheduledDate).toLocaleDateString()}. Template: ${template.name}`,
                 relatedId: evaluation._id,
                 relatedModel: 'Evaluation'
             });
