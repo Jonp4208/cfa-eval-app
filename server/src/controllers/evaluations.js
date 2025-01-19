@@ -667,47 +667,60 @@ export const acknowledgeEvaluation = async (req, res) => {
         // Send email to store
         if (evaluation.store.storeEmail) {
             try {
+                // Convert Map to object if needed
+                const managerEvaluation = evaluation.managerEvaluation && evaluation.managerEvaluation.size > 0
+                    ? Object.fromEntries(evaluation.managerEvaluation)
+                    : {};
+
+                console.log('Manager Evaluation data:', managerEvaluation);
+
                 // Generate HTML for evaluation sections and responses
                 let sectionsHtml = '';
-                evaluation.template.sections.forEach((section, sIndex) => {
+                evaluation.template.sections.forEach((section, sectionIndex) => {
                     sectionsHtml += `
-                        <div style="margin-top: 20px; margin-bottom: 20px;">
-                            <h2 style="color: #E4002B; margin-bottom: 10px;">${section.title}</h2>
-                            ${section.description ? `<p style="margin-bottom: 15px;">${section.description}</p>` : ''}
-                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                                <tr style="background-color: #f5f5f5;">
-                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Criterion</th>
-                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Manager's Evaluation</th>
-                                </tr>
-                                ${section.criteria.map((criterion, cIndex) => {
-                                    const managerResponse = evaluation.managerEvaluation.get(`${sIndex}.${cIndex}`);
-                                    return `
-                                        <tr>
-                                            <td style="padding: 10px; border: 1px solid #ddd;">
-                                                <strong>${criterion.name}</strong>
-                                                ${criterion.description ? `<br><em>${criterion.description}</em>` : ''}
-                                            </td>
-                                            <td style="padding: 10px; border: 1px solid #ddd;">
-                                                ${managerResponse ? `
-                                                    <strong>Rating:</strong> ${managerResponse.rating}<br>
-                                                    ${managerResponse.comments ? `<strong>Comments:</strong> ${managerResponse.comments}` : ''}
-                                                ` : 'No response provided'}
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </table>
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #333;">${section.name}</h3>
+                            ${section.description ? `<p style="color: #666; margin-bottom: 10px;">${section.description}</p>` : ''}
+                            ${section.criteria.map((criterion, criterionIndex) => {
+                                const key = `0-${criterionIndex}`;
+                                const rating = managerEvaluation[key];
+                                const scale = criterion.gradingScale;
+                                
+                                console.log(`Key: ${key}, Rating:`, rating, 'Scale:', scale);
+                                
+                                let ratingText = 'N/A';
+                                let ratingColor = '#666';
+                                
+                                if (rating && scale) {
+                                    const grade = scale.grades.find(g => g.value === Number(rating));
+                                    if (grade) {
+                                        ratingText = `${rating} - ${grade.label}`;
+                                        ratingColor = grade.color || '#666';
+                                    }
+                                }
+                                
+                                return `
+                                    <div style="margin-bottom: 15px; padding: 12px; background-color: #f5f5f5; border-radius: 8px;">
+                                        <p style="margin: 0 0 8px 0; font-weight: 600;">${criterion.name}</p>
+                                        ${criterion.description ? `<p style="margin: 0 0 8px 0; color: #666; font-size: 0.9em;">${criterion.description}</p>` : ''}
+                                        <div style="display: flex; align-items: center;">
+                                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${ratingColor}; margin-right: 8px;"></div>
+                                            <p style="margin: 0; color: ${ratingColor}; font-weight: 500;">Rating: ${ratingText}</p>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     `;
                 });
 
                 // Overall evaluation comments and development plan
                 const summaryHtml = `
-                    <div style="margin-top: 20px; margin-bottom: 20px;">
-                        <h2 style="color: #E4002B;">Overall Comments</h2>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #333;">Overall Comments</h3>
                         <p style="margin-bottom: 15px;">${evaluation.overallComments || 'No overall comments provided.'}</p>
                         
-                        <h2 style="color: #E4002B;">Development Plan</h2>
+                        <h3 style="color: #333;">Development Plan</h3>
                         <p>${evaluation.developmentPlan || 'No development plan provided.'}</p>
                     </div>
                 `;
@@ -851,5 +864,170 @@ export const saveDraft = async (req, res) => {
             userStore: req.user.store._id
         });
         res.status(500).json({ message: 'Error saving draft' });
+    }
+};
+
+// Send completed evaluation email to store
+export const sendCompletedEvaluationEmail = async (req, res) => {
+    try {
+        // First get the default grading scale
+        const defaultScale = await GradingScale.findOne({ 
+            store: req.user.store._id,
+            isDefault: true,
+            isActive: true
+        });
+
+        const evaluation = await Evaluation.findOne({
+            _id: req.params.evaluationId,
+            store: req.user.store._id,
+            status: 'completed'
+        })
+        .populate({
+            path: 'employee',
+            select: 'name position'
+        })
+        .populate({
+            path: 'evaluator',
+            select: 'name position'
+        })
+        .populate({
+            path: 'template',
+            select: 'name sections description',
+            populate: {
+                path: 'sections.criteria.gradingScale',
+                model: 'GradingScale'
+            }
+        })
+        .populate('store', 'storeEmail name');
+
+        if (!evaluation) {
+            return res.status(404).json({ message: 'Completed evaluation not found' });
+        }
+
+        if (!evaluation.store.storeEmail) {
+            return res.status(400).json({ message: 'Store email not configured' });
+        }
+
+        // Properly handle the manager evaluation data
+        let managerEvaluation = {};
+        if (evaluation.managerEvaluation) {
+            if (evaluation.managerEvaluation instanceof Map) {
+                managerEvaluation = Object.fromEntries(evaluation.managerEvaluation);
+            } else if (typeof evaluation.managerEvaluation.get === 'function') {
+                managerEvaluation = Object.fromEntries(evaluation.managerEvaluation);
+            } else if (typeof evaluation.managerEvaluation === 'object') {
+                managerEvaluation = evaluation.managerEvaluation;
+            }
+        }
+
+        console.log('Processed Manager Evaluation data:', {
+            managerEvaluation,
+            keys: Object.keys(managerEvaluation),
+            values: Object.values(managerEvaluation)
+        });
+
+        // Generate HTML for evaluation sections and responses
+        let sectionsHtml = '';
+        if (evaluation.template && evaluation.template.sections) {
+            evaluation.template.sections.forEach((section, sectionIndex) => {
+                console.log(`Processing section ${sectionIndex}:`, {
+                    name: section.name || section.title,
+                    criteriaCount: section?.criteria?.length
+                });
+
+                if (section && section.criteria) {
+                    sectionsHtml += `
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #333;">${section.name || section.title}</h3>
+                            ${section.description ? `<p style="color: #666; margin-bottom: 10px;">${section.description}</p>` : ''}
+                            ${section.criteria.map((criterion, criterionIndex) => {
+                                const key = `0-${criterionIndex}`;
+                                const rating = managerEvaluation[key];
+                                const scale = criterion.gradingScale || defaultScale;
+                                
+                                console.log(`Processing criterion ${criterionIndex}:`, {
+                                    key,
+                                    rating,
+                                    criterionName: criterion.name,
+                                    hasGradingScale: !!scale,
+                                    gradingScaleGrades: scale?.grades
+                                });
+                                
+                                let ratingText = 'N/A';
+                                let ratingColor = '#666';
+                                
+                                if (rating !== undefined && scale && scale.grades) {
+                                    const grade = scale.grades.find(g => g.value === Number(rating));
+                                    console.log('Found grade:', {
+                                        rating,
+                                        grade,
+                                        allGrades: scale.grades
+                                    });
+                                    
+                                    if (grade) {
+                                        ratingText = `${rating} - ${grade.label}`;
+                                        ratingColor = grade.color || '#666';
+                                    }
+                                }
+                                
+                                return `
+                                    <div style="margin-bottom: 15px; padding: 12px; background-color: #f5f5f5; border-radius: 8px;">
+                                        <p style="margin: 0 0 8px 0; font-weight: 600;">${criterion.name}</p>
+                                        ${criterion.description ? `<p style="margin: 0 0 8px 0; color: #666; font-size: 0.9em;">${criterion.description}</p>` : ''}
+                                        <div style="display: flex; align-items: center;">
+                                            <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${ratingColor}; margin-right: 8px;"></div>
+                                            <p style="margin: 0; color: ${ratingColor}; font-weight: 500;">Rating: ${ratingText}</p>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // Send email to store
+        await sendEmail({
+            to: evaluation.store.storeEmail,
+            subject: `Completed Evaluation - ${evaluation.employee.name}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                    <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                        <h1 style="color: white; margin: 0;">Completed Evaluation Report</h1>
+                    </div>
+                    
+                    <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                        <h2 style="color: #333; margin-top: 0;">Evaluation Details</h2>
+                        <p><strong>Employee:</strong> ${evaluation.employee.name} (${evaluation.employee.position || 'Team Member'})</p>
+                        <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
+                        <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        <p><strong>Template:</strong> ${evaluation.template.name}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h2 style="color: #333;">Evaluation Results</h2>
+                        ${sectionsHtml}
+                    </div>
+                    
+                    <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px;">
+                        <h2 style="color: #333; margin-top: 0;">Overall Assessment</h2>
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #666;">Comments</h3>
+                            <p style="margin: 0;">${evaluation.overallComments || 'No overall comments provided.'}</p>
+                        </div>
+                        <div>
+                            <h3 style="color: #666;">Development Plan</h3>
+                            <p style="margin: 0;">${evaluation.developmentPlan || 'No development plan provided.'}</p>
+                        </div>
+                    </div>
+                </div>
+            `
+        });
+
+        res.json({ message: 'Evaluation email sent successfully' });
+    } catch (error) {
+        console.error('Send completed evaluation email error:', error);
+        res.status(500).json({ message: 'Error sending evaluation email' });
     }
 };

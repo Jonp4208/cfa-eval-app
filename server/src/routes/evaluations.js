@@ -11,7 +11,8 @@ import {
     completeManagerEvaluation,
     acknowledgeEvaluation,
     markNotificationViewed,
-    saveDraft
+    saveDraft,
+    sendCompletedEvaluationEmail
 } from '../controllers/evaluations.js';
 import { auth } from '../middleware/auth.js';
 import { isManager } from '../middleware/roles.js';
@@ -37,5 +38,8 @@ router.post('/:evaluationId/acknowledge', auth, acknowledgeEvaluation);
 
 // Mark notification as viewed
 router.post('/:evaluationId/mark-viewed', auth, markNotificationViewed);
+
+// Send completed evaluation email
+router.post('/:evaluationId/send-email', auth, sendCompletedEvaluationEmail);
 
 export default router;

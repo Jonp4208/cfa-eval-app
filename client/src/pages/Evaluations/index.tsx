@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -17,14 +18,14 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useNotification } from '@/contexts/NotificationContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import api from '@/lib/axios';
 import { handleError } from '@/lib/utils/error-handler';
-import { useNotification } from '@/contexts/NotificationContext';
 
 interface Evaluation {
   _id: string;
@@ -62,7 +63,6 @@ interface Department {
 export default function Evaluations() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
   const { showNotification } = useNotification();
   const [view, setView] = useState<'all' | 'pending' | 'completed'>('pending');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -95,19 +95,17 @@ export default function Evaluations() {
       await api.delete(`/api/evaluations/${evaluationId}`);
     },
     onSuccess: () => {
-      showNotification(
-        'success',
-        'Evaluation Deleted',
-        'The evaluation has been successfully deleted'
-      );
+      showNotification({
+        type: 'success',
+        message: 'Evaluation Deleted',
+      });
       refetch();
     },
     onError: (error: any) => {
-      showNotification(
-        'error',
-        'Error',
-        error.response?.data?.message || 'Failed to delete evaluation'
-      );
+      showNotification({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to delete evaluation',
+      });
     }
   });
 
@@ -227,6 +225,29 @@ export default function Evaluations() {
         return CheckCircle2;
       default:
         return AlertTriangle;
+    }
+  };
+
+  const sendEvaluationEmail = async (evaluationId: string) => {
+    try {
+      const response = await api.post(`/api/evaluations/${evaluationId}/send-email`);
+      
+      if (!response.data) {
+        throw new Error('Failed to send evaluation email');
+      }
+      
+      showNotification(
+        'success',
+        'Email Sent',
+        'Evaluation has been sent to the store email.'
+      );
+    } catch (error: any) {
+      console.error('Error sending evaluation email:', error);
+      showNotification(
+        'error',
+        'Email Failed',
+        error.response?.data?.message || 'Failed to send evaluation email. Please try again.'
+      );
     }
   };
 
@@ -430,13 +451,13 @@ export default function Evaluations() {
                               ? 'bg-purple-100'
                               : 'bg-[#E51636]/10'
                           }`}>
-                            <StatusIcon className={`w-6 h-6 ${
+                            {React.createElement(StatusIcon, { className: `w-6 h-6 ${
                               evaluation.status === 'completed'
                                 ? 'text-green-600'
                                 : evaluation.status === 'in_review_session'
                                 ? 'text-purple-600'
                                 : 'text-[#E51636]'
-                            }`} />
+                            }` })}
                           </div>
                           <div>
                             <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
@@ -449,10 +470,31 @@ export default function Evaluations() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-start gap-2">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(evaluation.status)}`}>
-                            {getStatusDisplay(evaluation)}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            {React.createElement(StatusIcon, { className: `w-6 h-6 ${
+                              evaluation.status === 'completed'
+                                ? 'text-green-600'
+                                : evaluation.status === 'in_review_session'
+                                ? 'text-purple-600'
+                                : 'text-[#E51636]'
+                            }` })}
+                            <span>{getStatusDisplay(evaluation)}</span>
+                          </div>
+                          {evaluation.status === 'completed' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                sendEvaluationEmail(evaluation._id);
+                              }}
+                              title="Send evaluation to store email"
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          )}
                           {(user?._id === evaluation.evaluator._id) && evaluation.status !== 'completed' && (
                             <Button
                               variant="ghost"
