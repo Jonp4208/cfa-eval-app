@@ -24,6 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Progress } from '@/components/ui/progress';
 import api from '@/lib/axios';
 import { handleError } from '@/lib/utils/error-handler';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface Evaluation {
   _id: string;
@@ -62,6 +63,7 @@ export default function Evaluations() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { showNotification } = useNotification();
   const [view, setView] = useState<'all' | 'pending' | 'completed'>('pending');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -93,15 +95,19 @@ export default function Evaluations() {
       await api.delete(`/api/evaluations/${evaluationId}`);
     },
     onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Evaluation deleted successfully',
-        duration: 5000,
-      });
+      showNotification(
+        'success',
+        'Evaluation Deleted',
+        'The evaluation has been successfully deleted'
+      );
       refetch();
     },
     onError: (error: any) => {
-      handleError(error);
+      showNotification(
+        'error',
+        'Error',
+        error.response?.data?.message || 'Failed to delete evaluation'
+      );
     }
   });
 
