@@ -21,13 +21,30 @@ export const getAllIncidents = handleAsync(async (req, res) => {
     }
   );
 
-  // Build query based on user role
-  let query = {};
+  // Build query based on user role and store
+  const { store, role, isAdmin } = req.user;
+  let query = { store };
   
-  // If user is not an admin and not a manager, only show their own incidents
-  if (!req.user.isAdmin && req.user.role !== 'manager') {
+  // If user is not an admin/manager/evaluator, only show their own incidents
+  const isLeader = isAdmin || ['manager', 'evaluator'].includes(role);
+  if (!isLeader) {
     query.employee = req.user._id;
   }
+  
+  console.log('Disciplinary getAllIncidents - User details:', {
+    id: req.user._id,
+    name: req.user.name,
+    role: role,
+    isAdmin: isAdmin,
+    isLeader: isLeader,
+    store: store
+  });
+  
+  console.log('Disciplinary getAllIncidents - Query conditions:', JSON.stringify(query, null, 2));
+
+  // First get total count of all incidents in store
+  const totalCount = await Disciplinary.countDocuments({ store });
+  console.log('Total incidents in store:', totalCount);
 
   // Then get incidents based on the query
   const incidents = await Disciplinary.find(query)
@@ -36,6 +53,17 @@ export const getAllIncidents = handleAsync(async (req, res) => {
     .populate('createdBy', 'name')
     .sort('-createdAt');
   
+  console.log('Disciplinary getAllIncidents - Found incidents:', {
+    count: incidents.length,
+    incidents: incidents.map(i => ({
+      id: i._id,
+      status: i.status,
+      store: i.store,
+      employee: i.employee?._id,
+      employeeName: i.employee?.name
+    }))
+  });
+
   res.json(incidents);
 });
 
