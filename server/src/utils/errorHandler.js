@@ -1,3 +1,5 @@
+import { ApiError } from './ApiError.js';
+
 /**
  * Wraps an async route handler to catch errors and pass them to Express error handler
  * @param {Function} fn The async route handler function
@@ -5,23 +7,24 @@
  */
 export const handleAsync = (fn) => {
   return (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
+    Promise.resolve(fn(req, res, next)).catch((err) => {
+      console.error('Error:', err);
+      
+      if (err instanceof ApiError) {
+        return res.status(err.statusCode).json({
+          status: err.status,
+          message: err.message
+        });
+      }
+
+      // Default to 500 server error for unhandled errors
+      res.status(500).json({
+        status: 'error',
+        message: 'Internal server error'
+      });
+    });
   };
 };
-
-/**
- * Custom error class for API errors
- */
-export class ApiError extends Error {
-  constructor(statusCode, message) {
-    super(message);
-    this.statusCode = statusCode;
-    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
-    this.isOperational = true;
-
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
 
 /**
  * Global error handler middleware

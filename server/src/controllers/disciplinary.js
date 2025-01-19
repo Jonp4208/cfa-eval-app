@@ -2,10 +2,35 @@ import Disciplinary from '../models/Disciplinary.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { handleAsync } from '../utils/errorHandler.js';
+import { ApiError } from '../utils/ApiError.js';
 
 // Get all disciplinary incidents
 export const getAllIncidents = handleAsync(async (req, res) => {
-  const incidents = await Disciplinary.find()
+  // First, update any incidents that need status correction
+  await Disciplinary.updateMany(
+    { 
+      $or: [
+        { status: 'Open' },
+        { status: { $exists: false } }
+      ]
+    },
+    { 
+      $set: { 
+        status: 'Pending Acknowledgment',
+      }
+    }
+  );
+
+  // Build query based on user role
+  let query = {};
+  
+  // If user is not an admin and not a manager, only show their own incidents
+  if (!req.user.isAdmin && req.user.role !== 'manager') {
+    query.employee = req.user._id;
+  }
+
+  // Then get incidents based on the query
+  const incidents = await Disciplinary.find(query)
     .populate('employee', 'name position department')
     .populate('supervisor', 'name')
     .populate('createdBy', 'name')
@@ -65,7 +90,8 @@ export const createIncident = handleAsync(async (req, res) => {
     documentationAttached,
     supervisor: employee.supervisor || req.user._id,
     createdBy: req.user._id,
-    store: req.user.store
+    store: req.user.store,
+    status: 'Pending Acknowledgment'
   });
 
   await incident.populate([
@@ -76,11 +102,12 @@ export const createIncident = handleAsync(async (req, res) => {
 
   // Create notification for the employee
   await Notification.create({
-    user: employeeId,
+    user: employee._id,
     store: req.user.store._id,
     type: 'disciplinary',
+    priority: 'high',
     title: 'New Disciplinary Incident',
-    message: `A ${severity.toLowerCase()} disciplinary incident has been filed regarding ${type.toLowerCase()}. Please review the details.`,
+    message: `A ${severity.toLowerCase()} disciplinary incident has been created regarding ${type.toLowerCase()}.`,
     relatedId: incident._id,
     relatedModel: 'Disciplinary'
   });
@@ -127,11 +154,56 @@ export const updateIncident = handleAsync(async (req, res) => {
   res.json(incident);
 });
 
-// Add a follow-up to an incident
+// Acknowledge incident
+export const acknowledgeIncident = handleAsync(async (req, res) => {
+  const { comments, rating } = req.body;
+  const { id } = req.params;
+
+  const incident = await Disciplinary.findOne({
+    _id: id,
+    employee: req.user._id,
+    'acknowledgment.acknowledged': { $ne: true }
+  });
+
+  if (!incident) {
+    throw new ApiError(404, 'Incident not found or already acknowledged');
+  }
+
+  incident.acknowledgment = {
+    acknowledged: true,
+    date: new Date(),
+    comments,
+    rating
+  };
+
+  if (incident.requiresFollowUp) {
+    incident.status = 'Pending Follow-up';
+  } else {
+    incident.status = 'Resolved';
+  }
+
+  await incident.save();
+
+  // Create notification for the supervisor
+  await Notification.create({
+    user: incident.supervisor,
+    store: req.user.store._id,
+    type: 'disciplinary',
+    title: 'Disciplinary Incident Acknowledged',
+    message: `${req.user.name} has acknowledged the ${incident.severity.toLowerCase()} disciplinary incident.`,
+    relatedId: incident._id,
+    relatedModel: 'Disciplinary'
+  });
+
+  res.json(incident);
+});
+
+// Add follow-up
 export const addFollowUp = handleAsync(async (req, res) => {
+  const { id } = req.params;
   const { date, note, status } = req.body;
-  
-  const incident = await Disciplinary.findById(req.params.id);
+
+  const incident = await Disciplinary.findById(id);
   if (!incident) {
     return res.status(404).json({ message: 'Incident not found' });
   }
@@ -143,8 +215,68 @@ export const addFollowUp = handleAsync(async (req, res) => {
     by: req.user._id
   });
 
+  incident.status = 'Pending Acknowledgment';
   await incident.save();
-  await incident.populate('followUps.by', 'firstName lastName');
+
+  // Create notification for employee
+  await Notification.create({
+    user: incident.employee,
+    store: req.user.store,
+    type: 'disciplinary',
+    title: 'Follow-up Added to Disciplinary Incident',
+    message: `A follow-up has been added to your disciplinary incident. Please review and acknowledge.`,
+    relatedId: incident._id,
+    relatedModel: 'Disciplinary'
+  });
+
+  await incident.populate([
+    { path: 'employee', select: 'name position department' },
+    { path: 'supervisor', select: 'name' },
+    { path: 'createdBy', select: 'name' },
+    { path: 'followUps.by', select: 'name' }
+  ]);
+
+  res.json(incident);
+});
+
+// Complete follow-up
+export const completeFollowUp = handleAsync(async (req, res) => {
+  const { id, followUpId } = req.params;
+  const { note } = req.body;
+
+  const incident = await Disciplinary.findById(id);
+  if (!incident) {
+    return res.status(404).json({ message: 'Incident not found' });
+  }
+
+  const followUp = incident.followUps.id(followUpId);
+  if (!followUp) {
+    return res.status(404).json({ message: 'Follow-up not found' });
+  }
+
+  followUp.status = 'Completed';
+  followUp.note = note;
+  incident.status = 'Pending Acknowledgment';
+
+  await incident.save();
+
+  // Create notification for employee
+  await Notification.create({
+    user: incident.employee,
+    store: req.user.store,
+    type: 'disciplinary',
+    title: 'Follow-up Completed',
+    message: `The follow-up for your disciplinary incident has been completed. Please review and acknowledge.`,
+    relatedId: incident._id,
+    relatedModel: 'Disciplinary'
+  });
+
+  await incident.populate([
+    { path: 'employee', select: 'name position department' },
+    { path: 'supervisor', select: 'name' },
+    { path: 'createdBy', select: 'name' },
+    { path: 'followUps.by', select: 'name' }
+  ]);
 
   res.json(incident);
 });
@@ -218,14 +350,23 @@ export const getAllDisciplinaryIncidents = async (req, res) => {
     }
 };
 
-// Update existing incidents with store field
+// Update existing incidents with proper status
 export const updateExistingIncidents = handleAsync(async (req, res) => {
   const { store } = req.user;
   
-  // Update all incidents that don't have a store field
+  // Update all incidents that have 'Open' status or no status
   const result = await Disciplinary.updateMany(
-    { store: { $exists: false } },
-    { $set: { store: store } }
+    { 
+      $or: [
+        { status: 'Open' },
+        { status: { $exists: false } }
+      ]
+    },
+    { 
+      $set: { 
+        status: 'Pending Acknowledgment',
+      }
+    }
   );
   
   res.json({

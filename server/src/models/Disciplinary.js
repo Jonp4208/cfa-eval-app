@@ -69,7 +69,7 @@ const disciplinarySchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['Open', 'In Progress', 'Resolved'],
+    enum: ['Open', 'Pending Acknowledgment', 'Pending Follow-up', 'Resolved'],
     default: 'Open'
   },
   description: {
@@ -83,11 +83,28 @@ const disciplinarySchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  requiresFollowUp: {
+    type: Boolean,
+    default: false
+  },
   followUpDate: {
     type: Date
   },
   followUpActions: {
     type: String
+  },
+  acknowledgment: {
+    acknowledged: {
+      type: Boolean,
+      default: false
+    },
+    date: Date,
+    comments: String,
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5
+    }
   },
   previousIncidents: {
     type: Boolean,

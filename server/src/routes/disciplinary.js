@@ -10,7 +10,9 @@ import {
   addDocument,
   getEmployeeIncidents,
   getAllDisciplinaryIncidents,
-  updateExistingIncidents
+  updateExistingIncidents,
+  acknowledgeIncident,
+  completeFollowUp
 } from '../controllers/disciplinary.js';
 
 const router = express.Router();
@@ -44,9 +46,13 @@ router.route('/:id')
   .delete(deleteIncident);
 
 // Get all disciplinary incidents
-router.get('/all', auth, getAllDisciplinaryIncidents);
+router.get('/all', getAllDisciplinaryIncidents);
 
 // Update existing incidents with store field
-router.post('/update-store', auth, updateExistingIncidents);
+router.post('/update-store', updateExistingIncidents);
+
+// New routes for acknowledgment and follow-up completion
+router.post('/:id/acknowledge', acknowledgeIncident);
+router.post('/:id/follow-up/:followUpId/complete', completeFollowUp);
 
 export default router; 
