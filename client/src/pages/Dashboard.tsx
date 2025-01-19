@@ -172,7 +172,7 @@ export default function Dashboard() {
             <CardContent className="p-8">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[#27251F]/60 font-medium">Active Incidents</p>
+                  <p className="text-[#27251F]/60 font-medium">Open Incidents</p>
                   <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{stats?.openDisciplinaryIncidents || 0}</h3>
                   <p className="text-[#27251F]/60 mt-1">
                     {stats?.resolvedDisciplinaryThisMonth || 0} resolved this month

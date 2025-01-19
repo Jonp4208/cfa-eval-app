@@ -40,15 +40,35 @@ export default function DisciplinaryPage() {
   const loadIncidents = async () => {
     try {
       const data = await disciplinaryService.getAllIncidents();
+      console.log('Raw data from server:', data);
       setIncidents(data);
       
+      // Debug logging
+      console.log('All incidents:', data.map(i => ({ 
+        id: i._id, 
+        status: i.status,
+        type: i.type,
+        severity: i.severity,
+        description: i.description
+      })));
+      
       // Calculate stats
+      const openIncidents = data.filter(i => i.status === 'Open' || i.status === 'Pending Acknowledgment' || i.status === 'In Progress' || i.status === 'Pending Follow-up');
+      console.log('Open incidents:', openIncidents.map(i => ({ 
+        id: i._id, 
+        status: i.status,
+        type: i.type,
+        severity: i.severity,
+        description: i.description
+      })));
+      
       const stats = {
-        open: data.filter(i => i.status === 'Open').length,
+        open: openIncidents.length,
         followUps: data.filter(i => new Date(i.followUpDate) >= new Date()).length,
         resolved: data.filter(i => i.status === 'Resolved').length,
         repeat: data.filter(i => i.previousIncidents).length
       };
+      console.log('Calculated stats:', stats);
       setStats(stats);
     } catch (error) {
       toast.error('Failed to load incidents');
@@ -60,11 +80,21 @@ export default function DisciplinaryPage() {
 
   const getFilteredIncidents = () => {
     let filtered = incidents;
+    console.log('Initial incidents for filtering:', filtered.map(i => ({ 
+      id: i._id, 
+      status: i.status,
+      type: i.type,
+      severity: i.severity,
+      description: i.description
+    })));
 
     // Status filter
     switch (filter) {
+      case 'all':
+        // Don't filter, show all incidents
+        break;
       case 'open':
-        filtered = filtered.filter(i => i.status === 'Open');
+        filtered = filtered.filter(i => i.status === 'Open' || i.status === 'Pending Acknowledgment' || i.status === 'In Progress' || i.status === 'Pending Follow-up');
         break;
       case 'followup':
         filtered = filtered.filter(i => new Date(i.followUpDate) >= new Date());
@@ -73,6 +103,14 @@ export default function DisciplinaryPage() {
         filtered = filtered.filter(i => i.status === 'Resolved');
         break;
     }
+
+    console.log('After status filtering:', filtered.map(i => ({ 
+      id: i._id, 
+      status: i.status,
+      type: i.type,
+      severity: i.severity,
+      description: i.description
+    })));
 
     // Search filter
     if (searchQuery) {
@@ -84,6 +122,13 @@ export default function DisciplinaryPage() {
         i.type.toLowerCase().includes(query) ||
         i.description.toLowerCase().includes(query)
       );
+      console.log('After search filtering:', filtered.map(i => ({ 
+        id: i._id, 
+        status: i.status,
+        type: i.type,
+        severity: i.severity,
+        description: i.description
+      })));
     }
 
     return filtered;

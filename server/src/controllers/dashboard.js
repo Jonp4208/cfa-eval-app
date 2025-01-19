@@ -38,25 +38,43 @@ export const getDashboardStats = async (req, res) => {
 
         // Get disciplinary stats
         console.log('Querying disciplinary incidents for store:', store);
-        const openDisciplinaryIncidents = await Disciplinary.countDocuments({
-            $or: [
-                { store },
-                { store: { $exists: false }, createdBy: req.user._id }
-            ],
-            status: { $in: ['Open', 'In Progress'] }
-        });
-        console.log('Open disciplinary incidents:', openDisciplinaryIncidents);
-
-        const resolvedDisciplinaryThisMonth = await Disciplinary.countDocuments({
-            $or: [
-                { store },
-                { store: { $exists: false }, createdBy: req.user._id }
-            ],
-            status: 'Resolved',
-            date: { $gte: new Date(now.getFullYear(), now.getMonth(), 1) }
-        });
-        console.log('Resolved disciplinary incidents this month:', resolvedDisciplinaryThisMonth);
         
+        // Build query based on user role
+        let query = { store };
+        
+        // If user is not an admin and not a manager, only show their own incidents
+        if (!req.user.isAdmin && req.user.role !== 'manager') {
+            query.employee = req.user._id;
+        }
+
+        // Get all incidents first, then filter on the client side like the disciplinary page does
+        const allDisciplinaryIncidents = await Disciplinary.find(query)
+            .populate('employee', 'name position department')
+            .populate('supervisor', 'name')
+            .populate('createdBy', 'name')
+            .sort('-createdAt');
+
+        // Use the same filtering logic as the disciplinary page
+        const openDisciplinaryIncidents = allDisciplinaryIncidents.filter(i => 
+            i.status === 'Open' || 
+            i.status === 'Pending Acknowledgment' || 
+            i.status === 'In Progress' || 
+            i.status === 'Pending Follow-up'
+        ).length;
+
+        // Get recent disciplinary incidents (last 7 days)
+        const recentDisciplinaryIncidents = allDisciplinaryIncidents
+            .filter(i => new Date(i.date) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+            .slice(0, 5);
+
+        // Count resolved incidents this month
+        const resolvedDisciplinaryThisMonth = allDisciplinaryIncidents.filter(i => 
+            i.status === 'Resolved' && 
+            new Date(i.date) >= new Date(now.getFullYear(), now.getMonth(), 1)
+        ).length;
+
+        console.log('Open disciplinary incidents count:', openDisciplinaryIncidents);
+
         const totalEmployees = await User.countDocuments({ 
             store,
             status: 'active'  // Only count active employees
@@ -131,7 +149,17 @@ export const getDashboardStats = async (req, res) => {
                 type: activity.status,
                 description: `${activity.evaluator?.name || 'Unknown'} ${activity.status} evaluation for ${activity.employee?.name || 'Unknown Employee'}`,
                 date: activity.updatedAt
-            }))
+            })),
+            disciplinary: {
+                active: openDisciplinaryIncidents,
+                recent: recentDisciplinaryIncidents.map(incident => ({
+                    id: incident._id,
+                    name: incident.employee?.name || 'Unknown Employee',
+                    type: incident.type,
+                    severity: incident.severity,
+                    date: incident.date
+                }))
+            }
         });
 
     } catch (error) {
