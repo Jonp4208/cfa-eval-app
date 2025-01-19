@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, ChevronLeft, Scale } from 'lucide-react';
+import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, ChevronLeft, Scale, Mail } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import UserAccessSettings from './components/UserAccessSettings';
 import EvaluationSettings from './components/EvaluationSettings';
@@ -309,6 +309,38 @@ const SettingsPage = () => {
               </CardHeader>
               <CardContent>
                 <ChangePasswordForm />
+              </CardContent>
+            </Card>
+
+            {/* Email Configuration Test */}
+            <Card className="bg-white rounded-[20px] shadow-md mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg text-[#27251F]">Email Configuration</CardTitle>
+                <CardDescription className="text-[#27251F]/60">Test email notification settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-[#27251F]/80">
+                    Send a test email to verify that your email notifications are working correctly.
+                    The test email will be sent to your registered email address.
+                  </p>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        setError('');
+                        setSuccess('');
+                        const response = await api.post('/api/test-email');
+                        setSuccess('Test email sent successfully! Please check your inbox.');
+                      } catch (err: any) {
+                        setError(err.response?.data?.message || 'Failed to send test email');
+                      }
+                    }}
+                    className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl flex items-center gap-2"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Send Test Email
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

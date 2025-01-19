@@ -72,6 +72,45 @@ apiRouter.use('/goals', goalsRoutes);
 apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/grading-scales', gradingScalesRouter);
 
+// Test Email Configuration
+apiRouter.post('/test-email', async (req, res) => {
+  try {
+    console.log('Starting test email send...');
+    const { sendEmail } = await import('./utils/email.js');
+    
+    console.log('Attempting to send test email to:', process.env.EMAIL_USER);
+    const result = await sendEmail({
+      to: process.env.EMAIL_USER,
+      subject: 'Test Email from Growth Hub',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #E4002B;">Test Email</h1>
+          <p>This is a test email from Growth Hub to verify the email configuration.</p>
+          <p>If you received this email, it means your email configuration is working correctly!</p>
+          <p>Time sent: ${new Date().toLocaleString()}</p>
+        </div>
+      `
+    });
+    
+    console.log('Email send result:', result);
+    res.json({ message: 'Test email sent successfully' });
+  } catch (error) {
+    console.error('Detailed error in test-email endpoint:', {
+      error: error,
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      response: error.response
+    });
+    
+    res.status(500).json({ 
+      message: 'Failed to send test email',
+      error: error.message,
+      details: error.code || 'No error code available'
+    });
+  }
+});
+
 // API error handling
 apiRouter.use(errorHandler);
 
@@ -85,6 +124,11 @@ app.use('/api', apiRouter);
 
 // Static file serving - AFTER API routes
 app.use(express.static(path.join(__dirname, '../../client/dist')));
+
+// Test Sentry
+app.get('/debug-sentry', function mainHandler(req, res) {
+  throw new Error('My first Sentry error!');
+});
 
 // Serve React app for any other routes - This should be LAST
 app.get('*', (req, res) => {
