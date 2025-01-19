@@ -643,7 +643,16 @@ export const acknowledgeEvaluation = async (req, res) => {
             employee: req.user._id,
             store: req.user.store._id,
             status: 'completed'
-        });
+        })
+        .populate('employee', 'name position')
+        .populate('evaluator', 'name position')
+        .populate({
+            path: 'template',
+            populate: {
+                path: 'sections.criteria.gradingScale'
+            }
+        })
+        .populate('store', 'storeEmail name');
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Completed evaluation not found' });
@@ -654,6 +663,86 @@ export const acknowledgeEvaluation = async (req, res) => {
             date: new Date()
         };
         await evaluation.save();
+
+        // Send email to store
+        if (evaluation.store.storeEmail) {
+            try {
+                // Generate HTML for evaluation sections and responses
+                let sectionsHtml = '';
+                evaluation.template.sections.forEach((section, sIndex) => {
+                    sectionsHtml += `
+                        <div style="margin-top: 20px; margin-bottom: 20px;">
+                            <h2 style="color: #E4002B; margin-bottom: 10px;">${section.title}</h2>
+                            ${section.description ? `<p style="margin-bottom: 15px;">${section.description}</p>` : ''}
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                                <tr style="background-color: #f5f5f5;">
+                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Criterion</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Manager's Evaluation</th>
+                                </tr>
+                                ${section.criteria.map((criterion, cIndex) => {
+                                    const managerResponse = evaluation.managerEvaluation.get(`${sIndex}.${cIndex}`);
+                                    return `
+                                        <tr>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                <strong>${criterion.name}</strong>
+                                                ${criterion.description ? `<br><em>${criterion.description}</em>` : ''}
+                                            </td>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                                ${managerResponse ? `
+                                                    <strong>Rating:</strong> ${managerResponse.rating}<br>
+                                                    ${managerResponse.comments ? `<strong>Comments:</strong> ${managerResponse.comments}` : ''}
+                                                ` : 'No response provided'}
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </table>
+                        </div>
+                    `;
+                });
+
+                // Overall evaluation comments and development plan
+                const summaryHtml = `
+                    <div style="margin-top: 20px; margin-bottom: 20px;">
+                        <h2 style="color: #E4002B;">Overall Comments</h2>
+                        <p style="margin-bottom: 15px;">${evaluation.overallComments || 'No overall comments provided.'}</p>
+                        
+                        <h2 style="color: #E4002B;">Development Plan</h2>
+                        <p>${evaluation.developmentPlan || 'No development plan provided.'}</p>
+                    </div>
+                `;
+
+                await sendEmail({
+                    to: evaluation.store.storeEmail,
+                    subject: `Evaluation Acknowledged - ${evaluation.employee.name}`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+                            <h1 style="color: #E4002B;">Evaluation Acknowledgment</h1>
+                            
+                            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                <p><strong>Store:</strong> ${evaluation.store.name}</p>
+                                <p><strong>Employee:</strong> ${evaluation.employee.name} (${evaluation.employee.position})</p>
+                                <p><strong>Evaluator:</strong> ${evaluation.evaluator.name} (${evaluation.evaluator.position})</p>
+                                <p><strong>Template:</strong> ${evaluation.template.name}</p>
+                                <p><strong>Acknowledgment Date:</strong> ${new Date().toLocaleDateString()}</p>
+                            </div>
+
+                            <h2 style="color: #E4002B;">Evaluation Details</h2>
+                            ${sectionsHtml}
+                            ${summaryHtml}
+
+                            <p style="margin-top: 30px;">
+                                For more details, please log in to the Growth Hub platform.
+                            </p>
+                            <p>Best regards,<br>Growth Hub Team</p>
+                        </div>
+                    `
+                });
+            } catch (emailError) {
+                console.error('Failed to send store notification email:', emailError);
+                // Continue execution - don't fail the acknowledgment
+            }
+        }
 
         res.json({ evaluation });
     } catch (error) {
