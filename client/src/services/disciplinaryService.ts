@@ -10,13 +10,20 @@ export interface DisciplinaryIncident {
   };
   date: string;
   type: string;
-  severity: string;
-  status: string;
+  severity: 'Minor' | 'Moderate' | 'Severe';
+  status: 'Open' | 'Pending Acknowledgment' | 'Pending Follow-up' | 'Resolved';
   description: string;
   witnesses?: string;
   actionTaken: string;
+  requiresFollowUp: boolean;
   followUpDate?: string;
   followUpActions?: string;
+  acknowledgment?: {
+    acknowledged: boolean;
+    date: string;
+    comments?: string;
+    rating: number;
+  };
   previousIncidents: boolean;
   documentationAttached: boolean;
   supervisor: {
@@ -26,26 +33,22 @@ export interface DisciplinaryIncident {
   followUps: Array<{
     _id: string;
     date: string;
-    status: string;
     note: string;
     by: {
       _id: string;
       name: string;
     };
-    createdAt: string;
-    updatedAt: string;
+    status: 'Pending' | 'Completed';
   }>;
   documents: Array<{
     _id: string;
     name: string;
-    type: string;
     url: string;
     uploadedBy: {
       _id: string;
       name: string;
     };
     createdAt: string;
-    updatedAt: string;
   }>;
   createdBy: {
     _id: string;
@@ -100,9 +103,21 @@ const disciplinaryService = {
     return response.data;
   },
 
+  // Acknowledge incident
+  acknowledgeIncident: async (id: string, data: { comments?: string; rating: number }): Promise<DisciplinaryIncident> => {
+    const response = await api.post(`/api/disciplinary/${id}/acknowledge`, data);
+    return response.data;
+  },
+
   // Add follow-up
   addFollowUp: async (id: string, data: { date: string; note: string; status: string }): Promise<DisciplinaryIncident> => {
     const response = await api.post(`/api/disciplinary/${id}/follow-up`, data);
+    return response.data;
+  },
+
+  // Complete follow-up
+  completeFollowUp: async (id: string, followUpId: string, data: { note: string }): Promise<DisciplinaryIncident> => {
+    const response = await api.post(`/api/disciplinary/${id}/follow-up/${followUpId}/complete`, data);
     return response.data;
   },
 

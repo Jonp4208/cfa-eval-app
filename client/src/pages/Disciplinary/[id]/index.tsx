@@ -14,18 +14,26 @@ import {
   Printer,
   History,
   Eye,
-  Loader2
+  Loader2,
+  Star
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import disciplinaryService, { DisciplinaryIncident } from '@/services/disciplinaryService';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import AcknowledgmentDialog from '../components/AcknowledgmentDialog';
+import FollowUpDialog from '../components/FollowUpDialog';
 
 export default function IncidentDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('details');
   const [incident, setIncident] = useState<DisciplinaryIncident | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAcknowledgmentDialog, setShowAcknowledgmentDialog] = useState(false);
+  const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
+  const [selectedFollowUpId, setSelectedFollowUpId] = useState<string>();
 
   useEffect(() => {
     if (id) {
@@ -36,6 +44,12 @@ export default function IncidentDetail() {
   const loadIncident = async () => {
     try {
       const data = await disciplinaryService.getIncidentById(id as string);
+      console.log('Loaded incident data:', {
+        id: data._id,
+        status: data.status,
+        employee: data.employee,
+        supervisor: data.supervisor
+      });
       setIncident(data);
     } catch (error) {
       toast.error('Failed to load incident');
@@ -49,26 +63,63 @@ export default function IncidentDetail() {
     navigate(`/disciplinary/${id}/edit`);
   };
 
-  const handleAddFollowUp = async (data: { date: string; note: string; status: string }) => {
-    try {
-      const updated = await disciplinaryService.addFollowUp(id as string, data);
-      setIncident(updated);
-      toast.success('Follow-up added successfully');
-    } catch (error) {
-      toast.error('Failed to add follow-up');
-      console.error('Error adding follow-up:', error);
-    }
+  const handleAcknowledge = () => {
+    setShowAcknowledgmentDialog(true);
   };
 
-  const handleAddDocument = async (data: { name: string; type: string; url: string }) => {
-    try {
-      const updated = await disciplinaryService.addDocument(id as string, data);
-      setIncident(updated);
-      toast.success('Document added successfully');
-    } catch (error) {
-      toast.error('Failed to add document');
-      console.error('Error adding document:', error);
+  const handleScheduleFollowUp = () => {
+    setShowFollowUpDialog(true);
+  };
+
+  const handleCompleteFollowUp = (followUpId: string) => {
+    setSelectedFollowUpId(followUpId);
+    setShowFollowUpDialog(true);
+  };
+
+  const isEmployee = user?._id === incident?.employee?._id;
+  const isManager = user?._id === incident?.supervisor?._id || user?.role === 'admin';
+
+  const renderActionButton = () => {
+    if (!incident) return null;
+
+    console.log('Debug visibility conditions:', {
+      user: user?._id,
+      employee: incident?.employee?._id,
+      isEmployee,
+      status: incident?.status,
+      shouldShowButton: isEmployee && incident.status === 'Pending Acknowledgment',
+      userRole: user?.role
+    });
+
+    if (isEmployee) {
+      if (incident.status === 'Pending Acknowledgment') {
+        return (
+          <Button
+            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white"
+            onClick={handleAcknowledge}
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Acknowledge Incident
+          </Button>
+        );
+      }
     }
+
+    if (isManager) {
+      if (incident.status === 'Pending Follow-up') {
+        return (
+          <Button
+            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white"
+            onClick={handleScheduleFollowUp}
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            Schedule Follow-up
+          </Button>
+        );
+      }
+    }
+
+    return null;
   };
 
   if (loading || !incident) {
@@ -96,7 +147,7 @@ export default function IncidentDetail() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold">
-                    {incident.employee.firstName} {incident.employee.lastName}
+                    {incident.employee.name}
                   </h1>
                   <span className={`px-2 py-1 rounded-full text-sm ${
                     incident.severity === 'Minor' ? 'bg-yellow-100 text-yellow-800' :
@@ -106,9 +157,10 @@ export default function IncidentDetail() {
                     {incident.severity}
                   </span>
                   <span className={`px-2 py-1 rounded-full text-sm ${
-                    incident.status === 'Open' ? 'bg-blue-100 text-blue-800' :
-                    incident.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'
+                    incident.status === 'Open' ? 'bg-yellow-100 text-yellow-800' :
+                    incident.status === 'Pending Acknowledgment' ? 'bg-blue-100 text-blue-800' :
+                    incident.status === 'Pending Follow-up' ? 'bg-orange-100 text-orange-800' :
+                    'bg-green-100 text-green-800'
                   }`}>
                     {incident.status}
                   </span>
@@ -117,18 +169,17 @@ export default function IncidentDetail() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Printer className="w-4 h-4" />
-                Print
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                onClick={handleEdit}
-              >
-                <Edit className="w-4 h-4" />
-                Edit
-              </Button>
+              {renderActionButton()}
+              {isManager && (
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  onClick={handleEdit}
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </Button>
+              )}
             </div>
           </div>
 
@@ -176,19 +227,8 @@ export default function IncidentDetail() {
                       <p className="font-medium">{incident.employee.department}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Start Date</p>
-                      <p className="font-medium">
-                        {incident.employee.startDate ? 
-                          new Date(incident.employee.startDate).toLocaleDateString() : 
-                          'N/A'
-                        }
-                      </p>
-                    </div>
-                    <div>
                       <p className="text-sm text-gray-500">Supervisor</p>
-                      <p className="font-medium">
-                        {incident.supervisor.firstName} {incident.supervisor.lastName}
-                      </p>
+                      <p className="font-medium">{incident.supervisor.name}</p>
                     </div>
                   </div>
                 </div>
@@ -227,6 +267,40 @@ export default function IncidentDetail() {
                   </div>
                 </div>
               </Card>
+
+              {/* Acknowledgment Information */}
+              {incident.acknowledgment?.acknowledged && (
+                <Card>
+                  <div className="p-6">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-gray-400" />
+                      Acknowledgment
+                    </h2>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Date Acknowledged</p>
+                        <p className="font-medium">
+                          {new Date(incident.acknowledgment.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {incident.acknowledgment.comments && (
+                        <div>
+                          <p className="text-sm text-gray-500">Comments</p>
+                          <p className="mt-1">{incident.acknowledgment.comments}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm text-gray-500">Fairness Rating</p>
+                        <div className="flex gap-1 mt-1">
+                          {Array.from({ length: incident.acknowledgment.rating }).map((_, i) => (
+                            <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </>
           )}
 
@@ -245,7 +319,7 @@ export default function IncidentDetail() {
                           </p>
                         </div>
                         <span className="text-sm text-gray-500">
-                          By {followUp.by.firstName} {followUp.by.lastName}
+                          By {followUp.by.name}
                         </span>
                       </div>
                       <p className="mt-2 text-gray-600">{followUp.note}</p>
@@ -265,15 +339,14 @@ export default function IncidentDetail() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold">Follow-up Actions</h2>
-                  <Button 
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={() => {
-                      // TODO: Implement follow-up form dialog
-                      toast.info('Follow-up form coming soon');
-                    }}
-                  >
-                    Add Follow-up
-                  </Button>
+                  {isManager && incident.status === 'Pending Follow-up' && (
+                    <Button 
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={handleScheduleFollowUp}
+                    >
+                      Schedule Follow-up
+                    </Button>
+                  )}
                 </div>
                 <div className="space-y-4">
                   {incident.followUps.map((followUp) => (
@@ -282,14 +355,25 @@ export default function IncidentDetail() {
                         <div>
                           <p className="font-medium">{new Date(followUp.date).toLocaleDateString()}</p>
                           <p className="text-sm text-gray-500">
-                            By {followUp.by.firstName} {followUp.by.lastName}
+                            By {followUp.by.name}
                           </p>
                         </div>
-                        <span className={`px-2 py-1 rounded-full text-sm ${
-                          followUp.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {followUp.status}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-sm ${
+                            followUp.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {followUp.status}
+                          </span>
+                          {isManager && followUp.status === 'Pending' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCompleteFollowUp(followUp._id)}
+                            >
+                              Complete
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-gray-600">{followUp.note}</p>
                     </div>
@@ -326,7 +410,7 @@ export default function IncidentDetail() {
                         <div>
                           <p className="font-medium">{doc.name}</p>
                           <p className="text-sm text-gray-500">
-                            Added by {doc.uploadedBy.firstName} {doc.uploadedBy.lastName} on{' '}
+                            Added by {doc.uploadedBy.name} on{' '}
                             {new Date(doc.createdAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -350,6 +434,26 @@ export default function IncidentDetail() {
           )}
         </div>
       </div>
+
+      {/* Dialogs */}
+      <AcknowledgmentDialog
+        incidentId={id!}
+        isOpen={showAcknowledgmentDialog}
+        onClose={() => setShowAcknowledgmentDialog(false)}
+        onAcknowledge={loadIncident}
+      />
+
+      <FollowUpDialog
+        incidentId={id!}
+        followUpId={selectedFollowUpId}
+        isOpen={showFollowUpDialog}
+        onClose={() => {
+          setShowFollowUpDialog(false);
+          setSelectedFollowUpId(undefined);
+        }}
+        onComplete={loadIncident}
+        mode={selectedFollowUpId ? 'complete' : 'schedule'}
+      />
     </div>
   );
 }

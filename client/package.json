@@ -48,7 +48,8 @@
     "shadcn-ui": "^0.9.4",
     "sonner": "^1.7.1",
     "tabs": "^0.2.0",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^2.6.0",
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
