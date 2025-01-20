@@ -6,16 +6,40 @@ export const getDashboardStats = async (req, res) => {
         const { store, role, isAdmin } = req.user;
 
         // Get counts
-        const pendingEvaluations = await Evaluation.countDocuments({ 
-            store, 
-            $or: [
-                { employee: req.user._id },  // User is the employee
-                { evaluator: req.user._id }  // User is the evaluator
-            ],
-            status: { 
-                $in: ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'] 
-            }
-        });
+        console.log('Getting pending evaluations for user:', req.user._id);
+        console.log('User role:', req.user.role);
+        console.log('User store:', store);
+        
+        // Build query based on user role
+        let evaluationQuery = { 
+            store,
+            status: { $ne: 'completed' },  // Count all non-completed evaluations
+            deleted: { $ne: true }  // Ensure we're not counting deleted evaluations
+        };
+
+        // If not admin/manager, only show own evaluations
+        if (!isAdmin && !['manager', 'evaluator'].includes(role)) {
+            evaluationQuery.$or = [
+                { employee: req.user._id },
+                { evaluator: req.user._id }
+            ];
+        }
+        
+        // Debug query to see all matching evaluations
+        const matchingEvaluations = await Evaluation.find(evaluationQuery)
+            .populate('employee', 'name')
+            .populate('evaluator', 'name');
+        
+        console.log('Matching evaluations:', matchingEvaluations.map(e => ({
+            id: e._id,
+            employee: e.employee?.name,
+            evaluator: e.evaluator?.name,
+            status: e.status
+        })));
+
+        const pendingEvaluations = await Evaluation.countDocuments(evaluationQuery);
+
+        console.log('Pending evaluations count:', pendingEvaluations);
         
         // Get the start of the current quarter
         const now = new Date();
@@ -84,7 +108,7 @@ export const getDashboardStats = async (req, res) => {
         sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
         // Build query for upcoming evaluations based on role
-        let evaluationQuery = {
+        let evaluationQueryUpcoming = {
             store,
             scheduledDate: { $gte: now, $lte: sevenDaysFromNow },
             status: { $ne: 'completed' }
@@ -92,10 +116,10 @@ export const getDashboardStats = async (req, res) => {
 
         // If not admin/manager/evaluator, only show own evaluations
         if (!isAdmin && !['manager', 'evaluator'].includes(role)) {
-            evaluationQuery.employee = req.user._id;
+            evaluationQueryUpcoming.employee = req.user._id;
         }
 
-        const upcomingEvaluations = await Evaluation.find(evaluationQuery)
+        const upcomingEvaluations = await Evaluation.find(evaluationQueryUpcoming)
             .populate('employee', 'name')
             .populate('template', 'name')
             .sort('scheduledDate')
