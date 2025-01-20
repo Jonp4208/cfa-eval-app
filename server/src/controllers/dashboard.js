@@ -229,6 +229,7 @@ export const getTeamMemberDashboard = async (req, res) => {
         // Get next scheduled evaluation - include draft evaluations too
         const nextEvaluation = await Evaluation.findOne({
             employee: user._id,
+            deleted: { $ne: true },
             $or: [
                 { 
                     status: { 
@@ -248,6 +249,7 @@ export const getTeamMemberDashboard = async (req, res) => {
         // Get the last completed evaluation
         const lastCompletedEvaluation = await Evaluation.findOne({
             employee: user._id,
+            deleted: { $ne: true },
             status: 'completed',
             completedDate: { $exists: true }
         })
