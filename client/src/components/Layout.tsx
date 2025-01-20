@@ -272,9 +272,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 hover:bg-gray-50 rounded-xl touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="relative p-2 hover:bg-gray-50 rounded-xl touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <MenuIcon className="w-6 h-6 text-gray-600" />
+            {notificationCount > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-[#E51636] rounded-full"></span>
+            )}
           </button>
         </div>
       </div>
