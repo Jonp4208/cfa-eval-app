@@ -195,11 +195,21 @@ export const acknowledgeIncident = handleAsync(async (req, res) => {
   })
   .populate('employee', 'name position')
   .populate('supervisor', 'name')
-  .populate('store', 'name storeEmail');
+  .populate({
+    path: 'store',
+    select: 'name storeEmail storeNumber'
+  });
 
   if (!incident) {
     throw new ApiError(404, 'Incident not found or already acknowledged');
   }
+
+  console.log('Found incident for acknowledgment:', {
+    id: incident._id,
+    employee: incident.employee?.name,
+    store: incident.store,
+    hasStoreEmail: !!incident.store?.storeEmail
+  });
 
   incident.acknowledgment = {
     acknowledged: true,
@@ -228,8 +238,9 @@ export const acknowledgeIncident = handleAsync(async (req, res) => {
   });
 
   // Send email to store if store email is configured
-  if (incident.store.storeEmail) {
+  if (incident.store?.storeEmail) {
     try {
+      console.log('Attempting to send email to store:', incident.store.storeEmail);
       await sendEmail({
         to: incident.store.storeEmail,
         subject: `Disciplinary Incident Acknowledged - ${incident.employee.name}`,
@@ -276,10 +287,13 @@ export const acknowledgeIncident = handleAsync(async (req, res) => {
           </div>
         `
       });
+      console.log('Email sent successfully');
     } catch (emailError) {
       console.error('Failed to send store notification email:', emailError);
       // Continue execution - don't fail the acknowledgment
     }
+  } else {
+    console.log('No store email configured, skipping email notification');
   }
 
   res.json({ incident });
