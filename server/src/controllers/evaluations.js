@@ -139,7 +139,7 @@ export const createEvaluation = async (req, res) => {
 // Get all evaluations for store
 export const getEvaluations = async (req, res) => {
     try {
-        const showAll = req.query.showAll === 'true' && req.user.role === 'admin';
+        const showAll = req.user.role === 'admin' || req.user.position === 'Director';
         
         console.log('Getting evaluations for store:', {
             storeId: req.user.store._id,
@@ -149,35 +149,19 @@ export const getEvaluations = async (req, res) => {
             showAll
         });
         
-        // First, get all employees where the current user is their direct manager
-        const managedEmployees = await User.find({ 
-            manager: req.user._id,
-            store: req.user.store._id 
-        });
-        
-        console.log('Direct reports found:', {
-            managerId: req.user._id,
-            managedEmployees: managedEmployees.map(emp => ({
-                id: emp._id,
-                name: emp.name,
-                manager: emp.manager
-            }))
-        });
-        
-        const managedEmployeeIds = managedEmployees.map(emp => emp._id);
-        
         // Base query - always filter by store
         let query = { store: req.user.store._id };
         
-        // Add employee filter unless admin is requesting to see all
+        // If not showing all, only show evaluations where user is employee or evaluator
         if (!showAll) {
-            query.employee = {
-                $in: [...managedEmployeeIds, req.user._id]
-            };
+            query.$or = [
+                { employee: req.user._id },
+                { evaluator: req.user._id }
+            ];
         }
 
         console.log('Final query:', JSON.stringify(query, null, 2));
-        
+
         let evaluations = await Evaluation.find(query)
             .populate({
                 path: 'employee',
@@ -191,14 +175,6 @@ export const getEvaluations = async (req, res) => {
             .populate('template')
             .sort('-createdAt');
 
-        // Filter out evaluations that shouldn't be shown, unless admin is requesting to see all
-        if (!showAll) {
-            evaluations = evaluations.filter(evaluation => 
-                evaluation.employee?.manager?._id.toString() === req.user._id.toString() || 
-                evaluation.employee?._id.toString() === req.user._id.toString()
-            );
-        }
-
         // Log final filtered evaluations
         console.log('Final filtered evaluations:', evaluations.map(evaluation => ({
             id: evaluation._id,
@@ -208,9 +184,7 @@ export const getEvaluations = async (req, res) => {
             employeeManagerName: evaluation.employee?.manager?.name,
             evaluatorName: evaluation.evaluator?.name,
             evaluatorId: evaluation.evaluator?._id,
-            isVisible: showAll || 
-                evaluation.employee?.manager?._id.toString() === req.user._id.toString() || 
-                evaluation.employee?._id.toString() === req.user._id.toString()
+            status: evaluation.status
         })));
 
         res.json({ evaluations });
