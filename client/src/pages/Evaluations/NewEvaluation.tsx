@@ -2,7 +2,7 @@
 import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -72,6 +72,7 @@ export default function NewEvaluation() {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedTag, setSelectedTag] = useState('All');
   const [selectedCountByDepartment, setSelectedCountByDepartment] = useState<Record<string, number>>({});
+  const queryClient = useQueryClient();
 
   // Predefined departments that match the server's enum values
   const DEPARTMENTS = ['all', 'FOH', 'BOH', 'Leadership'];
@@ -176,7 +177,7 @@ export default function NewEvaluation() {
       console.log('Submitting evaluation with template:', selectedTemplate);
       return evaluationService.createEvaluation(evaluationData);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Create and show success notification
       const notification = document.createElement('div');
       notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
@@ -193,6 +194,10 @@ export default function NewEvaluation() {
         notification.remove();
       }, 3000);
 
+      // Invalidate evaluations query
+      queryClient.invalidateQueries({ queryKey: ['evaluations'] });
+      
+      // Navigate to evaluations page
       navigate('/evaluations');
     },
     onError: (error: any) => {
