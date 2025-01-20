@@ -93,7 +93,8 @@ export const createEvaluation = async (req, res) => {
                             <p>A new evaluation has been assigned to you. Please complete your self-evaluation by ${new Date(scheduledDate).toLocaleDateString()}.</p>
                             <p><strong>Evaluator:</strong> ${req.user.name}</p>
                             <p><strong>Due Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
-                            <p>Please log in to the Growth Hub platform to complete your self-evaluation.</p>
+                            <p>Please log in to the Growth Hub platform to complete your self-evaluation:</p>
+                            <p><a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
                             <p>Best regards,<br>Growth Hub Team</p>
                         </div>
                     `
