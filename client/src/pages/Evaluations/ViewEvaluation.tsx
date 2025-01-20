@@ -459,6 +459,29 @@ export default function ViewEvaluation() {
               </div>
             </div>
 
+            {/* Grading Scale Legend */}
+            <div className="mb-8 p-6 bg-[#27251F]/5 rounded-[20px]">
+              <h3 className="text-lg font-medium text-[#27251F] mb-4">Grading Scale</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-white rounded-xl">
+                  <div className="text-lg font-medium text-[#27251F]">1 - Poor</div>
+                  <div className="text-sm text-[#27251F]/60">Low Hands / Low Heart</div>
+                </div>
+                <div className="p-4 bg-white rounded-xl">
+                  <div className="text-lg font-medium text-[#27251F]">2 - Fair</div>
+                  <div className="text-sm text-[#27251F]/60">High Hands / Low Heart</div>
+                </div>
+                <div className="p-4 bg-white rounded-xl">
+                  <div className="text-lg font-medium text-[#27251F]">3 - Good</div>
+                  <div className="text-sm text-[#27251F]/60">Low Hands / High Heart</div>
+                </div>
+                <div className="p-4 bg-white rounded-xl">
+                  <div className="text-lg font-medium text-[#27251F]">4 - Excellent</div>
+                  <div className="text-sm text-[#27251F]/60">High Hands / High Heart</div>
+                </div>
+              </div>
+            </div>
+
             {/* Schedule Review Session Modal */}
             {showScheduleReview && (
               <Card className="mb-8 border border-[#E51636]/20 rounded-[20px]">
