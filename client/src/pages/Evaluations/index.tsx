@@ -95,17 +95,40 @@ export default function Evaluations() {
       await api.delete(`/api/evaluations/${evaluationId}`);
     },
     onSuccess: () => {
-      showNotification({
-        type: 'success',
-        message: 'Evaluation Deleted',
-      });
+      // Create and show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Evaluation deleted successfully</span>
+      `;
+      document.body.appendChild(notification);
+
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+
       refetch();
     },
     onError: (error: any) => {
-      showNotification({
-        type: 'error',
-        message: error.response?.data?.message || 'Failed to delete evaluation',
-      });
+      // Create and show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <span>${error.response?.data?.message || 'Failed to delete evaluation'}</span>
+      `;
+      document.body.appendChild(notification);
+
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
     }
   });
 
