@@ -471,6 +471,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </button>
             </div>
 
+            {/* Mobile Notifications */}
+            <div className="border-b">
+              <div className="p-4">
+                <h2 className="font-bold text-[#27251F]">Notifications</h2>
+              </div>
+              <NotificationList 
+                onDismiss={() => {
+                  const fetchNotifications = async () => {
+                    try {
+                      const response = await api.get('/api/notifications');
+                      const unreadCount = response.data.notifications.filter(
+                        (notification: any) => !notification.read
+                      ).length;
+                      setNotificationCount(unreadCount);
+                    } catch (error) {
+                      console.error('Error fetching notifications:', error);
+                    }
+                  };
+                  fetchNotifications();
+                }}
+                isMobile={true}
+              />
+            </div>
+
+            {/* Rest of mobile menu items */}
             <div className="py-2 overflow-y-auto momentum-scroll custom-scrollbar h-[calc(100vh-64px)]">
               {menuItems
                 .filter(item => item.show)

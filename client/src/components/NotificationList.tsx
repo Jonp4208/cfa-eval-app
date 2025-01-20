@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { ClipboardList, X } from 'lucide-react';
 import api from '@/lib/axios';
 import { useNotification } from '@/contexts/NotificationContext';
+import { cn } from '@/lib/utils';
 
 interface NotificationListProps {
   onDismiss: () => void;
+  isMobile?: boolean;
 }
 
 interface Notification {
@@ -18,7 +20,7 @@ interface Notification {
   createdAt: string;
 }
 
-export function NotificationList({ onDismiss }: NotificationListProps) {
+export function NotificationList({ onDismiss, isMobile = false }: NotificationListProps) {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -78,7 +80,10 @@ export function NotificationList({ onDismiss }: NotificationListProps) {
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className={cn(
+        "text-center text-gray-500",
+        isMobile ? "p-6" : "p-4"
+      )}>
         Loading notifications...
       </div>
     );
@@ -86,16 +91,28 @@ export function NotificationList({ onDismiss }: NotificationListProps) {
 
   if (notifications.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500">
+      <div className={cn(
+        "text-center text-gray-500",
+        isMobile ? "p-6" : "p-4"
+      )}>
         No new notifications
       </div>
     );
   }
 
   return (
-    <div className="py-2 max-h-[400px] overflow-y-auto">
+    <div className={cn(
+      "overflow-y-auto",
+      isMobile ? "max-h-[calc(100vh-200px)]" : "max-h-[400px] py-2"
+    )}>
       {notifications.map((notification) => (
-        <div key={notification._id} className="relative px-4 py-2 hover:bg-gray-50">
+        <div 
+          key={notification._id} 
+          className={cn(
+            "relative hover:bg-gray-50",
+            isMobile ? "p-4 border-b" : "px-4 py-2"
+          )}
+        >
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
               <ClipboardList className="w-4 h-4 text-[#E51636]" />
@@ -104,13 +121,22 @@ export function NotificationList({ onDismiss }: NotificationListProps) {
               className="flex-grow text-left"
               onClick={() => handleNotificationClick(notification)}
             >
-              <p className="text-sm font-medium text-[#27251F]">
+              <p className={cn(
+                "font-medium text-[#27251F]",
+                isMobile ? "text-base" : "text-sm"
+              )}>
                 {notification.title}
               </p>
-              <p className="text-xs text-[#27251F]/60">
+              <p className={cn(
+                "text-[#27251F]/60",
+                isMobile ? "text-sm" : "text-xs"
+              )}>
                 {notification.message}
               </p>
-              <p className="text-xs text-[#27251F]/60 mt-1">
+              <p className={cn(
+                "text-[#27251F]/60 mt-1",
+                isMobile ? "text-sm" : "text-xs"
+              )}>
                 {new Date(notification.createdAt).toLocaleDateString()}
               </p>
             </button>
@@ -120,9 +146,15 @@ export function NotificationList({ onDismiss }: NotificationListProps) {
                 e.stopPropagation();
                 handleDismissNotification(notification._id);
               }}
-              className="p-2 hover:bg-gray-100 rounded-full transition-all flex-shrink-0"
+              className={cn(
+                "hover:bg-gray-100 rounded-full transition-all flex-shrink-0",
+                isMobile ? "p-3" : "p-2"
+              )}
             >
-              <X className="w-4 h-4 text-[#27251F]/60" />
+              <X className={cn(
+                "text-[#27251F]/60",
+                isMobile ? "w-5 h-5" : "w-4 h-4"
+              )} />
             </button>
           </div>
         </div>
