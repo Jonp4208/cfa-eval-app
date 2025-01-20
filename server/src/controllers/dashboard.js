@@ -212,10 +212,11 @@ export const getTeamMemberDashboard = async (req, res) => {
             .populate({
                 path: 'evaluations',
                 match: { deleted: { $ne: true } },
-                select: 'scheduledDate completedDate template status evaluator createdAt acknowledged',
+                select: 'scheduledDate completedDate template status evaluator createdAt acknowledged deleted store',
                 populate: [
                     { path: 'template', select: 'name' },
-                    { path: 'evaluator', select: 'name position' }
+                    { path: 'evaluator', select: 'name position' },
+                    { path: 'store', select: 'name storeNumber' }
                 ]
             })
             .populate('store', 'name storeNumber location')
@@ -227,12 +228,32 @@ export const getTeamMemberDashboard = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Add more detailed debug logging
+        console.log('User evaluations raw:', user.evaluations);
         console.log('Finding next evaluation for user:', user._id);
-        // Find next evaluation (scheduled or in progress)
-        const nextEvaluation = user.evaluations?.find(e => 
-            !e.deleted && ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'].includes(e.status)
-        );
+        
+        // Find next evaluation
+        const nextEvaluation = await Evaluation.findOne({
+            employee: user._id,
+            deleted: { $ne: true },
+            status: { $ne: 'completed' },
+            scheduledDate: { $exists: true }
+        })
+        .sort({ scheduledDate: 1 })
+        .select('scheduledDate status template evaluator')
+        .populate('template', 'name')
+        .populate('evaluator', 'name')
+        .lean();
+
         console.log('Next evaluation found:', nextEvaluation);
+
+        // Add debug logging
+        console.log('All evaluations:', user.evaluations?.map(e => ({
+            id: e._id,
+            status: e.status,
+            deleted: e.deleted,
+            scheduledDate: e.scheduledDate
+        })));
 
         console.log('Finding last completed evaluation for user:', user._id);
         // Find last completed evaluation with a separate query
