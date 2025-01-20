@@ -385,9 +385,31 @@ export default function DisciplinaryPage() {
                           e.stopPropagation();
                           try {
                             await disciplinaryService.sendEmail(incident._id);
-                            toast.success('Email sent successfully');
+                            const notification = document.createElement('div');
+                            notification.className = 'fixed top-4 right-4 bg-green-50 text-green-600 px-6 py-4 rounded-xl shadow-lg z-50 flex items-center border border-green-100';
+                            notification.innerHTML = `
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span class="font-medium">Email sent successfully</span>
+                            `;
+                            document.body.appendChild(notification);
+                            setTimeout(() => {
+                              notification.remove();
+                            }, 3000);
                           } catch (error: any) {
-                            toast.error(error.response?.data?.message || 'Failed to send email');
+                            const notification = document.createElement('div');
+                            notification.className = 'fixed top-4 right-4 bg-red-50 text-red-600 px-6 py-4 rounded-xl shadow-lg z-50 flex items-center border border-red-100';
+                            notification.innerHTML = `
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              <span class="font-medium">${error.response?.data?.message || 'Failed to send email'}</span>
+                            `;
+                            document.body.appendChild(notification);
+                            setTimeout(() => {
+                              notification.remove();
+                            }, 3000);
                           }
                         }}
                         title="Send incident details to store email"
