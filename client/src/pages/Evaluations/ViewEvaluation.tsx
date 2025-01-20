@@ -422,19 +422,26 @@ export default function ViewEvaluation() {
   });
 
   // Add helper function to calculate rating value
-  const getRatingValue = (rating: string | number | undefined): number => {
+  const getRatingValue = (rating: string | number | undefined, gradingScale?: GradingScale): number => {
+    if (!rating || !gradingScale) return 0;
     if (typeof rating === 'number') return rating;
-    if (typeof rating === 'string') {
-      if (rating.includes('Improvement Needed') || rating.includes('- Improvement Needed')) return 1;
-      if (rating.includes('Performer') || rating.includes('- Performer')) return 2;
-      if (rating.includes('Valued') || rating.includes('- Valued')) return 3;
-      if (rating.includes('Star') || rating.includes('- Star')) return 4;
+    
+    // If we have a grading scale, find the grade by label
+    const grade = gradingScale.grades.find(g => 
+      rating.includes(g.label) || rating.includes(`- ${g.label}`)
+    );
+    
+    // Find the index of the grade in the sorted grades array (1-based)
+    if (grade) {
+      const sortedGrades = [...gradingScale.grades].sort((a, b) => a.value - b.value);
+      return sortedGrades.findIndex(g => g.label === grade.label) + 1;
     }
+    
     return 0;
   };
 
   // Add helper function to calculate total score
-  const calculateTotalScore = (ratings: Record<string, any>): { score: number; total: number } => {
+  const calculateTotalScore = (ratings: Record<string, any> | undefined | null): { score: number; total: number } => {
     if (!evaluation || !ratings) return { score: 0, total: 0 };
 
     let totalScore = 0;
@@ -442,10 +449,14 @@ export default function ViewEvaluation() {
 
     evaluation.template.sections.forEach((section: Section, sectionIndex: number) => {
       section.questions.forEach((question: Question, questionIndex: number) => {
-        if (question.type === 'rating') {
+        if (question.type === 'rating' && question.gradingScale) {
           const rating = ratings[`${sectionIndex}-${questionIndex}`];
-          totalScore += getRatingValue(rating);
-          totalPossible += 4; // Maximum rating is 4 (Star)
+          if (rating !== undefined && rating !== null) {
+            // Get the total number of grades as the maximum possible value
+            const maxValue = question.gradingScale.grades.length;
+            totalScore += getRatingValue(rating, question.gradingScale);
+            totalPossible += maxValue;
+          }
         }
       });
     });
@@ -454,11 +465,11 @@ export default function ViewEvaluation() {
   };
 
   // Add helper function to compare ratings
-  const getComparisonStyle = (employeeRating: string | number | undefined, managerRating: string | number | undefined): string => {
-    if (!employeeRating || !managerRating) return '';
+  const getComparisonStyle = (employeeRating: string | number | undefined, managerRating: string | number | undefined, gradingScale?: GradingScale): string => {
+    if (!employeeRating || !managerRating || !gradingScale) return '';
     
-    const employeeValue = getRatingValue(employeeRating);
-    const managerValue = getRatingValue(managerRating);
+    const employeeValue = getRatingValue(employeeRating, gradingScale);
+    const managerValue = getRatingValue(managerRating, gradingScale);
 
     if (managerValue > employeeValue) return 'bg-green-50 border-green-200';
     if (managerValue < employeeValue) return 'bg-red-50 border-red-200';
@@ -873,11 +884,20 @@ export default function ViewEvaluation() {
                                   const managerRating = evaluation.managerEvaluation?.[`${sectionIndex}-${questionIndex}`];
                                   const employeeColor = getRatingColor(employeeRating, question.gradingScale);
                                   const managerColor = getRatingColor(managerRating, question.gradingScale);
+                                  const employeeValue = getRatingValue(employeeRating, question.gradingScale);
+                                  const managerValue = getRatingValue(managerRating, question.gradingScale);
+                                  
+                                  let comparisonStyle = '';
+                                  if (managerValue > employeeValue) {
+                                    comparisonStyle = 'bg-green-50 border-green-200';
+                                  } else if (managerValue < employeeValue) {
+                                    comparisonStyle = 'bg-red-50 border-red-200';
+                                  } else {
+                                    comparisonStyle = 'bg-[#27251F]/5';
+                                  }
 
                                   return (
-                                    <div key={questionIndex} className={`p-4 rounded-xl border ${
-                                      getComparisonStyle(employeeRating, managerRating)
-                                    }`}>
+                                    <div key={questionIndex} className={`p-4 rounded-xl border ${comparisonStyle}`}>
                                       <p className="font-medium text-[#27251F] mb-3">{question.text}</p>
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Employee's Rating */}
@@ -1045,11 +1065,20 @@ export default function ViewEvaluation() {
                           const managerRating = evaluation.managerEvaluation?.[`${sectionIndex}-${questionIndex}`];
                           const employeeColor = getRatingColor(employeeRating, question.gradingScale);
                           const managerColor = getRatingColor(managerRating, question.gradingScale);
+                          const employeeValue = getRatingValue(employeeRating, question.gradingScale);
+                          const managerValue = getRatingValue(managerRating, question.gradingScale);
+                          
+                          let comparisonStyle = '';
+                          if (managerValue > employeeValue) {
+                            comparisonStyle = 'bg-green-50 border-green-200';
+                          } else if (managerValue < employeeValue) {
+                            comparisonStyle = 'bg-red-50 border-red-200';
+                          } else {
+                            comparisonStyle = 'bg-[#27251F]/5';
+                          }
 
                           return (
-                            <div key={questionIndex} className={`p-4 rounded-xl border ${
-                              getComparisonStyle(employeeRating, managerRating)
-                            }`}>
+                            <div key={questionIndex} className={`p-4 rounded-xl border ${comparisonStyle}`}>
                               <p className="font-medium text-[#27251F] mb-3">{question.text}</p>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Employee's Rating */}
