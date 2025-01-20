@@ -65,7 +65,11 @@ const evaluationSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }]
+  }],
+  deleted: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });

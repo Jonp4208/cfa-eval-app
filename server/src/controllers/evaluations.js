@@ -512,10 +512,10 @@ export const submitEvaluation = async (req, res) => {
 // Submit self-evaluation
 export const submitSelfEvaluation = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { evaluationId } = req.params;
         const { selfEvaluation } = req.body;
 
-        const evaluation = await Evaluation.findById(id)
+        const evaluation = await Evaluation.findById(evaluationId)
             .populate('employee', 'name email position')
             .populate('evaluator', 'name email')
             .populate({
