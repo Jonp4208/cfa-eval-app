@@ -67,8 +67,11 @@ export function NotificationList({ onDismiss, isMobile = false }: NotificationLi
       console.log('Handling notification click:', notification);
       
       if (notification.evaluationId) {
-        console.log('Navigating to evaluation:', notification.evaluationId);
-        navigate(`/evaluations/${notification.evaluationId}`);
+        const evaluationId = typeof notification.evaluationId === 'object' 
+          ? notification.evaluationId._id || notification.evaluationId.toString()
+          : notification.evaluationId;
+        console.log('Navigating to evaluation:', evaluationId);
+        navigate(`/evaluations/${evaluationId}`);
       }
       
       await handleDismissNotification(notification._id);
