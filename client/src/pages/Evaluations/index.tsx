@@ -141,25 +141,54 @@ export default function Evaluations() {
 
   const filteredEvaluations = evaluations
     ?.filter((evaluation: Evaluation) => {
+      console.log('Processing evaluation:', {
+        id: evaluation._id,
+        employee: evaluation.employee?.name,
+        status: evaluation.status,
+        view,
+        departmentFilter,
+        searchQuery
+      });
+
+      let shouldShow = true;
+
       // Status filter
       if (view === 'pending') {
-        return evaluation.status !== 'completed';
-      } 
-      if (view === 'completed') {
-        return evaluation.status === 'completed';
+        shouldShow = evaluation.status !== 'completed';
+      } else if (view === 'completed') {
+        shouldShow = evaluation.status === 'completed';
       }
+      
+      console.log('After status filter:', { shouldShow });
 
       // Department filter
-      if (departmentFilter !== 'all') {
+      if (shouldShow && departmentFilter !== 'all') {
         const employeeDepartment = evaluation.employee?.position?.split(' ')[0];
-        if (employeeDepartment !== departmentFilter) {
-          return false;
-        }
+        shouldShow = employeeDepartment === departmentFilter;
+        console.log('After department filter:', { employeeDepartment, departmentFilter, shouldShow });
       }
 
-      return true;
+      // Search filter
+      if (shouldShow && searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        shouldShow = evaluation.employee?.name?.toLowerCase().includes(searchLower) ||
+                    evaluation.template?.name?.toLowerCase().includes(searchLower);
+        console.log('After search filter:', { searchQuery, shouldShow });
+      }
+
+      console.log('Final decision for evaluation:', { id: evaluation._id, shouldShow });
+      return shouldShow;
     })
     .sort(sortEvaluations);
+
+  // Debug log for final filtered results
+  console.log('Final filtered evaluations:', {
+    total: evaluations?.length || 0,
+    filtered: filteredEvaluations?.length || 0,
+    view,
+    departmentFilter,
+    searchQuery
+  });
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
