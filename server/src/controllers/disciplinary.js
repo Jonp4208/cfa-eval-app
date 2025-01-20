@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { handleAsync } from '../utils/errorHandler.js';
 import { ApiError } from '../utils/ApiError.js';
-import { sendEmail } from '../utils/emailSender.js';
+import { sendEmail } from '../utils/email.js';
 
 // Get all disciplinary incidents
 export const getAllIncidents = handleAsync(async (req, res) => {
