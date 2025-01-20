@@ -380,7 +380,7 @@ export default function DisciplinaryPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 rounded-full text-[#E51636] hover:text-[#E51636] hover:bg-[#E51636]/10"
+                        className="h-10 w-10 rounded-full text-[#E51636] hover:text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
                         onClick={async (e) => {
                           e.stopPropagation();
                           try {
