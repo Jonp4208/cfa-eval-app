@@ -69,6 +69,12 @@ export const createEvaluation = async (req, res) => {
 
             await evaluation.save();
 
+            // Update the employee's evaluations array
+            await User.findByIdAndUpdate(
+                employee._id,
+                { $push: { evaluations: evaluation._id } }
+            );
+
             // Create notification for the employee
             await Notification.create({
                 user: employee._id,
@@ -363,13 +369,13 @@ export const getEvaluation = async (req, res) => {
         function getDefaultGradeLabel(value) {
             switch (value) {
                 case 1:
-                    return 'Poor';
+                    return 'Improvement Needed';
                 case 2:
-                    return 'Fair';
+                    return 'Performer';
                 case 3:
-                    return 'Good';
+                    return 'Valued';
                 case 4:
-                    return 'Excellent';
+                    return 'Star';
                 default:
                     return '';
             }

@@ -464,19 +464,19 @@ export default function ViewEvaluation() {
               <h3 className="text-lg font-medium text-[#27251F] mb-4">Grading Scale</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 bg-red-50 text-red-800 rounded-xl">
-                  <div className="text-lg font-medium">1 - Poor</div>
+                  <div className="text-lg font-medium">1 - Improvement Needed</div>
                   <div className="text-sm opacity-80">Low Hands / Low Heart</div>
                 </div>
                 <div className="p-4 bg-yellow-50 text-yellow-800 rounded-xl">
-                  <div className="text-lg font-medium">2 - Fair</div>
+                  <div className="text-lg font-medium">2 - Performer</div>
                   <div className="text-sm opacity-80">High Hands / Low Heart</div>
                 </div>
                 <div className="p-4 bg-blue-50 text-blue-800 rounded-xl">
-                  <div className="text-lg font-medium">3 - Good</div>
+                  <div className="text-lg font-medium">3 - Valued</div>
                   <div className="text-sm opacity-80">Low Hands / High Heart</div>
                 </div>
                 <div className="p-4 bg-green-50 text-green-800 rounded-xl">
-                  <div className="text-lg font-medium">4 - Excellent</div>
+                  <div className="text-lg font-medium">4 - Star</div>
                   <div className="text-sm opacity-80">High Hands / High Heart</div>
                 </div>
               </div>
