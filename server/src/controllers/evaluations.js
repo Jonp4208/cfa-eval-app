@@ -601,61 +601,47 @@ export const scheduleReviewSession = async (req, res) => {
 // Complete manager evaluation
 export const completeManagerEvaluation = async (req, res) => {
     try {
-        const { managerEvaluation, overallComments, developmentPlan } = req.body;
+        const { id } = req.params;
+        const { managerEvaluation, overallComments } = req.body;
 
-        const evaluation = await Evaluation.findOne({
-            _id: req.params.evaluationId,
-            evaluator: req.user._id,
-            store: req.user.store._id,
-            status: 'in_review_session'
-        }).populate('employee', 'name email _id');
+        const evaluation = await Evaluation.findById(id)
+            .populate('employee')
+            .populate('evaluator')
+            .populate('store')
+            .populate('template');
 
         if (!evaluation) {
-            return res.status(404).json({ message: 'Evaluation not found or not in review session' });
+            return res.status(404).json({ message: 'Evaluation not found' });
         }
 
-        // Convert the evaluation data to a Map
-        evaluation.managerEvaluation = new Map(Object.entries(managerEvaluation));
+        // Update evaluation
+        evaluation.managerEvaluation = managerEvaluation;
         evaluation.overallComments = overallComments;
-        evaluation.developmentPlan = developmentPlan;
         evaluation.status = 'completed';
         evaluation.completedDate = new Date();
+
         await evaluation.save();
 
         // Create notification for the employee
-        await Notification.create({
+        const notification = new Notification({
             user: evaluation.employee._id,
-            store: req.user.store._id,
-            type: 'evaluation',
+            store: evaluation.store._id,
+            type: 'evaluation_completed',
+            priority: 'high',
             title: 'Evaluation Completed',
-            message: `Your evaluation has been completed. Please review and acknowledge the results.`,
-            relatedId: evaluation._id,
-            relatedModel: 'Evaluation'
+            message: `Your evaluation has been completed by ${evaluation.evaluator.firstName} ${evaluation.evaluator.lastName}`,
+            evaluationId: evaluation._id
         });
 
-        // Send email notification to employee
-        await sendEmail({
-            to: evaluation.employee.email,
-            subject: 'Evaluation Completed',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h1 style="color: #E4002B;">Evaluation Completed</h1>
-                    <p>Hello ${evaluation.employee.name},</p>
-                    <p>Your evaluation has been completed by ${req.user.name}. Please log in to review the results and development plan.</p>
-                    <p><strong>Overall Comments:</strong></p>
-                    <p>${overallComments}</p>
-                    <p><strong>Development Plan:</strong></p>
-                    <p>${developmentPlan}</p>
-                    <p>Please log in to the Growth Hub platform to review the complete evaluation and acknowledge the results.</p>
-                    <p>Best regards,<br>Growth Hub Team</p>
-                </div>
-            `
-        });
+        await notification.save();
 
-        res.json({ evaluation });
+        res.json({ 
+            message: 'Evaluation completed successfully',
+            evaluation
+        });
     } catch (error) {
-        console.error('Complete manager evaluation error:', error);
-        res.status(500).json({ message: 'Error completing evaluation' });
+        console.error('Error completing manager evaluation:', error);
+        res.status(500).json({ message: 'Failed to complete evaluation' });
     }
 };
 

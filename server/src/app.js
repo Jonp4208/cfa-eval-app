@@ -54,6 +54,7 @@ app.use((req, res, next) => {
   console.log('Request URL:', req.url);
   console.log('Request Method:', req.method);
   console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
   next();
 });
 
@@ -118,6 +119,7 @@ apiRouter.use(errorHandler);
 
 // Handle 404s for API routes
 apiRouter.all('*', (req, res) => {
+  console.log('404 Not Found:', req.url);
   res.status(404).json({ message: 'API endpoint not found' });
 });
 

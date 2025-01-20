@@ -28,9 +28,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { MobileNav } from './MobileNav';
 import { useNotification } from '@/contexts/NotificationContext';
+import { NotificationList } from './NotificationList';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
@@ -45,6 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [upcomingEvaluations, setUpcomingEvaluations] = useState<any[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   // Close notifications when clicking outside
   useEffect(() => {
@@ -89,6 +92,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       return () => clearInterval(interval);
     }
   }, [user?.store?._id, showNotification]);
+
+  // Add effect to fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await api.get('/api/notifications');
+        const unreadCount = response.data.notifications.filter(
+          (notification: any) => !notification.read
+        ).length;
+        setNotificationCount(unreadCount);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    // Set up polling every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const menuItems = [
     {
@@ -367,73 +390,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Notifications */}
             <div className="relative" ref={notificationRef}>
-              <button 
-                className="relative p-2 hover:bg-gray-50 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <Bell className="w-5 h-5 text-[#27251F]" />
-                {hasNotifications && (
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-[#E51636] rounded-full"></span>
-                )}
-              </button>
-
-              {/* Notification Dropdown */}
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-[20px] shadow-md border py-2 z-50">
-                  <div className="px-4 py-2 border-b">
-                    <h3 className="font-medium text-[#27251F]">Notifications</h3>
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto momentum-scroll custom-scrollbar">
-                    {upcomingEvaluations.length > 0 ? (
-                      upcomingEvaluations.map((evaluation: any) => (
-                        <div key={evaluation._id} className="relative px-4 py-2 hover:bg-gray-50">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
-                              <ClipboardList className="w-4 h-4 text-[#E51636]" />
-                            </div>
-                            <button 
-                              className="flex-grow text-left"
-                              onClick={() => {
-                                if (evaluation._id) {
-                                  navigate(`/evaluations/${evaluation._id}`);
-                                  setShowNotifications(false);
-                                }
-                              }}
-                            >
-                              <p className="text-sm font-medium text-[#27251F]">
-                                {evaluation.employee?.name || 'Unknown Employee'}
-                              </p>
-                              <p className="text-xs text-[#27251F]/60">
-                                {evaluation.template?.name || 'Evaluation'}
-                              </p>
-                              <p className="text-xs text-[#27251F]/60 mt-1">
-                                Scheduled for {evaluation.scheduledDate ? new Date(evaluation.scheduledDate).toLocaleDateString() : 'Unknown Date'}
-                              </p>
-                            </button>
-                            {evaluation.notificationId && (
-                              <button
-                                data-testid="notification-dismiss-button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleDismissNotification(evaluation);
-                                }}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-all flex-shrink-0"
-                              >
-                                <X className="w-4 h-4 text-[#27251F]/60" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-2 text-sm text-[#27251F]/60">
-                        No new notifications
-                      </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    aria-label="Notifications"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-[#E51636] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                        {notificationCount}
+                      </span>
                     )}
-                  </div>
-                </div>
-              )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[300px]">
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <NotificationList onDismiss={() => {
+                    // Refresh notification count after dismissal
+                    const fetchNotifications = async () => {
+                      try {
+                        const response = await api.get('/api/notifications');
+                        const unreadCount = response.data.notifications.filter(
+                          (notification: any) => !notification.read
+                        ).length;
+                        setNotificationCount(unreadCount);
+                      } catch (error) {
+                        console.error('Error fetching notifications:', error);
+                      }
+                    };
+                    fetchNotifications();
+                  }} />
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* User Menu */}
