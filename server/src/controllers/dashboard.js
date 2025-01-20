@@ -209,44 +209,33 @@ const getActivityLogs = async (storeId) => {
 export const getTeamMemberDashboard = async (req, res) => {
     try {
         const user = await User.findById(req.user._id)
+            .populate({
+                path: 'evaluations',
+                match: { deleted: { $ne: true } },
+                select: 'scheduledDate completedDate template status evaluator createdAt acknowledged',
+                populate: [
+                    { path: 'template', select: 'name' },
+                    { path: 'evaluator', select: 'name position' }
+                ]
+            })
             .populate('store', 'name storeNumber location')
             .populate('evaluator', 'name')
             .populate('manager', 'name')
-            .populate({
-                path: 'evaluations',
-                select: 'score date status template evaluator',
-                populate: [
-                    { path: 'template', select: 'name' },
-                    { path: 'evaluator', select: 'name' }
-                ]
-            })
             .select('name position departments positionType status evaluations development recognition');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Get next scheduled evaluation - include draft evaluations too
-        const nextEvaluation = await Evaluation.findOne({
-            employee: user._id,
-            deleted: { $ne: true },
-            $or: [
-                { 
-                    status: { 
-                        $in: ['scheduled', 'draft', 'pending_self_evaluation', 'pending_manager_review', 'in_review_session'] 
-                    }
-                },
-                {
-                    scheduledDate: { $exists: true, $gt: new Date() }
-                }
-            ]
-        })
-        .sort({ scheduledDate: 1, createdAt: -1 })
-        .populate('template', 'name')
-        .populate('evaluator', 'name')
-        .select('scheduledDate completedDate template status evaluator createdAt acknowledged');
+        console.log('Finding next evaluation for user:', user._id);
+        // Find next evaluation (scheduled or in progress)
+        const nextEvaluation = user.evaluations?.find(e => 
+            !e.deleted && ['pending_self_evaluation', 'pending_manager_review', 'in_review_session'].includes(e.status)
+        );
+        console.log('Next evaluation found:', nextEvaluation);
 
-        // Get the last completed evaluation
+        console.log('Finding last completed evaluation for user:', user._id);
+        // Find last completed evaluation with a separate query
         const lastCompletedEvaluation = await Evaluation.findOne({
             employee: user._id,
             deleted: { $ne: true },
@@ -254,18 +243,25 @@ export const getTeamMemberDashboard = async (req, res) => {
             completedDate: { $exists: true }
         })
         .sort({ completedDate: -1 })
-        .select('completedDate');
+        .select('completedDate')
+        .lean();
+        
+        console.log('Last completed evaluation found:', lastCompletedEvaluation);
+
+        // Get completed evaluations count (excluding deleted)
+        const completedEvaluations = user.evaluations?.filter(e => e.status === 'completed' && !e.deleted) || [];
+        const completedCount = completedEvaluations.length;
 
         // Calculate current performance from completed evaluations
-        const completedEvaluations = user.evaluations?.filter(e => e.status === 'completed') || [];
-        const currentPerformance = completedEvaluations.length > 0
-            ? Math.round(
+        let currentPerformance = null;
+        if (completedCount > 0) {
+            currentPerformance = Math.round(
                 completedEvaluations
                     .slice(0, 3)
                     .reduce((sum, evaluation) => sum + (evaluation.score || 0), 0) / 
-                Math.min(completedEvaluations.length, 3)
-            )
-            : null;
+                Math.min(completedCount, 3)
+            );
+        }
 
         // Get active development goals
         const activeGoals = user.development
