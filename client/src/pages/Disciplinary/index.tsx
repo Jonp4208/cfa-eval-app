@@ -11,7 +11,8 @@ import {
   ClipboardList,
   Filter,
   Search,
-  Loader2
+  Loader2,
+  Mail
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import disciplinaryService, { DisciplinaryIncident } from '@/services/disciplinaryService';
@@ -375,6 +376,25 @@ export default function DisciplinaryPage() {
                       <FileText className="w-4 h-4" />
                       View Details
                     </Button>
+                    {incident.status === 'Resolved' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-2 flex-1 sm:flex-initial justify-center h-10 px-4"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await disciplinaryService.sendEmail(incident._id);
+                            toast.success('Email sent successfully');
+                          } catch (error: any) {
+                            toast.error(error.response?.data?.message || 'Failed to send email');
+                          }
+                        }}
+                        title="Send incident details to store email"
+                      >
+                        <Mail className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

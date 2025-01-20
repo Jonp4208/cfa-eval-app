@@ -130,6 +130,12 @@ const disciplinaryService = {
   // Delete incident
   deleteIncident: async (id: string): Promise<void> => {
     await api.delete(`/api/disciplinary/${id}`);
+  },
+
+  // Send email
+  sendEmail: async (id: string): Promise<{ message: string }> => {
+    const response = await api.post(`/api/disciplinary/${id}/send-email`);
+    return response.data;
   }
 };
 

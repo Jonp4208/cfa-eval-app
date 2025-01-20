@@ -12,7 +12,8 @@ import {
   getAllDisciplinaryIncidents,
   updateExistingIncidents,
   acknowledgeIncident,
-  completeFollowUp
+  completeFollowUp,
+  sendDisciplinaryEmail
 } from '../controllers/disciplinary.js';
 
 const router = express.Router();
@@ -38,6 +39,9 @@ router.route('/')
 // Document and follow-up routes
 router.post('/:id/follow-up', addFollowUp);
 router.post('/:id/document', addDocument);
+
+// Send email route
+router.post('/:id/send-email', sendDisciplinaryEmail);
 
 // Individual incident routes - MUST come last
 router.route('/:id')

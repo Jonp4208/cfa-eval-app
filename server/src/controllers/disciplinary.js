@@ -474,4 +474,94 @@ export const updateExistingIncidents = handleAsync(async (req, res) => {
     message: 'Updated existing incidents',
     modifiedCount: result.modifiedCount
   });
+});
+
+// Send email for disciplinary incident
+export const sendDisciplinaryEmail = handleAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const incident = await Disciplinary.findOne({ _id: id, store: req.user.store._id })
+    .populate('employee', 'name position')
+    .populate('supervisor', 'name')
+    .populate('store', 'name storeEmail storeNumber');
+
+  if (!incident) {
+    throw new ApiError(404, 'Incident not found');
+  }
+
+  if (!incident.store?.storeEmail) {
+    throw new ApiError(400, 'Store email not configured');
+  }
+
+  await sendEmail({
+    to: incident.store.storeEmail,
+    subject: `Disciplinary Incident Report - ${incident.employee.name}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+          <h1 style="color: white; margin: 0;">Disciplinary Incident Report</h1>
+        </div>
+        
+        <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+          <h2 style="color: #333; margin-top: 0;">Incident Details</h2>
+          <p><strong>Employee:</strong> ${incident.employee.name} (${incident.employee.position})</p>
+          <p><strong>Supervisor:</strong> ${incident.supervisor.name}</p>
+          <p><strong>Date:</strong> ${new Date(incident.date).toLocaleDateString()}</p>
+          <p><strong>Type:</strong> ${incident.type}</p>
+          <p><strong>Severity:</strong> ${incident.severity}</p>
+          <p><strong>Status:</strong> ${incident.status}</p>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #333;">Incident Information</h2>
+          <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h3 style="color: #333; margin-top: 0;">Description</h3>
+            <p style="margin-bottom: 20px;">${incident.description}</p>
+
+            <h3 style="color: #333;">Action Taken</h3>
+            <p style="margin-bottom: 20px;">${incident.actionTaken}</p>
+
+            ${incident.witnesses ? `
+              <h3 style="color: #333;">Witnesses</h3>
+              <p style="margin-bottom: 20px;">${incident.witnesses}</p>
+            ` : ''}
+
+            ${incident.acknowledgment?.acknowledged ? `
+              <h3 style="color: #333;">Acknowledgment</h3>
+              <p><strong>Date:</strong> ${new Date(incident.acknowledgment.date).toLocaleDateString()}</p>
+              ${incident.acknowledgment.comments ? `
+                <p><strong>Employee Comments:</strong> ${incident.acknowledgment.comments}</p>
+              ` : ''}
+              ${incident.acknowledgment.rating ? `
+                <p><strong>Fairness Rating:</strong> ${incident.acknowledgment.rating} out of 5</p>
+              ` : ''}
+            ` : ''}
+          </div>
+        </div>
+
+        ${incident.followUps.length > 0 ? `
+          <div style="margin-bottom: 30px;">
+            <h2 style="color: #333;">Follow-up Actions</h2>
+            <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+              ${incident.followUps.map(followUp => `
+                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">
+                  <p><strong>Date:</strong> ${new Date(followUp.date).toLocaleDateString()}</p>
+                  <p><strong>By:</strong> ${followUp.by.name}</p>
+                  <p><strong>Status:</strong> ${followUp.status}</p>
+                  <p><strong>Note:</strong> ${followUp.note}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <p style="margin-top: 30px;">
+          For more details, please log in to the Growth Hub platform.
+        </p>
+        <p>Best regards,<br>Growth Hub Team</p>
+      </div>
+    `
+  });
+
+  res.json({ message: 'Email sent successfully' });
 }); 
