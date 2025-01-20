@@ -140,17 +140,56 @@ export default function Evaluations() {
       return api.post(`/api/evaluations/${evaluationId}/notify-unacknowledged`);
     },
     onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Notification sent successfully',
+      // Create and show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-[9999] flex items-center transform transition-all duration-300 translate-y-0';
+      notification.style.cssText = 'position: fixed; top: 1rem; right: 1rem; z-index: 9999;';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Acknowledgement reminder sent successfully</span>
+      `;
+      document.body.appendChild(notification);
+
+      // Add entrance animation
+      requestAnimationFrame(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
       });
+
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
     },
     onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to send notification',
-        variant: 'destructive',
+      // Create and show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-xl shadow-lg z-[9999] flex items-center transform transition-all duration-300 translate-y-0';
+      notification.style.cssText = 'position: fixed; top: 1rem; right: 1rem; z-index: 9999;';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <span>${error.response?.data?.message || 'Failed to send notification'}</span>
+      `;
+      document.body.appendChild(notification);
+
+      // Add entrance animation
+      requestAnimationFrame(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
       });
+
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
     }
   });
 
