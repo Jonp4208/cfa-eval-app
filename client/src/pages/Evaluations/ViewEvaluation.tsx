@@ -868,60 +868,48 @@ export default function ViewEvaluation() {
                             {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
                               <div key={sectionIndex} className="space-y-4">
                                 <h3 className="font-medium text-lg text-[#27251F]">{section.title}</h3>
-                                {section.questions.map((question: Question, questionIndex: number) => (
-                                  <div key={questionIndex} className={`p-4 rounded-xl border ${
-                                    getComparisonStyle(
-                                      evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`],
-                                      answers[`${sectionIndex}-${questionIndex}`]
-                                    ) || 'bg-[#27251F]/5'
-                                  }`}>
-                                    <p className="font-medium text-[#27251F] mb-3">{question.text}</p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      {/* Employee's Rating */}
-                                      <div>
-                                        <p className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Rating:</p>
-                                        <div className="flex items-center gap-2">
-                                          <div
-                                            className="w-3 h-3 rounded-full"
-                                            style={{ 
-                                              backgroundColor: getRatingColor(
-                                                evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`],
-                                                question.gradingScale
-                                              )
-                                            }}
-                                          />
-                                          <span className="text-[#27251F]">
-                                            {getRatingText(
-                                              evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`],
-                                              question.gradingScale
-                                            )}
-                                          </span>
+                                {section.questions.map((question: Question, questionIndex: number) => {
+                                  const employeeRating = evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`];
+                                  const managerRating = evaluation.managerEvaluation?.[`${sectionIndex}-${questionIndex}`];
+                                  const employeeColor = getRatingColor(employeeRating, question.gradingScale);
+                                  const managerColor = getRatingColor(managerRating, question.gradingScale);
+
+                                  return (
+                                    <div key={questionIndex} className={`p-4 rounded-xl border ${
+                                      getComparisonStyle(employeeRating, managerRating)
+                                    }`}>
+                                      <p className="font-medium text-[#27251F] mb-3">{question.text}</p>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Employee's Rating */}
+                                        <div>
+                                          <p className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Rating:</p>
+                                          <div className="flex items-center gap-2">
+                                            <div
+                                              className="w-3 h-3 rounded-full"
+                                              style={{ backgroundColor: employeeColor }}
+                                            />
+                                            <span style={{ color: employeeColor }}>
+                                              {getRatingText(employeeRating, question.gradingScale)}
+                                            </span>
+                                          </div>
                                         </div>
-                                      </div>
-                                      {/* Manager's Rating */}
-                                      <div>
-                                        <p className="text-sm font-medium text-[#27251F]/60 mb-2">Your Rating:</p>
-                                        <div className="flex items-center gap-2">
-                                          <div
-                                            className="w-3 h-3 rounded-full"
-                                            style={{ 
-                                              backgroundColor: getRatingColor(
-                                                answers[`${sectionIndex}-${questionIndex}`],
-                                                question.gradingScale
-                                              )
-                                            }}
-                                          />
-                                          <span className="text-[#27251F]">
-                                            {getRatingText(
-                                              answers[`${sectionIndex}-${questionIndex}`],
-                                              question.gradingScale
-                                            )}
-                                          </span>
+                                        {/* Manager's Rating */}
+                                        <div>
+                                          <p className="text-sm font-medium text-[#27251F]/60 mb-2">Manager's Rating:</p>
+                                          <div className="flex items-center gap-2">
+                                            <div
+                                              className="w-3 h-3 rounded-full"
+                                              style={{ backgroundColor: managerColor }}
+                                            />
+                                            <span style={{ color: managerColor }}>
+                                              {getRatingText(managerRating, question.gradingScale)}
+                                            </span>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             ))}
                           </CardContent>
@@ -988,6 +976,62 @@ export default function ViewEvaluation() {
             {/* Completed evaluation view */}
             {evaluation.status === 'completed' && (
               <div className="space-y-8">
+                {/* Overall Ratings Card */}
+                <Card className="bg-white rounded-[20px] shadow-md">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-[#27251F]">Overall Ratings</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Employee's Overall Score */}
+                      <div>
+                        <h4 className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Overall Rating</h4>
+                        {(() => {
+                          const { score, total } = calculateTotalScore(evaluation.selfEvaluation);
+                          const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+                          return (
+                            <div className="space-y-2">
+                              <div className="text-2xl font-bold text-[#27251F]">
+                                {score}/{total} <span className="text-lg font-normal text-[#27251F]/60">points</span>
+                              </div>
+                              <div className="w-full bg-[#27251F]/10 rounded-full h-2">
+                                <div
+                                  className="bg-[#E51636] h-2 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              <div className="text-sm text-[#27251F]/60">{percentage}% Overall Rating</div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Manager's Overall Score */}
+                      <div>
+                        <h4 className="text-sm font-medium text-[#27251F]/60 mb-2">Manager's Overall Rating</h4>
+                        {(() => {
+                          const { score, total } = calculateTotalScore(evaluation.managerEvaluation);
+                          const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+                          return (
+                            <div className="space-y-2">
+                              <div className="text-2xl font-bold text-[#27251F]">
+                                {score}/{total} <span className="text-lg font-normal text-[#27251F]/60">points</span>
+                              </div>
+                              <div className="w-full bg-[#27251F]/10 rounded-full h-2">
+                                <div
+                                  className="bg-[#E51636] h-2 rounded-full"
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                              <div className="text-sm text-[#27251F]/60">{percentage}% Overall Rating</div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Side by side comparison */}
                 {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
                   <Card key={sectionIndex} className="bg-white rounded-[20px] shadow-md">
@@ -997,57 +1041,41 @@ export default function ViewEvaluation() {
                     <CardContent>
                       <div className="space-y-6">
                         {section.questions.map((question: Question, questionIndex: number) => {
-                          const answerKey = `${sectionIndex}-${questionIndex}`;
-                          // Access the raw evaluation data directly
-                          const selfAnswer = evaluation.selfEvaluation[answerKey];
-                          const managerAnswer = evaluation.managerEvaluation[answerKey];
-                          
-                          console.log('Debug - Question:', question.text);
-                          console.log('Debug - Answer Key:', answerKey);
-                          console.log('Debug - Self Answer:', selfAnswer);
-                          console.log('Debug - Manager Answer:', managerAnswer);
-                          console.log('Debug - Raw Self Evaluation:', evaluation.selfEvaluation);
-                          console.log('Debug - Raw Manager Evaluation:', evaluation.managerEvaluation);
-                          
-                          const getRatingText = (rating: any) => {
-                            const ratingNum = Number(rating);
-                            console.log('Debug - Rating Number:', ratingNum, typeof ratingNum);
-                            switch(ratingNum) {
-                              case 1: return 'Poor';
-                              case 2: return 'Fair';
-                              case 3: return 'Good';
-                              case 4: return 'Very Good';
-                              case 5: return 'Excellent';
-                              default: return 'No rating provided';
-                            }
-                          };
+                          const employeeRating = evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`];
+                          const managerRating = evaluation.managerEvaluation?.[`${sectionIndex}-${questionIndex}`];
+                          const employeeColor = getRatingColor(employeeRating, question.gradingScale);
+                          const managerColor = getRatingColor(managerRating, question.gradingScale);
 
                           return (
-                            <div key={questionIndex} className="space-y-4">
-                              <h4 className="font-medium text-[#27251F]">{question.text}</h4>
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div key={questionIndex} className={`p-4 rounded-xl border ${
+                              getComparisonStyle(employeeRating, managerRating)
+                            }`}>
+                              <p className="font-medium text-[#27251F] mb-3">{question.text}</p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Employee's Rating */}
                                 <div>
-                                  <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
-                                    Employee Response
-                                  </label>
-                                  <div className="bg-[#27251F]/5 p-4 rounded-xl text-[#27251F]">
-                                    {question.type === 'rating' ? (
-                                      selfAnswer ? `${selfAnswer} - ${getRatingText(selfAnswer)}` : 'No rating provided'
-                                    ) : (
-                                      selfAnswer || 'No response provided'
-                                    )}
+                                  <p className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Rating:</p>
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-3 h-3 rounded-full"
+                                      style={{ backgroundColor: employeeColor }}
+                                    />
+                                    <span style={{ color: employeeColor }}>
+                                      {getRatingText(employeeRating, question.gradingScale)}
+                                    </span>
                                   </div>
                                 </div>
+                                {/* Manager's Rating */}
                                 <div>
-                                  <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
-                                    Manager Response
-                                  </label>
-                                  <div className="bg-[#E51636]/5 p-4 rounded-xl text-[#27251F]">
-                                    {question.type === 'rating' ? (
-                                      managerAnswer ? `${managerAnswer} - ${getRatingText(managerAnswer)}` : 'No rating provided'
-                                    ) : (
-                                      managerAnswer || 'No response provided'
-                                    )}
+                                  <p className="text-sm font-medium text-[#27251F]/60 mb-2">Manager's Rating:</p>
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-3 h-3 rounded-full"
+                                      style={{ backgroundColor: managerColor }}
+                                    />
+                                    <span style={{ color: managerColor }}>
+                                      {getRatingText(managerRating, question.gradingScale)}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
