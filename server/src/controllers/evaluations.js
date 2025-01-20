@@ -323,7 +323,11 @@ export const getEvaluation = async (req, res) => {
                                     id: scale._id,
                                     name: scale.name,
                                     description: scale.description,
-                                    grades: scale.grades,
+                                    grades: scale.grades.map(grade => ({
+                                        ...grade,
+                                        description: grade.description || getDefaultGradeDescription(grade.value),
+                                        label: grade.label || getDefaultGradeLabel(grade.value)
+                                    })),
                                     isDefault: scale.isDefault
                                 } : null
                             };
@@ -338,6 +342,37 @@ export const getEvaluation = async (req, res) => {
                 ? Object.fromEntries(evaluation.managerEvaluation)
                 : {}
         };
+
+        // Helper functions for default grade descriptions
+        function getDefaultGradeDescription(value) {
+            switch (value) {
+                case 1:
+                    return 'Low Hands / Low Heart';
+                case 2:
+                    return 'High Hands / Low Heart';
+                case 3:
+                    return 'Low Hands / High Heart';
+                case 4:
+                    return 'High Hands / High Heart';
+                default:
+                    return '';
+            }
+        }
+
+        function getDefaultGradeLabel(value) {
+            switch (value) {
+                case 1:
+                    return 'Poor';
+                case 2:
+                    return 'Fair';
+                case 3:
+                    return 'Good';
+                case 4:
+                    return 'Excellent';
+                default:
+                    return '';
+            }
+        }
 
         console.log('Transformed evaluation:', JSON.stringify(transformedEvaluation.template.sections, null, 2));
 
@@ -470,54 +505,96 @@ export const submitEvaluation = async (req, res) => {
 // Submit self-evaluation
 export const submitSelfEvaluation = async (req, res) => {
     try {
+        const { id } = req.params;
         const { selfEvaluation } = req.body;
 
-        const evaluation = await Evaluation.findOne({
-            _id: req.params.evaluationId,
-            employee: req.user._id,
-            store: req.user.store._id,
-            status: 'pending_self_evaluation'
-        }).populate('evaluator', 'name email _id');
+        const evaluation = await Evaluation.findById(id)
+            .populate('employee', 'name email position')
+            .populate('evaluator', 'name email')
+            .populate({
+                path: 'store',
+                select: 'name storeEmail'
+            });
 
         if (!evaluation) {
-            return res.status(404).json({ message: 'Evaluation not found or not in self-evaluation state' });
+            return res.status(404).json({ message: 'Evaluation not found' });
         }
 
-        // Convert the evaluation data to a Map
-        evaluation.selfEvaluation = new Map(Object.entries(selfEvaluation));
+        evaluation.selfEvaluation = selfEvaluation;
         evaluation.status = 'pending_manager_review';
         await evaluation.save();
 
-        // Create notification for the evaluator
-        await Notification.create({
-            user: evaluation.evaluator._id,
-            store: req.user.store._id,
-            type: 'evaluation',
-            title: 'Self-Evaluation Submitted',
-            message: `${req.user.name} has submitted their self-evaluation. Please review and schedule a review session.`,
-            relatedId: evaluation._id,
-            relatedModel: 'Evaluation'
-        });
+        // Send email to manager
+        if (evaluation.evaluator.email) {
+            await sendEmail({
+                to: evaluation.evaluator.email,
+                subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                        <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                            <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
+                        </div>
+                        
+                        <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                            <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
+                            <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
+                            <p><strong>Position:</strong> ${evaluation.employee.position}</p>
+                            <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        </div>
 
-        // Send email notification to evaluator
-        await sendEmail({
-            to: evaluation.evaluator.email,
-            subject: 'Self-Evaluation Submitted',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h1 style="color: #E4002B;">Self-Evaluation Submitted</h1>
-                    <p>Hello ${evaluation.evaluator.name},</p>
-                    <p>${req.user.name} has submitted their self-evaluation. Please review and schedule a review session.</p>
-                    <p>Please log in to the Growth Hub platform to review the self-evaluation and schedule the review session.</p>
-                    <p>Best regards,<br>Growth Hub Team</p>
-                </div>
-            `
-        });
+                        <div style="margin-bottom: 30px;">
+                            <p>The employee has completed their self-evaluation. Please log in to Growth Hub to schedule the review session.</p>
+                            <div style="margin-top: 20px; text-align: center;">
+                                <a href="${process.env.CLIENT_URL}/evaluations/${evaluation._id}" 
+                                    style="background-color: #E4002B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                                    Schedule Review Session
+                                </a>
+                            </div>
+                        </div>
 
-        res.json({ evaluation });
+                        <p style="margin-top: 30px;">
+                            Best regards,<br>Growth Hub Team
+                        </p>
+                    </div>
+                `
+            });
+        }
+
+        // Also send to store email if configured
+        if (evaluation.store?.storeEmail) {
+            await sendEmail({
+                to: evaluation.store.storeEmail,
+                subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                        <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                            <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
+                        </div>
+                        
+                        <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                            <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
+                            <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
+                            <p><strong>Position:</strong> ${evaluation.employee.position}</p>
+                            <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
+                            <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        </div>
+
+                        <div style="margin-bottom: 30px;">
+                            <p>The employee has completed their self-evaluation. The evaluator will schedule a review session soon.</p>
+                        </div>
+
+                        <p style="margin-top: 30px;">
+                            Best regards,<br>Growth Hub Team
+                        </p>
+                    </div>
+                `
+            });
+        }
+
+        res.json({ message: 'Self-evaluation submitted successfully', evaluation });
     } catch (error) {
-        console.error('Submit self-evaluation error:', error);
-        res.status(500).json({ message: 'Error submitting self-evaluation' });
+        console.error('Error submitting self-evaluation:', error);
+        res.status(500).json({ message: 'Error submitting self-evaluation', error: error.message });
     }
 };
 
