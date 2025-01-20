@@ -19,13 +19,15 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronRight,
-  Mail
+  Mail,
+  Bell
 } from 'lucide-react';
 import { useNotification } from '@/contexts/NotificationContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import api from '@/lib/axios';
 import { handleError } from '@/lib/utils/error-handler';
+import { toast } from '@/components/ui/use-toast';
 
 interface Evaluation {
   _id: string;
@@ -129,6 +131,26 @@ export default function Evaluations() {
       setTimeout(() => {
         notification.remove();
       }, 3000);
+    }
+  });
+
+  // Add this with other mutations at the top of the component
+  const sendUnacknowledgedNotification = useMutation({
+    mutationFn: async (evaluationId: string) => {
+      return api.post(`/api/evaluations/${evaluationId}/notify-unacknowledged`);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Notification sent successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to send notification',
+        variant: 'destructive',
+      });
     }
   });
 
@@ -526,31 +548,50 @@ export default function Evaluations() {
                           <div className="flex items-center space-x-2">
                             <span>{getStatusDisplay(evaluation)}</span>
                           </div>
-                          {evaluation.status === 'completed' && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                sendEvaluationEmail(evaluation._id);
-                              }}
-                              title="Send evaluation to store email"
-                              className="h-10 w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
-                            >
-                              <Mail className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {(user?._id === evaluation.evaluator._id) && evaluation.status !== 'completed' && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => handleDelete(e, evaluation._id)}
-                              className="h-8 w-8 text-[#E51636] hover:text-[#E51636]/90 hover:bg-[#E51636]/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {evaluation.status === 'completed' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    sendEvaluationEmail(evaluation._id);
+                                  }}
+                                  title="Send evaluation to store email"
+                                  className="h-10 w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </Button>
+                                {!evaluation.acknowledgement?.acknowledged && user?._id === evaluation.evaluator._id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      sendUnacknowledgedNotification.mutate(evaluation._id);
+                                    }}
+                                    title="Send acknowledgement reminder"
+                                    className="h-10 w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
+                                  >
+                                    <Bell className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                            {(user?._id === evaluation.evaluator._id) && evaluation.status !== 'completed' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => handleDelete(e, evaluation._id)}
+                                className="h-8 w-8 text-[#E51636] hover:text-[#E51636]/90 hover:bg-[#E51636]/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                       {(evaluation.status === 'pending_manager_review' || evaluation.status === 'in_review_session') && (

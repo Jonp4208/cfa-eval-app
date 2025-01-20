@@ -1041,3 +1041,43 @@ export const sendCompletedEvaluationEmail = async (req, res) => {
         res.status(500).json({ message: 'Error sending evaluation email' });
     }
 };
+
+// Send notification for unacknowledged evaluation
+export const sendUnacknowledgedNotification = async (req, res) => {
+    try {
+        const { evaluationId } = req.params;
+
+        const evaluation = await Evaluation.findOne({
+            _id: evaluationId,
+            status: 'completed',
+            'acknowledgement.acknowledged': false
+        })
+        .populate('employee', 'name')
+        .populate('evaluator', 'name');
+
+        if (!evaluation) {
+            return res.status(404).json({ message: 'Evaluation not found or already acknowledged' });
+        }
+
+        // Create notification for the employee
+        const notification = new Notification({
+            user: evaluation.employee._id,
+            store: evaluation.store,
+            type: 'evaluation',
+            priority: 'high',
+            title: 'Evaluation Acknowledgement Required',
+            message: `Please acknowledge your completed evaluation from ${evaluation.evaluator.name}.`,
+            evaluationId: evaluation._id
+        });
+
+        await notification.save();
+
+        res.json({ 
+            message: 'Notification sent successfully',
+            notification 
+        });
+    } catch (error) {
+        console.error('Error sending unacknowledged notification:', error);
+        res.status(500).json({ message: 'Error sending notification' });
+    }
+};

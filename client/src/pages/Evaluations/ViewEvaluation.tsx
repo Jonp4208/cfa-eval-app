@@ -364,6 +364,26 @@ export default function ViewEvaluation() {
     }
   });
 
+  // Send unacknowledged notification mutation
+  const sendUnacknowledgedNotification = useMutation({
+    mutationFn: async () => {
+      return api.post(`/api/evaluations/${id}/notify-unacknowledged`);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Notification sent successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to send notification',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const handleAnswerChange = (sectionIndex: number, questionIndex: number, value: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -1151,6 +1171,19 @@ export default function ViewEvaluation() {
                   <div className="text-sm text-[#27251F]/60 pt-4 border-t border-gray-200">
                     Acknowledged by {evaluation.employee.name} on{' '}
                     {new Date(evaluation.acknowledgement.date).toLocaleDateString()}
+                  </div>
+                )}
+
+                {/* Add this inside the completed evaluation view, after the acknowledgement status display */}
+                {evaluation.status === 'completed' && !evaluation.acknowledgement?.acknowledged && isManager && (
+                  <div className="flex justify-end pt-4 border-t border-gray-200">
+                    <Button
+                      onClick={() => sendUnacknowledgedNotification.mutate()}
+                      disabled={sendUnacknowledgedNotification.isPending}
+                      className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                    >
+                      {sendUnacknowledgedNotification.isPending ? 'Sending...' : 'Send Acknowledgement Reminder'}
+                    </Button>
                   </div>
                 )}
               </div>
