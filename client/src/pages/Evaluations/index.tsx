@@ -484,6 +484,7 @@ export default function Evaluations() {
                                 sendEvaluationEmail(evaluation._id);
                               }}
                               title="Send evaluation to store email"
+                              className="h-10 w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
                             >
                               <Mail className="h-4 w-4" />
                             </Button>
