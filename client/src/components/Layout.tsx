@@ -30,12 +30,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MobileNav } from './MobileNav';
-import { toast } from "@/components/ui/use-toast";
+import { useNotification } from '@/contexts/NotificationContext';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { showNotification } = useNotification();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(false);
   const [pendingEvaluations, setPendingEvaluations] = useState(0);
@@ -67,8 +68,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         setUpcomingEvaluations(notifications);
         // Set hasNotifications directly based on whether there are any notifications
         setHasNotifications(notifications.length > 0);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch (error: any) {
+        console.error('Error fetching dashboard data:', error);
+        
+        let errorMessage = "Failed to load notifications";
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (!error.response) {
+          errorMessage = "Server not responding. Please check your connection.";
+        }
+
+        showNotification('error', 'Error', errorMessage);
       }
     };
 
@@ -78,7 +88,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const interval = setInterval(fetchData, 5 * 60 * 1000);
       return () => clearInterval(interval);
     }
-  }, [user?.store?._id]);
+  }, [user?.store?._id, showNotification]);
 
   const menuItems = [
     {
@@ -171,9 +181,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     try {
       console.log('Dismissing notification:', {
         notificationId: evaluation.notificationId,
-        evaluationId: evaluation._id,
         evaluation
       });
+
+      if (!evaluation.notificationId) {
+        showNotification('error', 'Error', 'Invalid notification: No notification ID found');
+        return;
+      }
 
       // Mark the notification as read
       await api.post(`/api/notifications/${evaluation.notificationId}/mark-read`);
@@ -188,17 +202,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         return updatedNotifications;
       });
 
-      toast({
-        title: "Success",
-        description: "Notification dismissed successfully",
-      });
-    } catch (error) {
+      showNotification('success', 'Success', 'Notification dismissed successfully');
+    } catch (error: any) {
       console.error('Error dismissing notification:', error);
-      toast({
-        title: "Error",
-        description: "Failed to dismiss notification. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Get a user-friendly error message
+      let errorMessage = "Failed to dismiss notification. Please try again.";
+      if (error.response) {
+        // Server responded with error
+        if (error.response.status === 404) {
+          errorMessage = "Notification not found or already dismissed";
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.status === 403) {
+          errorMessage = "You don't have permission to dismiss this notification";
+        }
+      } else if (error.request) {
+        // Request made but no response
+        errorMessage = "Server not responding. Please check your connection.";
+      } else {
+        // Error setting up request
+        errorMessage = error.message || "An unexpected error occurred";
+      }
+
+      showNotification('error', 'Error', errorMessage);
     }
   };
 
@@ -364,29 +391,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             <div className="w-8 h-8 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
                               <ClipboardList className="w-4 h-4 text-[#E51636]" />
                             </div>
-                            <div className="flex-grow" onClick={() => {
-                              navigate(`/evaluations/${evaluation._id}`);
-                              setShowNotifications(false);
-                            }}>
+                            <button 
+                              className="flex-grow text-left"
+                              onClick={() => {
+                                if (evaluation._id) {
+                                  navigate(`/evaluations/${evaluation._id}`);
+                                  setShowNotifications(false);
+                                }
+                              }}
+                            >
                               <p className="text-sm font-medium text-[#27251F]">
-                                {evaluation.employeeName}
+                                {evaluation.employee?.name || 'Unknown Employee'}
                               </p>
                               <p className="text-xs text-[#27251F]/60">
-                                {evaluation.templateName}
+                                {evaluation.template?.name || 'Evaluation'}
                               </p>
                               <p className="text-xs text-[#27251F]/60 mt-1">
-                                Scheduled for {new Date(evaluation.scheduledDate).toLocaleDateString()}
+                                Scheduled for {evaluation.scheduledDate ? new Date(evaluation.scheduledDate).toLocaleDateString() : 'Unknown Date'}
                               </p>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDismissNotification(evaluation);
-                              }}
-                              className="p-2 hover:bg-gray-100 rounded-full transition-all"
-                            >
-                              <X className="w-4 h-4 text-[#27251F]/60" />
                             </button>
+                            {evaluation.notificationId && (
+                              <button
+                                data-testid="notification-dismiss-button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDismissNotification(evaluation);
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-all flex-shrink-0"
+                              >
+                                <X className="w-4 h-4 text-[#27251F]/60" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))

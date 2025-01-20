@@ -50,92 +50,47 @@ export const createEvaluation = async (req, res) => {
         });
 
         if (employees.length !== employeeIds.length) {
-            return res.status(404).json({ message: 'One or more employees not found' });
+            return res.status(400).json({ message: 'One or more employees not found in your store' });
         }
 
-        // Create an evaluation for each employee
-        const evaluations = await Promise.all(employees.map(async (employee) => {
+        // Create evaluations and notifications for each employee
+        const createdEvaluations = [];
+        for (const employee of employees) {
             const evaluation = new Evaluation({
                 employee: employee._id,
                 evaluator: req.user._id,
-                store: req.user.store._id,
                 template: templateId,
+                store: req.user.store._id,
                 scheduledDate,
-                status: 'pending_self_evaluation',
                 overallComments,
                 developmentPlan,
-                sectionResults
+                sectionResults,
+                status: 'scheduled'
             });
 
             await evaluation.save();
-
-            // Update the employee's evaluations array
-            await User.findByIdAndUpdate(
-                employee._id,
-                { $push: { evaluations: evaluation._id } }
-            );
+            createdEvaluations.push(evaluation);
 
             // Create notification for the employee
-            await Notification.create({
+            const notification = new Notification({
                 user: employee._id,
                 store: req.user.store._id,
                 type: 'evaluation',
                 priority: 'high',
                 title: 'New Evaluation Scheduled',
-                message: `An evaluation has been scheduled for ${new Date(scheduledDate).toLocaleDateString()}. Template: ${template.name}`,
-                relatedId: evaluation._id,
-                relatedModel: 'Evaluation'
+                message: `An evaluation has been scheduled for you on ${new Date(scheduledDate).toLocaleDateString()}`,
+                evaluationId: evaluation._id
             });
 
-            // Try to send email notification, but don't fail if it errors
-            try {
-                await sendEmail({
-                    to: employee.email,
-                    subject: 'New Evaluation Assigned',
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h1 style="color: #E4002B;">New Evaluation Assigned</h1>
-                            <p>Hello ${employee.name},</p>
-                            <p>A new evaluation has been assigned to you. Please complete your self-evaluation by ${new Date(scheduledDate).toLocaleDateString()}.</p>
-                            <p><strong>Evaluator:</strong> ${req.user.name}</p>
-                            <p><strong>Due Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
-                            <p>Please log in to the Growth Hub platform to complete your self-evaluation:</p>
-                            <p><a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
-                            <p>Best regards,<br>Growth Hub Team</p>
-                        </div>
-                    `
-                });
-            } catch (emailError) {
-                console.log('Email notification failed:', emailError);
-                // Continue execution - don't fail the evaluation creation
-            }
+            await notification.save();
+        }
 
-            // Get all managers in the store (except the creator)
-            const managers = await User.find({
-                store: req.user.store._id,
-                role: { $in: ['admin', 'evaluator'] },
-                _id: { $ne: req.user._id }
-            });
+        console.log('Created evaluations:', createdEvaluations);
 
-            // Create notifications for all managers
-            await Promise.all(managers.map(manager => 
-                Notification.create({
-                    user: manager._id,
-                    store: req.user.store._id,
-                    type: 'evaluation',
-                    title: 'New Evaluation Created',
-                    message: `${req.user.name} scheduled an evaluation for ${employee.name} on ${new Date(scheduledDate).toLocaleDateString()}.`,
-                    relatedId: evaluation._id,
-                    relatedModel: 'Evaluation'
-                })
-            ));
-
-            return evaluation;
-        }));
-
-        console.log('Created evaluations:', evaluations);
-
-        res.status(201).json({ evaluations });
+        res.status(201).json({
+            message: 'Evaluations created successfully',
+            evaluations: createdEvaluations
+        });
 
     } catch (error) {
         console.error('Create evaluation error:', error);

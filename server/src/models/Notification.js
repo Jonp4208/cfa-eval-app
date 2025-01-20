@@ -36,6 +36,10 @@ const notificationSchema = new mongoose.Schema({
   readAt: {
     type: Date
   },
+  evaluationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Evaluation'
+  },
   acknowledgedAt: {
     type: Date
   },

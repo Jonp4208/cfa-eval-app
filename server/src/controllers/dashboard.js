@@ -5,6 +5,20 @@ export const getDashboardStats = async (req, res) => {
     try {
         const { store, role, isAdmin } = req.user;
 
+        // Get notifications for the user
+        const notifications = await Notification.find({
+            user: req.user._id,
+            read: false
+        }).lean();
+
+        // Create a map of evaluation IDs to notification IDs
+        const notificationMap = notifications.reduce((acc, notification) => {
+            if (notification.evaluationId) {
+                acc[notification.evaluationId.toString()] = notification._id;
+            }
+            return acc;
+        }, {});
+
         // Get counts
         console.log('Getting pending evaluations for user:', req.user._id);
         console.log('User role:', req.user.role);
@@ -119,11 +133,47 @@ export const getDashboardStats = async (req, res) => {
             evaluationQueryUpcoming.employee = req.user._id;
         }
 
+        // Get upcoming evaluations with notifications
         const upcomingEvaluations = await Evaluation.find(evaluationQueryUpcoming)
             .populate('employee', 'name')
+            .populate('evaluator', 'name')
             .populate('template', 'name')
-            .sort('scheduledDate')
-            .limit(5);
+            .lean();
+
+        // Create notifications for evaluations that don't have one
+        const notificationsToCreate = [];
+        const evaluationsWithNotifications = await Promise.all(upcomingEvaluations.map(async (evaluation) => {
+            // Check if notification exists
+            let notification = await Notification.findOne({
+                evaluationId: evaluation._id,
+                user: req.user._id,
+                read: false
+            });
+
+            // If no notification exists, create one
+            if (!notification) {
+                notification = new Notification({
+                    user: req.user._id,
+                    store: req.user.store._id,
+                    type: 'evaluation',
+                    priority: 'high',
+                    title: 'Upcoming Evaluation',
+                    message: `You have an evaluation scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`,
+                    evaluationId: evaluation._id
+                });
+                notificationsToCreate.push(notification);
+            }
+
+            return {
+                ...evaluation,
+                notificationId: notification._id
+            };
+        }));
+
+        // Save all new notifications in bulk
+        if (notificationsToCreate.length > 0) {
+            await Notification.insertMany(notificationsToCreate);
+        }
 
         // Get recent activity
         const recentActivity = await Evaluation.find({
@@ -143,12 +193,7 @@ export const getDashboardStats = async (req, res) => {
             activeTemplates,
             openDisciplinaryIncidents,
             resolvedDisciplinaryThisMonth,
-            upcomingEvaluations: upcomingEvaluations.map(evaluation => ({
-                _id: evaluation._id,
-                employeeName: evaluation.employee?.name || 'Unknown Employee',
-                templateName: evaluation.template?.name || 'No Template',
-                scheduledDate: evaluation.scheduledDate
-            })),
+            upcomingEvaluations: evaluationsWithNotifications,
             recentActivity: recentActivity.map(activity => ({
                 id: activity._id,
                 type: activity.status,
