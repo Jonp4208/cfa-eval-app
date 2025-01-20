@@ -379,8 +379,8 @@ export default function DisciplinaryPage() {
                     {incident.status === 'Resolved' && (
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="flex items-center gap-2 flex-1 sm:flex-initial justify-center h-10 px-4"
+                        size="icon"
+                        className="h-10 w-10 rounded-full text-[#E51636] hover:text-[#E51636] hover:bg-[#E51636]/10"
                         onClick={async (e) => {
                           e.stopPropagation();
                           try {
