@@ -88,41 +88,16 @@ export default function IncidentDetail() {
   const renderActionButton = () => {
     if (!incident) return null;
 
-    console.log('Debug visibility conditions:', {
-      user: user?._id,
-      employee: incident?.employee?._id,
-      isEmployee,
-      status: incident?.status,
-      shouldShowButton: isEmployee && incident.status === 'Pending Acknowledgment',
-      userRole: user?.role
-    });
-
-    if (isEmployee) {
-      if (incident.status === 'Pending Acknowledgment') {
-        return (
-          <Button
-            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white"
-            onClick={handleAcknowledge}
-          >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Acknowledge Incident
-          </Button>
-        );
-      }
-    }
-
-    if (isManager) {
-      if (incident.status === 'Pending Follow-up') {
-        return (
-          <Button
-            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white"
-            onClick={handleScheduleFollowUp}
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Schedule Follow-up
-          </Button>
-        );
-      }
+    if (isManager && incident.status === 'Pending Follow-up') {
+      return (
+        <Button
+          className="bg-[#E51636] hover:bg-[#E51636]/90 text-white"
+          onClick={handleScheduleFollowUp}
+        >
+          <Calendar className="w-4 h-4 mr-2" />
+          Schedule Follow-up
+        </Button>
+      );
     }
 
     return null;
@@ -193,6 +168,15 @@ export default function IncidentDetail() {
                     <p className="text-lg font-medium text-[#27251F]">{incident.status}</p>
                   </div>
                 </div>
+                {isEmployee && incident.status === 'Pending Acknowledgment' && (
+                  <Button
+                    className="bg-[#E51636] hover:bg-[#E51636]/90 text-white mt-4"
+                    onClick={handleAcknowledge}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Acknowledge Incident
+                  </Button>
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-3">
