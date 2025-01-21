@@ -66,7 +66,7 @@ export default function Evaluations() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showNotification } = useNotification();
-  const [view, setView] = useState<'all' | 'pending' | 'completed'>('pending');
+  const [view, setView] = useState<'all' | 'pending' | 'completed'>(user?.position === 'Team Member' ? 'all' : 'pending');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
@@ -393,8 +393,8 @@ export default function Evaluations() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#F7F7F7]">
+      <div className="container mx-auto py-8 space-y-6">
         {/* Header Section */}
         <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
@@ -476,34 +476,36 @@ export default function Evaluations() {
                   Completed
                 </Button>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium bg-white hover:bg-gray-50 text-[#27251F] flex items-center gap-2"
-                  >
-                    <Filter className="w-5 h-5" />
-                    Filter
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="p-2">
-                    <h3 className="font-medium text-sm mb-2">Department</h3>
-                    <select
-                      className="w-full p-2 rounded-lg border border-gray-200"
-                      value={departmentFilter}
-                      onChange={(e) => setDepartmentFilter(e.target.value)}
+              {user?.position !== 'Team Member' && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      className="h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium bg-white hover:bg-gray-50 text-[#27251F] flex items-center gap-2"
                     >
-                      <option value="all">All Departments</option>
-                      {departments.map((dept) => (
-                        <option key={dept.value} value={dept.value}>
-                          {dept.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      <Filter className="w-5 h-5" />
+                      Filter
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="p-2">
+                      <h3 className="font-medium text-sm mb-2">Department</h3>
+                      <select
+                        className="w-full p-2 rounded-lg border border-gray-200"
+                        value={departmentFilter}
+                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                      >
+                        <option value="all">All Departments</option>
+                        {departments.map((dept) => (
+                          <option key={dept.value} value={dept.value}>
+                            {dept.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </CardContent>
         </Card>
