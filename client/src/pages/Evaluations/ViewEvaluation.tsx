@@ -107,23 +107,27 @@ export default function ViewEvaluation() {
   }, [searchParams]);
 
   const getRatingText = (rating: string | number | undefined, gradingScale?: GradingScale): string => {
-    if (!rating && typeof rating !== 'number') {
-      return 'Performer'; // Default to Performer if no rating
+    if (!rating || !gradingScale) return '';
+
+    // Convert to number if it's a numeric string
+    const ratingNum = typeof rating === 'number' ? rating : Number(rating);
+    if (!isNaN(ratingNum)) {
+      const grade = gradingScale.grades.find(g => g.value === ratingNum);
+      return grade ? grade.label : '';
     }
 
     // If the rating is a string starting with "- ", return the rest of the string
     if (typeof rating === 'string' && rating.startsWith('- ')) {
-      return rating.substring(2); // Remove the "- " prefix
+      return rating.substring(2);
     }
 
-    // For numeric ratings, use the grading scale
-    if (gradingScale) {
-      const ratingNum = Number(rating);
-      const grade = gradingScale.grades.find(g => g.value === ratingNum);
-      return grade ? grade.label : 'Performer';
+    // For string ratings, try to find matching grade by label
+    if (typeof rating === 'string' && gradingScale) {
+      const grade = gradingScale.grades.find(g => rating.includes(g.label));
+      return grade ? grade.label : '';
     }
 
-    return 'Performer';
+    return '';
   };
 
   const getRatingColor = (rating: number | string, gradingScale?: GradingScale): string => {
@@ -562,6 +566,10 @@ export default function ViewEvaluation() {
   const getRatingValue = (rating: string | number | undefined, gradingScale?: GradingScale): number => {
     if (!rating || !gradingScale) return 0;
     if (typeof rating === 'number') return rating;
+    
+    // If the rating is a numeric string, convert it to a number
+    const numericValue = Number(rating);
+    if (!isNaN(numericValue)) return numericValue;
     
     // If we have a grading scale, find the grade by label
     const grade = gradingScale.grades.find(g => 
@@ -1130,7 +1138,7 @@ export default function ViewEvaluation() {
                                 <h3 className="font-medium text-lg text-[#27251F]">{section.title}</h3>
                                 {section.questions.map((question: Question, questionIndex: number) => {
                                   const employeeRating = evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`];
-                                  const managerRating = evaluation.managerEvaluation?.[`${sectionIndex}-${questionIndex}`];
+                                  const managerRating = answers[`${sectionIndex}-${questionIndex}`];
                                   const employeeColor = getRatingColor(employeeRating, question.gradingScale);
                                   const managerColor = getRatingColor(managerRating, question.gradingScale);
                                   const employeeValue = getRatingValue(employeeRating, question.gradingScale);
