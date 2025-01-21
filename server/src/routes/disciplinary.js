@@ -13,7 +13,8 @@ import {
   updateExistingIncidents,
   acknowledgeIncident,
   completeFollowUp,
-  sendDisciplinaryEmail
+  sendDisciplinaryEmail,
+  sendUnacknowledgedNotification
 } from '../controllers/disciplinary.js';
 
 const router = express.Router();
@@ -23,31 +24,23 @@ router.use(auth);
 
 // Debug middleware for route matching
 router.use((req, res, next) => {
-  console.log('Disciplinary Route URL:', req.url);
-  console.log('Disciplinary Route Method:', req.method);
+  console.log('Disciplinary Route Debug:', {
+    url: req.url,
+    method: req.method,
+    params: req.params,
+    path: req.path,
+    baseUrl: req.baseUrl
+  });
   next();
 });
-
-// Employee-specific route - MUST come before :id routes
-router.get('/employee/:employeeId', getEmployeeIncidents);
 
 // Base routes
 router.route('/')
   .get(getAllIncidents)
   .post(createIncident);
 
-// Document and follow-up routes
-router.post('/:id/follow-up', addFollowUp);
-router.post('/:id/document', addDocument);
-
-// Send email route
-router.post('/:id/send-email', sendDisciplinaryEmail);
-
-// Individual incident routes - MUST come last
-router.route('/:id')
-  .get(getIncidentById)
-  .put(updateIncident)
-  .delete(deleteIncident);
+// Employee-specific route
+router.get('/employee/:employeeId', getEmployeeIncidents);
 
 // Get all disciplinary incidents
 router.get('/all', getAllDisciplinaryIncidents);
@@ -55,8 +48,18 @@ router.get('/all', getAllDisciplinaryIncidents);
 // Update existing incidents with store field
 router.post('/update-store', updateExistingIncidents);
 
-// New routes for acknowledgment and follow-up completion
+// Specific action routes for incidents
 router.post('/:id/acknowledge', acknowledgeIncident);
+router.post('/:id/follow-up', addFollowUp);
+router.post('/:id/document', addDocument);
+router.post('/:id/send-email', sendDisciplinaryEmail);
+router.post('/:id/notify-unacknowledged', sendUnacknowledgedNotification);
 router.post('/:id/follow-up/:followUpId/complete', completeFollowUp);
+
+// Individual incident routes - MUST come last
+router.route('/:id')
+  .get(getIncidentById)
+  .put(updateIncident)
+  .delete(deleteIncident);
 
 export default router; 

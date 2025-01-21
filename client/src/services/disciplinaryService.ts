@@ -136,6 +136,12 @@ const disciplinaryService = {
   sendEmail: async (id: string): Promise<{ message: string }> => {
     const response = await api.post(`/api/disciplinary/${id}/send-email`);
     return response.data;
+  },
+
+  // Send unacknowledged notification
+  sendUnacknowledgedNotification: async (id: string): Promise<{ message: string }> => {
+    const response = await api.post(`/api/disciplinary/${id}/notify-unacknowledged`);
+    return response.data;
   }
 };
 

@@ -12,7 +12,8 @@ import {
   Filter,
   Search,
   Loader2,
-  Mail
+  Mail,
+  Bell
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import disciplinaryService, { DisciplinaryIncident } from '@/services/disciplinaryService';
@@ -147,6 +148,39 @@ export default function DisciplinaryPage() {
     navigate(`/disciplinary/${incidentId}`);
   };
 
+  const handleSendUnacknowledgedNotification = async (e: React.MouseEvent, incidentId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await disciplinaryService.sendUnacknowledgedNotification(incidentId);
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-50 text-green-600 px-6 py-4 rounded-xl shadow-lg z-50 flex items-center border border-green-100';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span class="font-medium">Acknowledgement reminder sent successfully</span>
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    } catch (error: any) {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-50 text-red-600 px-6 py-4 rounded-xl shadow-lg z-50 flex items-center border border-red-100';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <span class="font-medium">${error.response?.data?.message || 'Failed to send notification'}</span>
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -166,15 +200,6 @@ export default function DisciplinaryPage() {
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">Disciplinary Management</h1>
                 <p className="text-white/80 mt-2 text-lg">Track and manage disciplinary actions</p>
-              </div>
-              <div>
-                <Button 
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6"
-                  onClick={handleNewIncident}
-                >
-                  <AlertTriangle className="w-5 h-5 mr-2" />
-                  New Incident
-                </Button>
               </div>
             </div>
           </div>
@@ -243,59 +268,52 @@ export default function DisciplinaryPage() {
                 <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={filter === 'all' ? 'default' : 'outline'}
-                  onClick={() => setFilter('all')}
-                  className={`h-12 px-6 ${
-                    filter === 'all' 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={filter === 'open' ? 'default' : 'outline'}
-                  onClick={() => setFilter('open')}
-                  className={`h-12 px-6 ${
-                    filter === 'open' 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  Open
-                </Button>
-                <Button
-                  variant={filter === 'followup' ? 'default' : 'outline'}
-                  onClick={() => setFilter('followup')}
-                  className={`h-12 px-6 ${
-                    filter === 'followup' 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  Needs Follow-up
-                </Button>
-                <Button
-                  variant={filter === 'resolved' ? 'default' : 'outline'}
-                  onClick={() => setFilter('resolved')}
-                  className={`h-12 px-6 ${
-                    filter === 'resolved' 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  Resolved
-                </Button>
-              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex gap-2">
+                  <Button
+                    variant={filter === 'open' ? 'default' : 'outline'}
+                    onClick={() => setFilter('open')}
+                    className={`h-12 px-6 ${
+                      filter === 'open' 
+                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    variant={filter === 'in-progress' ? 'default' : 'outline'}
+                    onClick={() => setFilter('in-progress')}
+                    className={`h-12 px-6 ${
+                      filter === 'in-progress' 
+                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    In Progress
+                  </Button>
+                  <Button
+                    variant={filter === 'resolved' ? 'default' : 'outline'}
+                    onClick={() => setFilter('resolved')}
+                    className={`h-12 px-6 ${
+                      filter === 'resolved' 
+                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    Resolved
+                  </Button>
+                </div>
 
-              <Button 
-                className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6"
-                onClick={handleNewIncident}
-              >
-                New Incident
-              </Button>
+                {(user?.position === 'Position Leader' || user?.position === 'Director') && (
+                  <Button 
+                    className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6"
+                    onClick={handleNewIncident}
+                  >
+                    New Incident
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -376,6 +394,17 @@ export default function DisciplinaryPage() {
                       <FileText className="w-4 h-4" />
                       View Details
                     </Button>
+                    {incident.status === 'Pending Acknowledgment' && user?._id === incident.supervisor._id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 rounded-full text-[#E51636] hover:text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
+                        onClick={(e) => handleSendUnacknowledgedNotification(e, incident._id)}
+                        title="Send acknowledgement reminder"
+                      >
+                        <Bell className="h-4 w-4" />
+                      </Button>
+                    )}
                     {incident.status === 'Resolved' && (
                       <Button
                         variant="ghost"
@@ -414,7 +443,7 @@ export default function DisciplinaryPage() {
                         }}
                         title="Send incident details to store email"
                       >
-                        <Mail className="w-4 h-4" />
+                        <Mail className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
