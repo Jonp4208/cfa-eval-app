@@ -254,69 +254,69 @@ export default function DisciplinaryPage() {
         </div>
 
         {/* Search and Filters Card */}
-        <Card className="bg-white">
-          <CardContent className="p-4">
-            <div className="flex flex-col lg:flex-row gap-4 items-center">
-              <div className="flex-1 relative w-full">
-                <Input
-                  type="text"
-                  placeholder="Search by employee, position, department..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-12 pl-10 pr-4 w-full bg-white border-gray-200"
-                />
-                <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex gap-2">
-                  <Button
-                    variant={filter === 'open' ? 'default' : 'outline'}
-                    onClick={() => setFilter('open')}
-                    className={`h-12 px-6 ${
-                      filter === 'open' 
-                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    Open
-                  </Button>
-                  <Button
-                    variant={filter === 'in-progress' ? 'default' : 'outline'}
-                    onClick={() => setFilter('in-progress')}
-                    className={`h-12 px-6 ${
-                      filter === 'in-progress' 
-                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    In Progress
-                  </Button>
-                  <Button
-                    variant={filter === 'resolved' ? 'default' : 'outline'}
-                    onClick={() => setFilter('resolved')}
-                    className={`h-12 px-6 ${
-                      filter === 'resolved' 
-                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    Resolved
-                  </Button>
+        {(user?.position === 'Position Leader' || user?.position === 'Director') && (
+          <Card className="bg-white">
+            <CardContent className="p-4">
+              <div className="flex flex-col lg:flex-row gap-4 items-center">
+                <div className="flex-1 relative w-full">
+                  <Input
+                    type="text"
+                    placeholder="Search by employee, position, department..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-12 pl-10 pr-4 w-full bg-white border-gray-200"
+                  />
+                  <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 </div>
 
-                {(user?.position === 'Position Leader' || user?.position === 'Director') && (
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant={filter === 'open' ? 'default' : 'outline'}
+                      onClick={() => setFilter('open')}
+                      className={`h-12 px-6 ${
+                        filter === 'open' 
+                          ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      Open
+                    </Button>
+                    <Button
+                      variant={filter === 'in-progress' ? 'default' : 'outline'}
+                      onClick={() => setFilter('in-progress')}
+                      className={`h-12 px-6 ${
+                        filter === 'in-progress' 
+                          ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      In Progress
+                    </Button>
+                    <Button
+                      variant={filter === 'resolved' ? 'default' : 'outline'}
+                      onClick={() => setFilter('resolved')}
+                      className={`h-12 px-6 ${
+                        filter === 'resolved' 
+                          ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      Resolved
+                    </Button>
+                  </div>
+
                   <Button 
                     className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6"
                     onClick={handleNewIncident}
                   >
                     New Incident
                   </Button>
-                )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Incidents List */}
         <div className="space-y-4">
