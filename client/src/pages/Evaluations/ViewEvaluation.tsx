@@ -709,6 +709,118 @@ export default function ViewEvaluation() {
               </Card>
             )}
 
+            {/* Self Evaluation Form */}
+            {isEmployee && evaluation.status === 'pending_self_evaluation' && (
+              <>
+                <div className="mb-8">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-medium text-[#27251F]">Question {getCurrentQuestionNumber()} of {totalQuestions}</h3>
+                    <span className="text-sm text-[#27251F]/60">{Math.round((getCurrentQuestionNumber() / totalQuestions) * 100)}%</span>
+                  </div>
+                  <Progress 
+                    value={(getCurrentQuestionNumber() / totalQuestions) * 100} 
+                    className="h-2 bg-[#27251F]/10 rounded-full [&>div]:bg-[#E51636] [&>div]:rounded-full"
+                  />
+                </div>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (validateAnswers()) {
+                    submitSelfEvaluation.mutate();
+                  }
+                }}>
+                  {validationErrors.length > 0 && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                      <h4 className="text-red-800 font-medium mb-2">Please complete all required questions before submitting</h4>
+                      <ul className="list-disc list-inside text-sm text-red-600">
+                        {validationErrors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Current Question Display */}
+                  <div className="space-y-6 mb-8">
+                    <div className="bg-white rounded-xl p-6 border border-gray-200">
+                      {/* Question */}
+                      <div className="mb-6">
+                        <h3 className="text-lg font-medium text-[#27251F] mb-4">
+                          {evaluation.template.sections[currentQuestionIndex.section]
+                            .questions[currentQuestionIndex.question].text}
+                        </h3>
+                      </div>
+
+                      {/* Rating Input */}
+                      <div>
+                        <select
+                          value={answers[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`] || ''}
+                          onChange={(e) => handleAnswerChange(currentQuestionIndex.section, currentQuestionIndex.question, e.target.value)}
+                          className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent bg-white"
+                        >
+                          <option value="">Select a rating</option>
+                          {evaluation.template.sections[currentQuestionIndex.section]
+                            .questions[currentQuestionIndex.question].gradingScale?.grades.map((grade: Grade) => (
+                            <option key={grade.value} value={grade.value}>
+                              {grade.value} - {grade.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between items-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const prev = getPreviousQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
+                          if (prev) setCurrentQuestionIndex(prev);
+                        }}
+                        disabled={currentQuestionIndex.section === 0 && currentQuestionIndex.question === 0}
+                        className="h-12 px-6 rounded-2xl"
+                      >
+                        Previous Question
+                      </Button>
+                      
+                      <div className="flex gap-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => saveDraft.mutate()}
+                          disabled={saveDraft.isPending}
+                          className="h-12 px-6 rounded-2xl"
+                        >
+                          {saveDraft.isPending ? 'Saving...' : 'Save Draft'}
+                        </Button>
+                        
+                        {getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question) ? (
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              const next = getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
+                              if (next) setCurrentQuestionIndex(next);
+                            }}
+                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                          >
+                            Next Question
+                          </Button>
+                        ) : (
+                          <Button
+                            type="submit"
+                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                          >
+                            Submit Evaluation
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </>
+            )}
+
             {/* Manager Review Session Notice */}
             {isManager && evaluation.status === 'pending_manager_review' && !showScheduleReview && (
               <Card className="mb-8 bg-yellow-50 border-yellow-200 rounded-[20px]">
