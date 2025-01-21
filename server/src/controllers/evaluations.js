@@ -610,17 +610,22 @@ export const scheduleReviewSession = async (req, res) => {
 // Complete manager evaluation
 export const completeManagerEvaluation = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { evaluationId } = req.params;
         const { managerEvaluation, overallComments } = req.body;
 
-        const evaluation = await Evaluation.findById(id)
-            .populate('employee')
-            .populate('evaluator')
-            .populate('store')
-            .populate('template');
+        const evaluation = await Evaluation.findOne({
+            _id: evaluationId,
+            evaluator: req.user._id,
+            store: req.user.store._id,
+            status: { $in: ['pending_manager_review', 'in_review_session'] }
+        })
+        .populate('employee')
+        .populate('evaluator')
+        .populate('store')
+        .populate('template');
 
         if (!evaluation) {
-            return res.status(404).json({ message: 'Evaluation not found' });
+            return res.status(404).json({ message: 'Evaluation not found or not in valid state for completion' });
         }
 
         // Update evaluation
@@ -638,7 +643,7 @@ export const completeManagerEvaluation = async (req, res) => {
             type: 'evaluation_completed',
             priority: 'high',
             title: 'Evaluation Completed',
-            message: `Your evaluation has been completed by ${evaluation.evaluator.firstName} ${evaluation.evaluator.lastName}`,
+            message: `Your evaluation has been completed by ${evaluation.evaluator.name}`,
             evaluationId: evaluation._id
         });
 
@@ -650,7 +655,7 @@ export const completeManagerEvaluation = async (req, res) => {
         });
     } catch (error) {
         console.error('Error completing manager evaluation:', error);
-        res.status(500).json({ message: 'Failed to complete evaluation' });
+        res.status(500).json({ message: 'Failed to complete evaluation', error: error.message });
     }
 };
 
