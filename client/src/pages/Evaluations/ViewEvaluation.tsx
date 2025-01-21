@@ -856,7 +856,7 @@ export default function ViewEvaluation() {
                     </div>
 
                     {/* Navigation Buttons */}
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 w-full">
                       <Button
                         type="button"
                         variant="outline"
@@ -865,18 +865,18 @@ export default function ViewEvaluation() {
                           if (prev) setCurrentQuestionIndex(prev);
                         }}
                         disabled={currentQuestionIndex.section === 0 && currentQuestionIndex.question === 0}
-                        className="h-12 px-6 rounded-2xl"
+                        className="w-full md:w-auto h-12 px-6 rounded-2xl"
                       >
                         Previous Question
                       </Button>
                       
-                      <div className="flex gap-4">
+                      <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                         <Button
                           type="button"
                           variant="outline"
                           onClick={() => saveDraft.mutate()}
                           disabled={saveDraft.isPending}
-                          className="h-12 px-6 rounded-2xl"
+                          className="w-full md:w-auto h-12 px-6 rounded-2xl"
                         >
                           {saveDraft.isPending ? 'Saving...' : 'Save Draft'}
                         </Button>
@@ -888,14 +888,14 @@ export default function ViewEvaluation() {
                               const next = getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
                               if (next) setCurrentQuestionIndex(next);
                             }}
-                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                            className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                           >
                             Next Question
                           </Button>
                         ) : (
                           <Button
                             type="submit"
-                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                            className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                           >
                             Submit Evaluation
                           </Button>
@@ -1018,7 +1018,7 @@ export default function ViewEvaluation() {
                       </div>
 
                       {/* Navigation and Finalize Buttons */}
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 w-full">
                         <Button
                           type="button"
                           variant="outline"
@@ -1027,18 +1027,18 @@ export default function ViewEvaluation() {
                             if (prev) setCurrentQuestionIndex(prev);
                           }}
                           disabled={currentQuestionIndex.section === 0 && currentQuestionIndex.question === 0}
-                          className="h-12 px-6 rounded-2xl"
+                          className="w-full md:w-auto h-12 px-6 rounded-2xl"
                         >
                           Previous Question
                         </Button>
                         
-                        <div className="flex gap-4">
+                        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => saveDraft.mutate()}
                             disabled={saveDraft.isPending}
-                            className="h-12 px-6 rounded-2xl"
+                            className="w-full md:w-auto h-12 px-6 rounded-2xl"
                           >
                             {saveDraft.isPending ? 'Saving...' : 'Save Draft'}
                           </Button>
@@ -1050,7 +1050,7 @@ export default function ViewEvaluation() {
                                 const next = getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
                                 if (next) setCurrentQuestionIndex(next);
                               }}
-                              className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                              className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                             >
                               Next Question
                             </Button>
@@ -1058,7 +1058,7 @@ export default function ViewEvaluation() {
                             <Button
                               type="button"
                               onClick={() => setShowSummary(true)}
-                              className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                              className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                             >
                               Finalize Review
                             </Button>
