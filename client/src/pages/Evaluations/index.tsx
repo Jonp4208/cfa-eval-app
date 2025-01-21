@@ -404,22 +404,22 @@ export default function Evaluations() {
                 <h1 className="text-3xl md:text-4xl font-bold">Evaluations</h1>
                 <p className="text-white/80 mt-2 text-lg">Manage and track team performance</p>
               </div>
-              <div className="flex flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 {user?.role === 'admin' && (
                   <Button 
                     variant="secondary"
-                    className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
+                    className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"
                     onClick={() => navigate('/templates')}
                   >
-                    <FileText className="w-5 h-5" />
+                    <FileText className="w-5 h-5 mr-2" />
                     Manage Templates
                   </Button>
                 )}
                 <Button 
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 flex-1 md:flex-none"
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
                   onClick={() => navigate('/evaluations/new')}
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-5 h-5 mr-2" />
                   New Evaluation
                 </Button>
               </div>
