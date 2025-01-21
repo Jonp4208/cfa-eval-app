@@ -624,7 +624,7 @@ export const completeManagerEvaluation = async (req, res) => {
         }
 
         // Update evaluation
-        evaluation.managerEvaluation = managerEvaluation;
+        evaluation.managerEvaluation = new Map(Object.entries(managerEvaluation));
         evaluation.overallComments = overallComments;
         evaluation.status = 'completed';
         evaluation.completedDate = new Date();
