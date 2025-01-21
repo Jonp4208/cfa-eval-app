@@ -65,7 +65,7 @@ export const createEvaluation = async (req, res) => {
                 overallComments,
                 developmentPlan,
                 sectionResults,
-                status: 'scheduled'
+                status: 'pending_self_evaluation'
             });
 
             await evaluation.save();
