@@ -35,11 +35,20 @@ export default function IncidentDetail() {
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
   const [selectedFollowUpId, setSelectedFollowUpId] = useState<string>();
 
+  const isEmployee = user?._id === incident?.employee?._id;
+  const isManager = user?._id === incident?.supervisor?._id || user?.role === 'admin';
+
   useEffect(() => {
     if (id) {
       loadIncident();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (!isManager && activeTab !== 'details') {
+      setActiveTab('details');
+    }
+  }, [isManager, activeTab]);
 
   const loadIncident = async () => {
     try {
@@ -75,9 +84,6 @@ export default function IncidentDetail() {
     setSelectedFollowUpId(followUpId);
     setShowFollowUpDialog(true);
   };
-
-  const isEmployee = user?._id === incident?.employee?._id;
-  const isManager = user?._id === incident?.supervisor?._id || user?.role === 'admin';
 
   const renderActionButton = () => {
     if (!incident) return null;
@@ -201,26 +207,46 @@ export default function IncidentDetail() {
 
             {/* Navigation Buttons */}
             <div className="flex flex-wrap gap-4">
-              {[
-                { id: 'details', label: 'Details', icon: FileText },
-                { id: 'history', label: 'History', icon: History },
-                { id: 'followups', label: 'Follow-ups', icon: Clock },
-                { id: 'documents', label: 'Documents', icon: Eye }
-              ].map((tab) => (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? 'default' : 'outline'}
-                  className={`h-12 px-6 ${
-                    activeTab === tab.id 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
-                      : 'border-[#27251F]/10 hover:bg-gray-100'
-                  }`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <tab.icon className="w-4 h-4 mr-2" />
-                  {tab.label}
-                </Button>
-              ))}
+              {isManager && (
+                <>
+                  <Button
+                    variant={activeTab === 'history' ? 'default' : 'outline'}
+                    className={`h-12 px-6 ${
+                      activeTab === 'history' 
+                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                        : 'border-[#27251F]/10 hover:bg-gray-100'
+                    }`}
+                    onClick={() => setActiveTab('history')}
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    History
+                  </Button>
+                  <Button
+                    variant={activeTab === 'followups' ? 'default' : 'outline'}
+                    className={`h-12 px-6 ${
+                      activeTab === 'followups' 
+                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                        : 'border-[#27251F]/10 hover:bg-gray-100'
+                    }`}
+                    onClick={() => setActiveTab('followups')}
+                  >
+                    <Clock className="w-4 h-4 mr-2" />
+                    Follow-ups
+                  </Button>
+                  <Button
+                    variant={activeTab === 'documents' ? 'default' : 'outline'}
+                    className={`h-12 px-6 ${
+                      activeTab === 'documents' 
+                        ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                        : 'border-[#27251F]/10 hover:bg-gray-100'
+                    }`}
+                    onClick={() => setActiveTab('documents')}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Documents
+                  </Button>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -325,133 +351,137 @@ export default function IncidentDetail() {
             </>
           )}
 
-          {activeTab === 'history' && (
-            <Card className="bg-white rounded-[20px] shadow-sm">
-              <CardContent className="p-8">
-                <h2 className="text-lg font-semibold mb-6">Incident History</h2>
-                <div className="space-y-4">
-                  {incident.followUps.map((followUp) => (
-                    <div key={followUp._id} className="border-l-2 border-red-600 pl-4 pb-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">Follow-up</p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(followUp.date).toLocaleDateString()}
-                          </p>
+          {isManager && (
+            <>
+              {activeTab === 'history' && (
+                <Card className="bg-white rounded-[20px] shadow-sm">
+                  <CardContent className="p-8">
+                    <h2 className="text-lg font-semibold mb-6">Incident History</h2>
+                    <div className="space-y-4">
+                      {incident.followUps.map((followUp) => (
+                        <div key={followUp._id} className="border-l-2 border-red-600 pl-4 pb-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">Follow-up</p>
+                              <p className="text-sm text-gray-500">
+                                {new Date(followUp.date).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              By {followUp.by.name}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-gray-600">{followUp.note}</p>
                         </div>
-                        <span className="text-sm text-gray-500">
-                          By {followUp.by.name}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-gray-600">{followUp.note}</p>
+                      ))}
+
+                      {incident.followUps.length === 0 && (
+                        <p className="text-gray-500 text-center py-4">No history available</p>
+                      )}
                     </div>
-                  ))}
+                  </CardContent>
+                </Card>
+              )}
 
-                  {incident.followUps.length === 0 && (
-                    <p className="text-gray-500 text-center py-4">No history available</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'followups' && (
-            <Card className="bg-white rounded-[20px] shadow-sm">
-              <CardContent className="p-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold">Follow-up Actions</h2>
-                  {isManager && incident.status === 'Pending Follow-up' && (
-                    <Button 
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={handleScheduleFollowUp}
-                    >
-                      Schedule Follow-up
-                    </Button>
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {incident.followUps.map((followUp) => (
-                    <div key={followUp._id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{new Date(followUp.date).toLocaleDateString()}</p>
-                          <p className="text-sm text-gray-500">
-                            By {followUp.by.name}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded-full text-sm ${
-                            followUp.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {followUp.status}
-                          </span>
-                          {isManager && followUp.status === 'Pending' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCompleteFollowUp(followUp._id)}
-                            >
-                              Complete
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-gray-600">{followUp.note}</p>
+              {activeTab === 'followups' && (
+                <Card className="bg-white rounded-[20px] shadow-sm">
+                  <CardContent className="p-8">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold">Follow-up Actions</h2>
+                      {isManager && incident.status === 'Pending Follow-up' && (
+                        <Button 
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={handleScheduleFollowUp}
+                        >
+                          Schedule Follow-up
+                        </Button>
+                      )}
                     </div>
-                  ))}
-
-                  {incident.followUps.length === 0 && (
-                    <p className="text-gray-500 text-center py-4">No follow-ups recorded</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'documents' && (
-            <Card className="bg-white rounded-[20px] shadow-sm">
-              <CardContent className="p-8">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold">Related Documents</h2>
-                  <Button 
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={() => {
-                      // TODO: Implement document upload dialog
-                      toast.info('Document upload coming soon');
-                    }}
-                  >
-                    Upload Document
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {incident.documents.map((doc) => (
-                    <div key={doc._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="font-medium">{doc.name}</p>
-                          <p className="text-sm text-gray-500">
-                            Added by {doc.uploadedBy.name} on{' '}
-                            {new Date(doc.createdAt).toLocaleDateString()}
-                          </p>
+                    <div className="space-y-4">
+                      {incident.followUps.map((followUp) => (
+                        <div key={followUp._id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="font-medium">{new Date(followUp.date).toLocaleDateString()}</p>
+                              <p className="text-sm text-gray-500">
+                                By {followUp.by.name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded-full text-sm ${
+                                followUp.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {followUp.status}
+                              </span>
+                              {isManager && followUp.status === 'Pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCompleteFollowUp(followUp._id)}
+                                >
+                                  Complete
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-gray-600">{followUp.note}</p>
                         </div>
-                      </div>
+                      ))}
+
+                      {incident.followUps.length === 0 && (
+                        <p className="text-gray-500 text-center py-4">No follow-ups recorded</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {activeTab === 'documents' && (
+                <Card className="bg-white rounded-[20px] shadow-sm">
+                  <CardContent className="p-8">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-lg font-semibold">Related Documents</h2>
                       <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => window.open(doc.url, '_blank')}
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => {
+                          // TODO: Implement document upload dialog
+                          toast.info('Document upload coming soon');
+                        }}
                       >
-                        View
+                        Upload Document
                       </Button>
                     </div>
-                  ))}
+                    <div className="space-y-2">
+                      {incident.documents.map((doc) => (
+                        <div key={doc._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-gray-400" />
+                            <div>
+                              <p className="font-medium">{doc.name}</p>
+                              <p className="text-sm text-gray-500">
+                                Added by {doc.uploadedBy.name} on{' '}
+                                {new Date(doc.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => window.open(doc.url, '_blank')}
+                          >
+                            View
+                          </Button>
+                        </div>
+                      ))}
 
-                  {incident.documents.length === 0 && (
-                    <p className="text-gray-500 text-center py-4">No documents attached</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                      {incident.documents.length === 0 && (
+                        <p className="text-gray-500 text-center py-4">No documents attached</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </div>
       </div>
