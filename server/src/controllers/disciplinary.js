@@ -564,4 +564,42 @@ export const sendDisciplinaryEmail = handleAsync(async (req, res) => {
   });
 
   res.json({ message: 'Email sent successfully' });
+});
+
+// Send notification for unacknowledged disciplinary incident
+export const sendUnacknowledgedNotification = handleAsync(async (req, res) => {
+  const { id } = req.params;
+  
+  console.log('Attempting to send unacknowledged notification for incident:', id);
+
+  const incident = await Disciplinary.findOne({
+    _id: id,
+    status: 'Pending Acknowledgment',
+    $or: [
+      { 'acknowledgment.acknowledged': false },
+      { 'acknowledgment.acknowledged': { $exists: false } }
+    ]
+  })
+  .populate('employee', 'name')
+  .populate('supervisor', 'name');
+
+  if (!incident) {
+    throw new ApiError(404, 'Incident not found or already acknowledged');
+  }
+
+  // Create notification for the employee
+  await Notification.create({
+    user: incident.employee._id,
+    store: req.user.store._id,
+    type: 'disciplinary',
+    priority: 'high',
+    title: 'Disciplinary Acknowledgement Required',
+    message: `Please acknowledge the ${incident.severity.toLowerCase()} disciplinary incident regarding ${incident.type.toLowerCase()}.`,
+    relatedId: incident._id,
+    relatedModel: 'Disciplinary'
+  });
+
+  res.json({ 
+    message: 'Notification sent successfully'
+  });
 }); 
