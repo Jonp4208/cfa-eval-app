@@ -173,15 +173,50 @@ export default function ViewEvaluation() {
   const getNextQuestionIndices = (currentSection: number, currentQuestion: number) => {
     if (!evaluation) return null;
     
-    const section = evaluation.template.sections[currentSection];
-    if (currentQuestion + 1 < section.questions.length) {
-      return { section: currentSection, question: currentQuestion + 1 };
+    // Start searching from the current position
+    let section = currentSection;
+    let question = currentQuestion + 1;
+
+    // Search through all sections and questions
+    while (section < evaluation.template.sections.length) {
+      const currentSectionQuestions = evaluation.template.sections[section].questions;
+      
+      while (question < currentSectionQuestions.length) {
+        // Check if this question is unanswered
+        const key = `${section}-${question}`;
+        if (!answers[key]) {
+          return { section, question };
+        }
+        question++;
+      }
+      
+      // Move to next section
+      section++;
+      question = 0;
+    }
+
+    // If we get here, check from the beginning up to current position
+    section = 0;
+    question = 0;
+
+    while (section <= currentSection) {
+      const currentSectionQuestions = evaluation.template.sections[section].questions;
+      const maxQuestion = (section === currentSection) ? currentQuestion : currentSectionQuestions.length;
+      
+      while (question < maxQuestion) {
+        // Check if this question is unanswered
+        const key = `${section}-${question}`;
+        if (!answers[key]) {
+          return { section, question };
+        }
+        question++;
+      }
+      
+      section++;
+      question = 0;
     }
     
-    if (currentSection + 1 < evaluation.template.sections.length) {
-      return { section: currentSection + 1, question: 0 };
-    }
-    
+    // If no unanswered questions found, return null
     return null;
   };
 
@@ -338,29 +373,72 @@ export default function ViewEvaluation() {
   // Save draft mutation
   const saveDraft = useMutation({
     mutationFn: async () => {
-      const payload = isEmployee 
-        ? { selfEvaluation: answers }
-        : { 
-            managerEvaluation: answers,
-            overallComments 
-          };
-      
-      const response = await api.post(`/api/evaluations/${id}/save-draft`, payload);
-      return response.data;
+      if (isEmployee) {
+        await api.post(`/api/evaluations/${id}/self-evaluation`, {
+          selfEvaluation: answers,
+          preventStatusChange: true
+        });
+      } else {
+        await api.post(`/api/evaluations/${id}/save-draft`, {
+          managerEvaluation: answers,
+          overallComments
+        });
+      }
     },
     onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Draft saved successfully',
+      // Create and show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-[9999] flex items-center transform transition-all duration-300 translate-y-0';
+      notification.style.cssText = 'position: fixed; top: 1rem; right: 1rem; z-index: 9999;';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Draft saved successfully</span>
+      `;
+      document.body.appendChild(notification);
+
+      // Add entrance animation
+      requestAnimationFrame(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
       });
-      navigate('/evaluations');
+
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+
+      // Refetch the evaluation data to update the UI
+      refetch();
     },
     onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to save draft',
-        variant: 'destructive',
+      // Create and show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-xl shadow-lg z-[9999] flex items-center transform transition-all duration-300 translate-y-0';
+      notification.style.cssText = 'position: fixed; top: 1rem; right: 1rem; z-index: 9999;';
+      notification.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        <span>${error.response?.data?.message || 'Failed to save draft'}</span>
+      `;
+      document.body.appendChild(notification);
+
+      // Add entrance animation
+      requestAnimationFrame(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
       });
+
+      // Remove the notification after 3 seconds
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
     }
   });
 
