@@ -185,6 +185,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       badge: null
     },
     {
+      icon: BarChart,
+      label: 'Analytics',
+      href: '/analytics',
+      show: user?.position !== 'Team Member',
+      badge: null
+    },
+    {
       icon: TrendingUp,
       label: 'Developmental',
       href: '/future',

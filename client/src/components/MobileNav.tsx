@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, TrendingUp, ClipboardList, Settings } from 'lucide-react';
+import { Home, Users, TrendingUp, ClipboardList, Settings, BarChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -25,6 +25,11 @@ export function MobileNav() {
       label: user?.position === 'Team Member' ? 'My Evaluations' : 'Evaluations',
       href: '/evaluations',
     },
+    ...(user?.position !== 'Team Member' ? [{
+      icon: BarChart,
+      label: 'Analytics',
+      href: '/analytics',
+    }] : []),
     {
       icon: Settings,
       label: 'Settings',
