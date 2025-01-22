@@ -640,18 +640,23 @@ export const completeManagerEvaluation = async (req, res) => {
         const notification = new Notification({
             user: evaluation.employee._id,
             store: evaluation.store._id,
-            type: 'evaluation_completed',
+            type: 'evaluation',
             priority: 'high',
             title: 'Evaluation Completed',
             message: `Your evaluation has been completed by ${evaluation.evaluator.name}`,
-            evaluationId: evaluation._id
+            relatedId: evaluation._id,
+            relatedModel: 'Evaluation'
         });
 
         await notification.save();
 
+        // Convert Map to object for response
+        const evaluationResponse = evaluation.toObject();
+        evaluationResponse.managerEvaluation = Object.fromEntries(evaluation.managerEvaluation);
+
         res.json({ 
             message: 'Evaluation completed successfully',
-            evaluation
+            evaluation: evaluationResponse
         });
     } catch (error) {
         console.error('Error completing manager evaluation:', error);
