@@ -68,6 +68,7 @@ interface DepartmentData {
 export function DepartmentReport() {
   const [department, setDepartment] = useState<'foh' | 'boh'>('foh');
   const [timeframe, setTimeframe] = useState('month');
+  const [showSetupGuide, setShowSetupGuide] = useState(true);
 
   const { data, isLoading } = useQuery({
     queryKey: ['department-report', department, timeframe],
@@ -122,6 +123,59 @@ export function DepartmentReport() {
     return (
       <div className="space-y-6">
         <AnalyticsPageHeader title="Department Reports" />
+        
+        {showSetupGuide && (
+          <Card className="bg-yellow-50 border-yellow-200">
+            <CardHeader>
+              <CardTitle className="text-yellow-800 flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Template Setup Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-yellow-800 space-y-4">
+                <p>To use department reports, your evaluation templates need specific sections based on the department:</p>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold mb-2">Front of House (FOH) Template:</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Guest Service</li>
+                      <li>Speed of Service</li>
+                      <li>Order Accuracy</li>
+                      <li>Cleanliness</li>
+                      <li>Team Collaboration</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold mb-2">Back of House (BOH) Template:</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Food Safety</li>
+                      <li>Food Quality</li>
+                      <li>Kitchen Efficiency</li>
+                      <li>Cleanliness</li>
+                      <li>Team Collaboration</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <p>Each section should have criteria with numerical ratings to generate accurate reports.</p>
+                
+                <div className="flex justify-end">
+                  <Button 
+                    variant="outline" 
+                    className="text-yellow-800 hover:text-yellow-900"
+                    onClick={() => setShowSetupGuide(false)}
+                  >
+                    Got it
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex gap-4 mb-6">
           <button
             onClick={() => setDepartment('foh')}
@@ -159,6 +213,56 @@ export function DepartmentReport() {
 
   return (
     <div className="space-y-6">
+      {showSetupGuide && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardHeader>
+            <CardTitle className="text-yellow-800 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Template Setup Guide
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-yellow-800 space-y-4">
+              <p>To get the most accurate reports, ensure your evaluation templates have these sections:</p>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold mb-2">Front of House (FOH) Template:</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Guest Service</li>
+                    <li>Speed of Service</li>
+                    <li>Order Accuracy</li>
+                    <li>Cleanliness</li>
+                    <li>Team Collaboration</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold mb-2">Back of House (BOH) Template:</h3>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Food Safety</li>
+                    <li>Food Quality</li>
+                    <li>Kitchen Efficiency</li>
+                    <li>Cleanliness</li>
+                    <li>Team Collaboration</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  className="text-yellow-800 hover:text-yellow-900"
+                  onClick={() => setShowSetupGuide(false)}
+                >
+                  Got it
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <AnalyticsPageHeader title="Department Reports" />
       
       {/* Department Selection */}
