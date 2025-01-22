@@ -437,48 +437,151 @@ export function DepartmentReport() {
         </Card>
 
         {/* Top Performers */}
-        <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-[#27251F]">Top Performers</CardTitle>
-            <p className="text-[#27251F]/60 mt-1">Highest rated team members</p>
-          </CardHeader>
-          <CardContent>
-            {departmentMetrics?.topPerformers?.length > 0 ? (
-              <div className="grid gap-4">
-                {departmentMetrics.topPerformers.map((performer) => (
-                  <div
-                    key={performer.id}
-                    className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 bg-[#E51636]/10 rounded-xl flex items-center justify-center">
-                          <Star className="w-6 h-6 text-[#E51636]" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-[#27251F] flex items-center gap-2">
+                <Star className="w-6 h-6 text-[#E51636]" />
+                Top Performers
+              </CardTitle>
+              <p className="text-[#27251F]/60 mt-1">Highest rated team members</p>
+            </CardHeader>
+            <CardContent>
+              {departmentMetrics?.topPerformers?.length > 0 ? (
+                <div className="grid gap-4">
+                  {departmentMetrics.topPerformers.map((performer, index) => (
+                    <div
+                      key={performer.id}
+                      className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <div className="h-12 w-12 bg-[#E51636]/10 rounded-xl flex items-center justify-center">
+                              <Star className="w-6 h-6 text-[#E51636]" />
+                            </div>
+                            {index < 3 && (
+                              <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#E51636] text-white flex items-center justify-center text-sm font-bold">
+                                {index + 1}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-[#27251F]">{performer.name}</h3>
+                            <p className="text-sm text-[#27251F]/60">{performer.position}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-medium text-[#27251F]">{performer.name}</h3>
-                          <p className="text-sm text-[#27251F]/60">{performer.position}</p>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2 justify-end">
+                            <div className={`px-2 py-1 rounded-lg text-sm font-medium ${
+                              performer.score >= 4.5 ? 'bg-green-100 text-green-800' :
+                              performer.score >= 4.0 ? 'bg-blue-100 text-blue-800' :
+                              performer.score >= 3.5 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {performer.score.toFixed(1)}
+                            </div>
+                            <div className={`flex items-center gap-1 text-sm ${
+                              performer.improvement > 0 ? 'text-green-600' : 'text-[#E51636]'
+                            }`}>
+                              {performer.improvement > 0 ? (
+                                <TrendingUp className="w-4 h-4" />
+                              ) : (
+                                <TrendingUp className="w-4 h-4 transform rotate-180" />
+                              )}
+                              {Math.abs(performer.improvement).toFixed(1)}%
+                            </div>
+                          </div>
+                          <p className="text-xs text-[#27251F]/60 mt-1">
+                            {performer.score >= 4.5 ? 'Outstanding' :
+                             performer.score >= 4.0 ? 'Excellent' :
+                             performer.score >= 3.5 ? 'Good' : 'Needs Improvement'}
+                          </p>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold text-[#27251F]">{performer.score.toFixed(1)}</p>
-                        <p className={`text-sm ${
-                          performer.improvement > 0 ? 'text-green-600' : 'text-[#E51636]'
-                        }`}>
-                          {performer.improvement > 0 ? '+' : ''}{performer.improvement.toFixed(1)}%
-                        </p>
                       </div>
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[#27251F]/60">
+                  No top performers data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Performance Insights */}
+          <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-[#27251F] flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-[#E51636]" />
+                Performance Insights
+              </CardTitle>
+              <p className="text-[#27251F]/60 mt-1">Key metrics and trends</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Average Team Score */}
+                <div>
+                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Average Team Score</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="text-2xl font-bold text-[#27251F]">
+                      {(departmentMetrics?.topPerformers?.reduce((acc, curr) => acc + curr.score, 0) / 
+                        (departmentMetrics?.topPerformers?.length || 1)).toFixed(1)}
+                    </div>
+                    <div className="text-sm text-[#27251F]/60">/ 5.0</div>
                   </div>
-                ))}
+                </div>
+
+                {/* Most Improved */}
+                <div>
+                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Most Improved</h3>
+                  {departmentMetrics?.topPerformers?.some(p => p.improvement > 0) ? (
+                    <div className="p-3 bg-[#F4F4F4] rounded-lg">
+                      {departmentMetrics?.topPerformers
+                        ?.filter(p => p.improvement > 0)
+                        ?.sort((a, b) => b.improvement - a.improvement)
+                        ?.slice(0, 1)
+                        ?.map(performer => (
+                          <div key={performer.id} className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-[#27251F]">{performer.name}</p>
+                              <p className="text-sm text-[#27251F]/60">{performer.position}</p>
+                            </div>
+                            <div className="text-green-600 flex items-center gap-1">
+                              <TrendingUp className="w-4 h-4" />
+                              {performer.improvement.toFixed(1)}%
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#27251F]/60">No improvement data available</p>
+                  )}
+                </div>
+
+                {/* Department Stats */}
+                <div>
+                  <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Department Stats</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-[#F4F4F4] rounded-lg">
+                      <p className="text-sm text-[#27251F]/60">Top Performers</p>
+                      <p className="text-xl font-bold text-[#27251F]">
+                        {departmentMetrics?.topPerformers?.filter(p => p.score >= 4.0).length || 0}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-[#F4F4F4] rounded-lg">
+                      <p className="text-sm text-[#27251F]/60">Needs Focus</p>
+                      <p className="text-xl font-bold text-[#27251F]">
+                        {departmentMetrics?.topPerformers?.filter(p => p.score < 3.5).length || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-8 text-[#27251F]/60">
-                No top performers data available
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Improvement Areas */}
         <Card className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300">

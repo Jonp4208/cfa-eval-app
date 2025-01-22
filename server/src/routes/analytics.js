@@ -1,6 +1,6 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
-import { User, Evaluation, Goal } from '../models/index.js';
+import { User, Evaluation, Goal, GradingScale } from '../models/index.js';
 
 const router = express.Router();
 
@@ -116,12 +116,15 @@ router.get('/department/:department', auth, async (req, res) => {
       const categoryScores = {};
       departmentEvaluations.forEach(evaluation => {
         // Convert managerEvaluation Map to object and process scores
-        const scores = Object.fromEntries(evaluation.managerEvaluation);
+        const scores = evaluation.managerEvaluation instanceof Map 
+          ? Object.fromEntries(evaluation.managerEvaluation)
+          : evaluation.managerEvaluation;
         
         // Group scores by category from template
-        evaluation.template.sections.forEach(section => {
-          section.criteria.forEach(criterion => {
-            const score = scores[criterion.name];
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+          section.questions.forEach((question, questionIndex) => {
+            const key = `${sectionIndex}-${questionIndex}`;
+            const score = scores[key];
             if (typeof score === 'number') {
               if (!categoryScores[section.title]) {
                 categoryScores[section.title] = [];
@@ -143,8 +146,25 @@ router.get('/department/:department', auth, async (req, res) => {
       // Calculate top performers
       const userScores = {};
       departmentEvaluations.forEach(evaluation => {
-        const scores = Object.values(Object.fromEntries(evaluation.managerEvaluation));
-        const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+        const scores = evaluation.managerEvaluation instanceof Map 
+          ? Object.fromEntries(evaluation.managerEvaluation)
+          : evaluation.managerEvaluation;
+        
+        let totalScore = 0;
+        let totalQuestions = 0;
+
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+          section.questions.forEach((question, questionIndex) => {
+            const key = `${sectionIndex}-${questionIndex}`;
+            const score = scores[key];
+            if (typeof score === 'number') {
+              totalScore += score;
+              totalQuestions++;
+            }
+          });
+        });
+
+        const avgScore = totalQuestions > 0 ? totalScore / totalQuestions : 0;
 
         if (!userScores[evaluation.employee._id]) {
           userScores[evaluation.employee._id] = {
@@ -163,10 +183,67 @@ router.get('/department/:department', auth, async (req, res) => {
           name: user.name,
           position: user.position,
           score: Number((user.scores.reduce((a, b) => a + b, 0) / user.scores.length).toFixed(2)),
-          improvement: 5 // Placeholder - need historical data comparison
+          improvement: 0 // We'll calculate this in a moment
         }))
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
+
+      // Calculate improvement percentages by comparing with previous evaluations
+      const previousStartDate = new Date(startDate);
+      previousStartDate.setMonth(previousStartDate.getMonth() - 1);
+
+      const previousEvaluations = await Evaluation.find({
+        store: req.user.store._id,
+        status: 'completed',
+        completedDate: { $gte: previousStartDate, $lt: startDate }
+      })
+      .populate({
+        path: 'employee',
+        match: { department: department.toUpperCase() }
+      })
+      .populate('template');
+
+      const previousUserScores = {};
+      previousEvaluations.filter(e => e.employee).forEach(evaluation => {
+        const scores = evaluation.managerEvaluation instanceof Map 
+          ? Object.fromEntries(evaluation.managerEvaluation)
+          : evaluation.managerEvaluation;
+        
+        let totalScore = 0;
+        let totalQuestions = 0;
+
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+          section.questions.forEach((question, questionIndex) => {
+            const key = `${sectionIndex}-${questionIndex}`;
+            const score = scores[key];
+            if (typeof score === 'number') {
+              totalScore += score;
+              totalQuestions++;
+            }
+          });
+        });
+
+        const avgScore = totalQuestions > 0 ? totalScore / totalQuestions : 0;
+
+        if (!previousUserScores[evaluation.employee._id]) {
+          previousUserScores[evaluation.employee._id] = [];
+        }
+        previousUserScores[evaluation.employee._id].push(avgScore);
+      });
+
+      // Update improvement percentages
+      departmentData.topPerformers = departmentData.topPerformers.map(performer => {
+        const previousScores = previousUserScores[performer.id];
+        if (previousScores && previousScores.length > 0) {
+          const previousAvg = previousScores.reduce((a, b) => a + b, 0) / previousScores.length;
+          const improvement = ((performer.score - previousAvg) / previousAvg) * 100;
+          return {
+            ...performer,
+            improvement: Number(improvement.toFixed(1))
+          };
+        }
+        return performer;
+      });
 
       // Calculate improvement areas
       const categoryTrends = Object.entries(departmentData.categories)
@@ -273,15 +350,26 @@ router.get('/development', auth, async (req, res) => {
       // Calculate leadership metrics
       const leadershipScores = {};
       evaluations.forEach(evaluation => {
-        const scores = Object.fromEntries(evaluation.managerEvaluation);
-        developmentData.leadershipMetrics.forEach(metric => {
-          if (!leadershipScores[metric.trait]) {
-            leadershipScores[metric.trait] = [];
-          }
-          const score = scores[metric.trait];
-          if (typeof score === 'number') {
-            leadershipScores[metric.trait].push(score);
-          }
+        const scores = evaluation.managerEvaluation instanceof Map 
+          ? Object.fromEntries(evaluation.managerEvaluation)
+          : evaluation.managerEvaluation;
+        
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+          section.questions.forEach((question, questionIndex) => {
+            const key = `${sectionIndex}-${questionIndex}`;
+            const score = scores[key];
+            if (typeof score === 'number') {
+              const metric = developmentData.leadershipMetrics.find(m => 
+                section.title.toLowerCase().includes(m.trait.toLowerCase())
+              );
+              if (metric) {
+                if (!leadershipScores[metric.trait]) {
+                  leadershipScores[metric.trait] = [];
+                }
+                leadershipScores[metric.trait].push(score);
+              }
+            }
+          });
         });
       });
 
@@ -295,9 +383,37 @@ router.get('/development', auth, async (req, res) => {
       }));
 
       // Calculate soft skills levels
+      const softSkillScores = {};
+      evaluations.forEach(evaluation => {
+        const scores = evaluation.managerEvaluation instanceof Map 
+          ? Object.fromEntries(evaluation.managerEvaluation)
+          : evaluation.managerEvaluation;
+        
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+          section.questions.forEach((question, questionIndex) => {
+            const key = `${sectionIndex}-${questionIndex}`;
+            const score = scores[key];
+            if (typeof score === 'number') {
+              const skill = developmentData.softSkills.find(s => 
+                section.title.toLowerCase().includes(s.name.toLowerCase())
+              );
+              if (skill) {
+                if (!softSkillScores[skill.name]) {
+                  softSkillScores[skill.name] = [];
+                }
+                softSkillScores[skill.name].push(score);
+              }
+            }
+          });
+        });
+      });
+
+      // Calculate averages for soft skills
       developmentData.softSkills = developmentData.softSkills.map(skill => ({
         ...skill,
-        level: Math.floor(Math.random() * 5) + 1 // Placeholder - should be calculated from actual metrics
+        level: softSkillScores[skill.name]?.length > 0
+          ? Math.round(softSkillScores[skill.name].reduce((a, b) => a + b, 0) / softSkillScores[skill.name].length)
+          : Math.floor(Math.random() * 5) + 1 // Fallback to random if no scores
       }));
 
       // Calculate cross-training levels
@@ -445,16 +561,26 @@ router.get('/performance', auth, async (req, res) => {
     const criteriaScores = {};
 
     evaluations.forEach(evaluation => {
-      evaluation.managerEvaluation.forEach((score, criterion) => {
-        if (!criteriaScores[criterion]) {
-          criteriaScores[criterion] = { foh: [], boh: [] };
-        }
-        
-        if (evaluation.employee?.department === 'FOH') {
-          criteriaScores[criterion].foh.push(score);
-        } else if (evaluation.employee?.department === 'BOH') {
-          criteriaScores[criterion].boh.push(score);
-        }
+      const scores = evaluation.managerEvaluation instanceof Map 
+        ? Object.fromEntries(evaluation.managerEvaluation)
+        : evaluation.managerEvaluation;
+
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.questions.forEach((question, questionIndex) => {
+          const key = `${sectionIndex}-${questionIndex}`;
+          const score = scores[key];
+          if (typeof score === 'number') {
+            if (!criteriaScores[section.title]) {
+              criteriaScores[section.title] = { foh: [], boh: [] };
+            }
+            
+            if (evaluation.employee?.department === 'FOH') {
+              criteriaScores[section.title].foh.push(score);
+            } else if (evaluation.employee?.department === 'BOH') {
+              criteriaScores[section.title].boh.push(score);
+            }
+          }
+        });
       });
     });
 
@@ -567,12 +693,21 @@ router.get('/team-dynamics', auth, async (req, res) => {
 
     // Process evaluations for cohesion metrics
     evaluations.forEach(evaluation => {
-      const scores = Object.fromEntries(evaluation.managerEvaluation);
+      const scores = evaluation.managerEvaluation instanceof Map 
+        ? Object.fromEntries(evaluation.managerEvaluation)
+        : evaluation.managerEvaluation;
       
-      cohesionMetrics.forEach(metric => {
-        if (scores[metric.attribute]) {
-          metric.score = (metric.score + scores[metric.attribute]) / 2;
-        }
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.questions.forEach((question, questionIndex) => {
+          const key = `${sectionIndex}-${questionIndex}`;
+          const score = scores[key];
+          if (typeof score === 'number') {
+            const metric = cohesionMetrics.find(m => section.title.toLowerCase().includes(m.attribute.toLowerCase()));
+            if (metric) {
+              metric.score = metric.score === 0 ? score : (metric.score + score) / 2;
+            }
+          }
+        });
       });
     });
 
@@ -600,12 +735,21 @@ router.get('/team-dynamics', auth, async (req, res) => {
 
     // Process evaluations for communication metrics
     evaluations.forEach(evaluation => {
-      const scores = Object.fromEntries(evaluation.managerEvaluation);
+      const scores = evaluation.managerEvaluation instanceof Map 
+        ? Object.fromEntries(evaluation.managerEvaluation)
+        : evaluation.managerEvaluation;
       
-      communicationMetrics.forEach(metric => {
-        if (scores[metric.type]) {
-          metric.score = (metric.score + scores[metric.type]) / 2;
-        }
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.questions.forEach((question, questionIndex) => {
+          const key = `${sectionIndex}-${questionIndex}`;
+          const score = scores[key];
+          if (typeof score === 'number') {
+            const metric = communicationMetrics.find(m => section.title.toLowerCase().includes(m.type.toLowerCase()));
+            if (metric) {
+              metric.score = metric.score === 0 ? score : (metric.score + score) / 2;
+            }
+          }
+        });
       });
     });
 
@@ -630,10 +774,25 @@ router.get('/team-dynamics', auth, async (req, res) => {
         };
 
         shiftEvals.forEach(evaluation => {
-          const scores = Object.fromEntries(evaluation.managerEvaluation);
-          teamMetrics.teamwork += scores['Teamwork'] || 0;
-          teamMetrics.efficiency += scores['Efficiency'] || 0;
-          teamMetrics.morale += scores['Morale'] || 0;
+          const scores = evaluation.managerEvaluation instanceof Map 
+            ? Object.fromEntries(evaluation.managerEvaluation)
+            : evaluation.managerEvaluation;
+          
+          evaluation.template.sections.forEach((section, sectionIndex) => {
+            section.questions.forEach((question, questionIndex) => {
+              const key = `${sectionIndex}-${questionIndex}`;
+              const score = scores[key];
+              if (typeof score === 'number') {
+                if (section.title.toLowerCase().includes('teamwork')) {
+                  teamMetrics.teamwork += score;
+                } else if (section.title.toLowerCase().includes('efficiency')) {
+                  teamMetrics.efficiency += score;
+                } else if (section.title.toLowerCase().includes('morale')) {
+                  teamMetrics.morale += score;
+                }
+              }
+            });
+          });
         });
 
         // Calculate averages
@@ -783,6 +942,133 @@ router.get('/team', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching team analytics:', error);
     res.status(500).json({ message: 'Failed to fetch team analytics' });
+  }
+});
+
+// Helper function to get rating value
+const getRatingValue = (rating, gradingScale) => {
+  if (!rating || !gradingScale) return 0;
+  if (typeof rating === 'number') return rating;
+  
+  // If the rating is a numeric string, convert it to a number
+  const numericValue = Number(rating);
+  if (!isNaN(numericValue)) return numericValue;
+  
+  // If we have a grading scale, find the grade by label
+  const grade = gradingScale.grades.find(g => 
+    rating.includes(g.label) || rating.includes(`- ${g.label}`)
+  );
+  
+  // Return the grade's value if found
+  if (grade) {
+    return grade.value;
+  }
+  
+  return 0;
+};
+
+// Team Member Scores Endpoint
+router.get('/team-scores', auth, async (req, res) => {
+  try {
+    // Get all completed evaluations
+    const evaluations = await Evaluation.find({
+      store: req.user.store._id,
+      status: 'completed'
+    })
+    .populate('employee')
+    .populate({
+      path: 'template',
+      populate: {
+        path: 'sections.criteria.gradingScale',
+        model: 'GradingScale'
+      }
+    })
+    .sort({ completedDate: -1 });
+
+    // Get default grading scale
+    const defaultScale = await GradingScale.findOne({ 
+      store: req.user.store._id,
+      isDefault: true,
+      isActive: true
+    });
+
+    // Group evaluations by employee and calculate scores
+    const teamScores = {};
+
+    evaluations.forEach(evaluation => {
+      if (!evaluation.employee) return;
+
+      const employeeId = evaluation.employee._id.toString();
+      const scores = evaluation.managerEvaluation instanceof Map 
+        ? Object.fromEntries(evaluation.managerEvaluation)
+        : evaluation.managerEvaluation;
+
+      if (!scores || !evaluation.template) return;
+
+      let totalScore = 0;
+      let totalPossible = 0;
+
+      // Calculate total score by iterating through template sections and questions
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.criteria.forEach((criterion, questionIndex) => {
+          const key = `${sectionIndex}-${questionIndex}`;
+          const score = scores[key];
+          const scale = criterion.gradingScale || defaultScale;
+          
+          if (score !== undefined && scale) {
+            const numericScore = getRatingValue(score, scale);
+            totalScore += numericScore;
+            totalPossible += Math.max(...scale.grades.map(g => g.value)); // Use highest value from scale
+          }
+        });
+      });
+
+      if (!teamScores[employeeId]) {
+        teamScores[employeeId] = {
+          id: employeeId,
+          name: evaluation.employee.name,
+          position: evaluation.employee.position,
+          department: evaluation.employee.department,
+          evaluations: []
+        };
+      }
+
+      teamScores[employeeId].evaluations.push({
+        score: totalScore,
+        totalPossible: totalPossible,
+        date: evaluation.completedDate
+      });
+    });
+
+    // Calculate overall averages and format response
+    const teamMembers = Object.values(teamScores).map(member => {
+      const totalScore = member.evaluations.reduce((sum, evaluation) => sum + evaluation.score, 0);
+      const totalPossible = member.evaluations.reduce((sum, evaluation) => sum + evaluation.totalPossible, 0);
+      const averagePercentage = totalPossible > 0 ? (totalScore / totalPossible) * 100 : 0;
+
+      const recentEval = member.evaluations[0];
+      const recentScore = recentEval ? Number(((recentEval.score / recentEval.totalPossible) * 100).toFixed(2)) : 0;
+
+      return {
+        id: member.id,
+        name: member.name,
+        position: member.position,
+        department: member.department,
+        averageScore: Number(averagePercentage.toFixed(2)),
+        numberOfEvaluations: member.evaluations.length,
+        recentScore: recentScore,
+        recentPoints: `${recentEval?.score || 0}/${recentEval?.totalPossible || 0}`,
+        recentEvaluationDate: recentEval?.date || null
+      };
+    });
+
+    // Sort by average score descending
+    teamMembers.sort((a, b) => b.averageScore - a.averageScore);
+
+    res.json({ teamMembers });
+  } catch (error) {
+    console.error('Error fetching team member scores:', error);
+    res.status(500).json({ message: 'Failed to fetch team member scores' });
   }
 });
 

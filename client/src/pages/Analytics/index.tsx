@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { BarChart3, Users, TrendingUp, GitCompare, Brain, ArrowLeft, Heart } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, GitCompare, Brain, ArrowLeft, Heart, Medal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
@@ -81,6 +81,12 @@ const AnalyticsHub = () => {
       description: "Track team member engagement and skill development matrix",
       icon: Heart,
       link: "hearts-and-hands",
+    },
+    {
+      title: "Team Scores",
+      description: "View all team members and their evaluation scores",
+      icon: Medal,
+      link: "team-scores",
     },
   ];
 

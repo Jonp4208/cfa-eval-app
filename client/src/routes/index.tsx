@@ -30,6 +30,7 @@ import HeartsAndHands from '@/pages/Analytics/HeartsAndHands';
 import DisciplinaryPage from '@/pages/Disciplinary';
 import NewIncident from '@/pages/Disciplinary/NewIncident';
 import IncidentDetail from '@/pages/Disciplinary/[id]';
+import TeamScores from '@/pages/Analytics/TeamScores';
 //import Goals from '@/pages/Goals';
 //import NewGoal from '@/pages/Goals/NewGoal';
 import FuturePage from '@/pages/FuturePage';
@@ -110,6 +111,7 @@ export default function AppRoutes() {
         <Route path="team-comparison" element={<TeamComparison />} />
         <Route path="team-dynamics" element={<TeamDynamics />} />
         <Route path="hearts-and-hands" element={<HeartsAndHands />} />
+        <Route path="team-scores" element={<TeamScores />} />
       </Route>
       <Route path="/future" element={<PrivateRoute><FuturePage /></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
