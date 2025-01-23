@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, Plus, Search, Upload, Download, Edit, Mail, Trash2 } from 'lucide-react';
+import { User, Plus, Search, Upload, Download, Edit, Mail, Trash2, Shield } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
@@ -51,6 +51,7 @@ interface UserType {
     _id: string;
     name: string;
   };
+  shift?: 'day' | 'night';
 }
 
 export default function Users() {
@@ -406,16 +407,23 @@ export default function Users() {
                         <User className="w-6 h-6 text-[#E51636]" />
                       </div>
                       <div>
-                        <h3 className="font-medium text-[#27251F]">{user.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-[#27251F]">{user.name}</h3>
+                          {user.role === 'admin' && (
+                            <div className="text-[#E51636]">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
                         <p className="text-sm text-[#27251F]/60 mt-1">{user.email}</p>
                         <div className="flex items-center gap-4 mt-2">
                           {user.position && (
                             <span className="text-sm text-[#27251F]/60">{user.position}</span>
                           )}
-                          {user.role && (
+                          {user.shift && (
                             <>
                               <span className="text-sm text-[#27251F]/60">•</span>
-                              <span className="text-sm text-[#27251F]/60">{user.role === 'admin' ? 'Admin' : 'User'}</span>
+                              <span className="text-sm text-[#27251F]/60">{user.shift === 'day' ? 'Day' : 'Night'}</span>
                             </>
                           )}
                           {user.departments && (
