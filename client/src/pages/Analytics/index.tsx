@@ -43,7 +43,9 @@ const AnalyticsHub = () => {
     queryFn: async () => {
       const response = await api.get('/api/analytics/quick-stats');
       return response.data;
-    }
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchOnWindowFocus: true // Refetch when window regains focus
   });
 
   const analyticsCards = [
@@ -165,7 +167,10 @@ const AnalyticsHub = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+              <Card 
+                className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                onClick={() => navigate('team-scores')}
+              >
                 <CardContent className="p-8">
                   <div className="flex items-start justify-between">
                     <div>
