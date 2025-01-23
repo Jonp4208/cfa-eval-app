@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { BarChart3, Users, TrendingUp, GitCompare, Brain, ArrowLeft, Heart, Medal, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, Heart, Medal, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
@@ -50,36 +50,6 @@ const AnalyticsHub = () => {
 
   const analyticsCards = [
     {
-      title: "Department Reports",
-      description: "View performance metrics across different departments",
-      icon: BarChart3,
-      link: "department-report",
-    },
-    {
-      title: "Development Metrics",
-      description: "Track team member growth and development progress",
-      icon: Brain,
-      link: "development-metrics",
-    },
-    {
-      title: "Performance Analytics",
-      description: "Analyze individual and team performance trends",
-      icon: TrendingUp,
-      link: "performance-analytics",
-    },
-    {
-      title: "Team Comparison",
-      description: "Compare metrics between different teams and shifts",
-      icon: GitCompare,
-      link: "team-comparison",
-    },
-    {
-      title: "Team Dynamics",
-      description: "Assess team relationships and leadership effectiveness",
-      icon: Users,
-      link: "team-dynamics",
-    },
-    {
       title: "Hearts & Hands",
       description: "Track team member engagement and skill development matrix",
       icon: Heart,
@@ -106,8 +76,8 @@ const AnalyticsHub = () => {
           <div className="relative">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Analytics Hub</h1>
-                <p className="text-white/80 mt-2 text-lg">Comprehensive analytics and reporting tools</p>
+                <h1 className="text-3xl md:text-4xl font-bold">Analytics</h1>
+                <p className="text-white/80 mt-2 text-lg">Team performance and development tracking</p>
               </div>
               <div className="flex gap-4">
                 <Button 
@@ -135,10 +105,10 @@ const AnalyticsHub = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {isLoading ? (
             <>
-              {[1, 2, 3].map((i) => (
+              {[1, 2].map((i) => (
                 <Card key={i} className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300">
                   <CardContent className="p-8">
                     <div className="h-16 bg-[#F4F4F4] rounded-xl animate-pulse"></div>
@@ -147,26 +117,13 @@ const AnalyticsHub = () => {
               ))}
             </>
           ) : !quickStats ? (
-            <Card className="md:col-span-3 bg-white rounded-[20px] shadow-md">
+            <Card className="md:col-span-2 bg-white rounded-[20px] shadow-md">
               <CardContent className="p-8 text-center text-[#27251F]/60">
                 <p>No analytics data available</p>
               </CardContent>
             </Card>
           ) : (
             <>
-              <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
-                <CardContent className="p-8">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-[#27251F]/60 font-medium">Team Members</p>
-                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{quickStats.teamMembers}</h3>
-                    </div>
-                    <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
-                      <Users className="h-7 w-7 text-[#E51636]" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
               <Card 
                 className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
                 onClick={() => navigate('team-scores')}
@@ -178,7 +135,7 @@ const AnalyticsHub = () => {
                       <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{quickStats.avgPerformance}%</h3>
                     </div>
                     <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
-                      <TrendingUp className="h-7 w-7 text-[#E51636]" />
+                      <Medal className="h-7 w-7 text-[#E51636]" />
                     </div>
                   </div>
                 </CardContent>
@@ -191,7 +148,7 @@ const AnalyticsHub = () => {
                       <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{quickStats.developmentGoals}% ↑</h3>
                     </div>
                     <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
-                      <Brain className="h-7 w-7 text-[#E51636]" />
+                      <Heart className="h-7 w-7 text-[#E51636]" />
                     </div>
                   </div>
                 </CardContent>
@@ -201,7 +158,7 @@ const AnalyticsHub = () => {
         </div>
 
         {/* Analytics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {analyticsCards.map((card) => (
             <Link key={card.link} to={card.link}>
               <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer h-full">

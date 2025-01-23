@@ -21,11 +21,6 @@ import ViewEvaluation from '@/pages/Evaluations/ViewEvaluation';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import AnalyticsHub from '@/pages/Analytics';
-import { DepartmentReport } from '@/pages/Analytics/DepartmentReport';
-import { DevelopmentMetrics } from '@/pages/Analytics/DevelopmentMetrics';
-import { PerformanceAnalytics } from '@/pages/Analytics/PerformanceAnalytics';
-import { TeamComparison } from '@/pages/Analytics/TeamComparison';
-import { TeamDynamics } from '@/pages/Analytics/TeamDynamics';
 import HeartsAndHands from '@/pages/Analytics/HeartsAndHands';
 import DisciplinaryPage from '@/pages/Disciplinary';
 import NewIncident from '@/pages/Disciplinary/NewIncident';
@@ -105,11 +100,6 @@ export default function AppRoutes() {
       <Route path="/disciplinary/new" element={<PrivateRoute><NewIncident /></PrivateRoute>} />
       <Route path="/disciplinary/:id" element={<PrivateRoute><IncidentDetail /></PrivateRoute>} />
       <Route path="/analytics" element={<PrivateRoute><AnalyticsHub /></PrivateRoute>}>
-        <Route path="department-report" element={<DepartmentReport />} />
-        <Route path="development-metrics" element={<DevelopmentMetrics />} />
-        <Route path="performance-analytics" element={<PerformanceAnalytics />} />
-        <Route path="team-comparison" element={<TeamComparison />} />
-        <Route path="team-dynamics" element={<TeamDynamics />} />
         <Route path="hearts-and-hands" element={<HeartsAndHands />} />
         <Route path="team-scores" element={<TeamScores />} />
       </Route>
