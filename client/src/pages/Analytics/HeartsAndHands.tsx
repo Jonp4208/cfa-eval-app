@@ -1,11 +1,12 @@
 // client/src/pages/Analytics/HeartsAndHands.tsx
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import {  AlertCircle, Users } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertCircle, Users, Search } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { AnalyticsPageHeader } from '.';
 import {
   Tooltip,
   TooltipContent,
@@ -72,16 +73,12 @@ const HeartsAndHands = () => {
   // Filter team members based on search and exclude directors
   const filteredMembers: Record<string, TeamMember[]> = teamMembers
     .filter((member: TeamMember) => (
-      // Exclude directors and above
       !member.position.toLowerCase().includes('director') &&
       !member.position.toLowerCase().includes('manager') &&
-      // Match active department or show all
       (activeDepartment === 'all' || member.department.toLowerCase() === activeDepartment.toLowerCase()) &&
-      // Apply search filter
       (member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.position.toLowerCase().includes(searchTerm.toLowerCase()))
     ))
-    // Group members by their position on the grid
     .reduce((acc: Record<string, TeamMember[]>, member: TeamMember) => {
       if (!member.metrics?.heartsAndHands) return acc;
       const { x, y } = member.metrics.heartsAndHands;
@@ -92,121 +89,131 @@ const HeartsAndHands = () => {
     }, {});
 
   return (
-    <div className="pt-8">
-      <div className="max-w-7xl mx-auto px-4 space-y-6">
-        <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
-          <h1 className="text-2xl font-semibold">Hearts & Hands Analysis</h1>
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search Input */}
-            <input
-              type="text"
-              placeholder="Search team members..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 w-full sm:w-auto"
-            />
-            
-            {/* Department Tabs */}
-            <div className="flex flex-wrap rounded-xl border overflow-hidden">
-              <button
-                className={`flex-1 sm:flex-none px-4 py-2 transition-colors ${
-                  activeDepartment === 'all' 
-                    ? 'bg-red-600 text-white font-medium' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-                onClick={() => setActiveDepartment('all')}
-                disabled={isLoading}
-              >
-                All
-              </button>
-              <button
-                className={`flex-1 sm:flex-none px-4 py-2 transition-colors ${
-                  activeDepartment === 'foh' 
-                    ? 'bg-red-600 text-white font-medium' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-                onClick={() => setActiveDepartment('foh')}
-                disabled={isLoading}
-              >
-                Front of House
-              </button>
-              <button
-                className={`flex-1 sm:flex-none px-4 py-2 transition-colors ${
-                  activeDepartment === 'boh' 
-                    ? 'bg-red-600 text-white font-medium' 
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-                onClick={() => setActiveDepartment('boh')}
-                disabled={isLoading}
-              >
-                Back of House
-              </button>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Hearts & Hands Analysis</h1>
+                <p className="text-white/80 mt-2 text-lg">Team Development Matrix</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#E51636]" />
+                  <input
+                    type="text"
+                    placeholder="Search team members..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 bg-white text-[#27251F] placeholder:text-[#27251F]/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/20 w-full sm:w-[200px] h-12 border-0"
+                  />
+                </div>
+                
+                {/* Department Tabs */}
+                <div className="flex flex-wrap rounded-xl overflow-hidden bg-white">
+                  <button
+                    className={`flex-1 sm:flex-none px-4 py-2 h-12 transition-colors ${
+                      activeDepartment === 'all' 
+                        ? 'bg-[#E51636] text-white font-medium' 
+                        : 'text-[#27251F] hover:bg-gray-50'
+                    }`}
+                    onClick={() => setActiveDepartment('all')}
+                    disabled={isLoading}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={`flex-1 sm:flex-none px-4 py-2 h-12 transition-colors ${
+                      activeDepartment === 'foh' 
+                        ? 'bg-[#E51636] text-white font-medium' 
+                        : 'text-[#27251F] hover:bg-gray-50'
+                    }`}
+                    onClick={() => setActiveDepartment('foh')}
+                    disabled={isLoading}
+                  >
+                    Front of House
+                  </button>
+                  <button
+                    className={`flex-1 sm:flex-none px-4 py-2 h-12 transition-colors ${
+                      activeDepartment === 'boh' 
+                        ? 'bg-[#E51636] text-white font-medium' 
+                        : 'text-[#27251F] hover:bg-gray-50'
+                    }`}
+                    onClick={() => setActiveDepartment('boh')}
+                    disabled={isLoading}
+                  >
+                    Back of House
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              <p>Failed to load team members. Please try again later.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="animate-pulse space-y-4">
-            <div className="h-[600px] bg-gray-100 rounded-xl"></div>
-          </div>
-        ) : !teamMembers.length ? (
-          // Empty state
-          <Card className="rounded-xl">
-            <CardContent className="p-6 text-center">
-              <div className="flex flex-col items-center gap-2">
-                <Users className="h-8 w-8 text-gray-400" />
-                <p className="text-gray-500">No team members found</p>
-                {searchTerm && (
-                  <p className="text-sm text-gray-400">
-                    Try adjusting your search or filters
-                  </p>
-                )}
+        <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300">
+          <CardContent className="p-6">
+            {/* Error State */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <p>Failed to load team members. Please try again later.</p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="rounded-xl">
-            <CardContent className="py-6">
+            )}
+
+            {/* Loading State */}
+            {isLoading ? (
+              <div className="animate-pulse space-y-4">
+                <div className="h-[600px] bg-gray-100 rounded-xl"></div>
+              </div>
+            ) : !teamMembers.length ? (
+              // Empty state
+              <div className="p-6 text-center">
+                <div className="flex flex-col items-center gap-2">
+                  <Users className="h-8 w-8 text-gray-400" />
+                  <p className="text-gray-500">No team members found</p>
+                  {searchTerm && (
+                    <p className="text-sm text-gray-400">
+                      Try adjusting your search or filters
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
               <div className="flex justify-center">
                 <div className="relative w-full max-w-[567px] aspect-square">
                   {/* Quadrant Grid */}
                   <div className="absolute inset-0 grid grid-cols-2 gap-0.5">
                     {/* Top Left Quadrant */}
-                    <div className="bg-yellow-100 rounded-tl-lg border border-gray-200 flex items-center justify-center">
-                      <div className="text-[10px] sm:text-sm font-medium text-gray-600 rotate-[-45deg]">High Potential</div>
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-tl-lg border border-gray-200 flex items-center justify-center">
+                      <div className="text-[10px] sm:text-sm font-medium text-[#27251F]/80 rotate-[-45deg]">High Potential</div>
                     </div>
                     {/* Top Right Quadrant */}
-                    <div className="bg-green-100 rounded-tr-lg border border-gray-200 flex items-center justify-center">
-                      <div className="text-[10px] sm:text-sm font-medium text-gray-600 rotate-45">Star Performers</div>
+                    <div className="bg-gradient-to-bl from-green-50 to-green-100 rounded-tr-lg border border-gray-200 flex items-center justify-center">
+                      <div className="text-[10px] sm:text-sm font-medium text-[#27251F]/80 rotate-45">Star Performers</div>
                     </div>
                     {/* Bottom Left Quadrant */}
-                    <div className="bg-red-100 rounded-bl-lg border border-gray-200 flex items-center justify-center">
-                      <div className="text-[10px] sm:text-sm font-medium text-gray-600 rotate-45">Needs Development</div>
+                    <div className="bg-gradient-to-tr from-red-50 to-red-100 rounded-bl-lg border border-gray-200 flex items-center justify-center">
+                      <div className="text-[10px] sm:text-sm font-medium text-[#27251F]/80 rotate-45">Needs Development</div>
                     </div>
                     {/* Bottom Right Quadrant */}
-                    <div className="bg-yellow-100 rounded-br-lg border border-gray-200 flex items-center justify-center">
-                      <div className="text-[10px] sm:text-sm font-medium text-gray-600 rotate-[-45deg]">Skill Masters</div>
+                    <div className="bg-gradient-to-tl from-yellow-50 to-yellow-100 rounded-br-lg border border-gray-200 flex items-center justify-center">
+                      <div className="text-[10px] sm:text-sm font-medium text-[#27251F]/80 rotate-[-45deg]">Skill Masters</div>
                     </div>
 
                     {/* Axis Labels */}
                     <div className="absolute inset-x-0 -top-8 flex justify-center">
-                      <div className="text-[10px] sm:text-sm text-gray-600">
+                      <div className="text-[10px] sm:text-sm font-medium text-[#27251F]/60">
                         Engagement & Commitment
                       </div>
                     </div>
                     <div className="absolute -right-12 sm:-right-16 inset-y-0 flex items-center">
-                      <div className="text-[10px] sm:text-sm text-gray-600 rotate-90">
+                      <div className="text-[10px] sm:text-sm font-medium text-[#27251F]/60 rotate-90">
                         Skills & Abilities
                       </div>
                     </div>
@@ -226,7 +233,7 @@ const HeartsAndHands = () => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
-                                  className="w-6 h-6 sm:w-8 sm:h-8 bg-red-600 rounded-full absolute flex items-center justify-center cursor-pointer hover:bg-red-700 transition-colors"
+                                  className="w-6 h-6 sm:w-8 sm:h-8 bg-[#E51636] rounded-full absolute flex items-center justify-center cursor-pointer hover:bg-[#DD0031] transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5"
                                   style={{
                                     left: `${x}%`,
                                     top: `${100 - y}%`,
@@ -240,9 +247,9 @@ const HeartsAndHands = () => {
                                   </span>
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent className="bg-white border shadow-md rounded-lg p-2">
-                                <p className="font-medium text-gray-900">{member.name}</p>
-                                <p className="text-xs text-gray-500">{member.position}</p>
+                              <TooltipContent side="top" className="bg-white border shadow-lg rounded-xl p-3">
+                                <p className="font-medium text-[#27251F]">{member.name}</p>
+                                <p className="text-xs text-[#27251F]/60">{member.position}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -252,9 +259,9 @@ const HeartsAndHands = () => {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
