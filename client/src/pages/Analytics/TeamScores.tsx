@@ -49,6 +49,27 @@ export default function TeamScores() {
     return `${score.toFixed(2)}%`;
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    try {
+      // Handle MongoDB date format which comes as a string
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "N/A";
+      
+      // Format the date - show only date without time
+      const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      };
+      
+      return new Intl.DateTimeFormat('en-US', options).format(date);
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return "N/A";
+    }
+  };
+
   const calculateTeamStats = () => {
     if (!data?.teamMembers.length) return { avgScore: null, totalEvals: 0 };
     
@@ -153,9 +174,7 @@ export default function TeamScores() {
                     </TableCell>
                     <TableCell className="text-right text-[#27251F]">{member.numberOfEvaluations}</TableCell>
                     <TableCell className="text-[#27251F]">
-                      {member.recentEvaluationDate
-                        ? new Date(member.recentEvaluationDate).toLocaleDateString()
-                        : "N/A"}
+                      {formatDate(member.recentEvaluationDate)}
                     </TableCell>
                   </TableRow>
                 ))}
