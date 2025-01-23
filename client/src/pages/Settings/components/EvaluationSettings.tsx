@@ -108,6 +108,7 @@ const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettin
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="hire_date">Employee Start Date</SelectItem>
+                      <SelectItem value="last_evaluation">Last Evaluation Date</SelectItem>
                       <SelectItem value="calendar_year">Calendar Year (Jan 1)</SelectItem>
                       <SelectItem value="fiscal_year">Fiscal Year (Oct 1)</SelectItem>
                       <SelectItem value="custom">Custom Date</SelectItem>

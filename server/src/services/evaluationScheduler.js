@@ -13,6 +13,9 @@ const calculateNextEvaluationDate = (employee, settings) => {
     case 'hire_date':
       baseDate = new Date(employee.startDate);
       break;
+    case 'last_evaluation':
+      baseDate = employee.lastEvaluation ? new Date(employee.lastEvaluation) : new Date(employee.startDate);
+      break;
     case 'calendar_year':
       baseDate = new Date(now.getFullYear(), 0, 1); // January 1st
       break;
