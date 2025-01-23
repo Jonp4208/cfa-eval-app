@@ -564,15 +564,50 @@ router.get('/:userId/evaluation-scores', auth, async (req, res) => {
     })
     .sort('completedDate');
 
-    // Get default grading scale
-    const defaultScale = await GradingScale.findOne({ 
-      store: req.user.store._id,
-      isDefault: true,
-      isActive: true
-    });
+    console.log('Found evaluations:', evaluations.map(e => ({
+      id: e._id,
+      date: e.completedDate,
+      managerEvaluation: Object.fromEntries(e.managerEvaluation)
+    })));
+
+    // Helper function to convert string ratings to numeric values
+    const getRatingValue = (rating) => {
+      // Handle numeric ratings
+      if (!isNaN(rating)) {
+        const numericValue = parseInt(rating);
+        return numericValue >= 1 && numericValue <= 4 ? numericValue : 0;
+      }
+      
+      // Handle text ratings
+      const normalizedRating = rating.trim().toLowerCase();
+      
+      const ratingMap = {
+        '- star': 4,
+        '- valued': 3,
+        '- performer': 2,
+        '- improvement needed': 1,
+        '- improvment needed': 1,
+        '- excellent': 4,
+        'star': 4,
+        'valued': 3,
+        'performer': 2,
+        'improvement needed': 1,
+        'excellent': 4,
+        '- very good': 4,
+        'very good': 4
+      };
+
+      return ratingMap[normalizedRating] || 0;
+    };
 
     // Calculate scores for each evaluation
     const evaluationScores = evaluations.map(evaluation => {
+      console.log('Processing evaluation:', {
+        id: evaluation._id,
+        date: evaluation.completedDate,
+        ratings: Object.fromEntries(evaluation.managerEvaluation)
+      });
+
       let totalScore = 0;
       let totalPossible = 0;
 
@@ -581,18 +616,34 @@ router.get('/:userId/evaluation-scores', auth, async (req, res) => {
         section.criteria.forEach((criterion, criterionIndex) => {
           const key = `${sectionIndex}-${criterionIndex}`;
           const score = evaluation.managerEvaluation.get(key);
-          const scale = criterion.gradingScale || defaultScale;
           
-          if (score !== undefined && scale && scale.grades) {
-            const numericScore = Number(score);
+          if (score !== undefined) {
+            const numericScore = getRatingValue(score);
             totalScore += numericScore;
-            totalPossible += Math.max(...scale.grades.map(g => g.value));
+            totalPossible += 4; // Since we're using a 1-4 scale
+            console.log('Processed score:', { 
+              key, 
+              originalScore: score,
+              numericScore, 
+              runningTotal: totalScore, 
+              possibleSoFar: totalPossible 
+            });
           }
         });
       });
 
-      // Calculate percentage score
-      const percentageScore = Math.round((totalScore / totalPossible) * 100);
+      // Calculate percentage score (avoid division by zero)
+      const percentageScore = totalPossible > 0 
+        ? Math.round((totalScore / totalPossible) * 100)
+        : 0;
+
+      console.log('Final score:', {
+        id: evaluation._id,
+        date: evaluation.completedDate,
+        totalScore,
+        totalPossible,
+        percentageScore
+      });
 
       return {
         date: evaluation.completedDate,
@@ -600,6 +651,7 @@ router.get('/:userId/evaluation-scores', auth, async (req, res) => {
       };
     });
 
+    console.log('Final evaluation scores:', evaluationScores);
     res.json({ evaluationScores });
   } catch (error) {
     console.error('Error getting evaluation scores:', error);

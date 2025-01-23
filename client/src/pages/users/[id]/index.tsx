@@ -240,7 +240,7 @@ export default function UserProfile() {
   });
 
   // Fetch potential managers
-  const { data: potentialManagers, isLoading: loadingManagers } = useQuery({
+  useQuery({
     queryKey: ['potential-managers', profile?.store?._id],
     queryFn: async () => {
       try {
