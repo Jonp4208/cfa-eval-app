@@ -11,6 +11,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { User, Plus, Search, Upload, Download, Edit, Mail, Trash2, Shield } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -59,7 +61,7 @@ export default function Users() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'position' | 'department' | 'role' | 'manager'>('name');
-  const [filterBy, setFilterBy] = useState<'all' | 'Front Counter' | 'Drive Thru' | 'Kitchen' | 'Everything' | 'myTeam'>('all');
+  const [filterBy, setFilterBy] = useState<'all' | 'Front Counter' | 'Drive Thru' | 'Kitchen' | 'Everything' | 'myTeam' | 'day' | 'night'>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEmailResetDialog, setShowEmailResetDialog] = useState(false);
@@ -160,8 +162,16 @@ export default function Users() {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesFilter = filterBy === 'all' ||
-      (user.departments && user.departments.includes(filterBy));
+    let matchesFilter = true;
+    if (filterBy !== 'all') {
+      if (filterBy === 'day' || filterBy === 'night') {
+        matchesFilter = user.shift === filterBy;
+      } else if (filterBy === 'myTeam') {
+        matchesFilter = user.manager?._id === currentUser?._id;
+      } else {
+        matchesFilter = user.departments?.includes(filterBy);
+      }
+    }
 
     return matchesSearch && matchesFilter;
   });
@@ -302,14 +312,22 @@ export default function Users() {
 
               <Select value={filterBy} onValueChange={(value: any) => setFilterBy(value)}>
                 <SelectTrigger className="h-12 rounded-xl bg-white border-gray-200 hover:border-gray-300">
-                  <SelectValue placeholder="Filter by Department" />
+                  <SelectValue placeholder="Filter by" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  <SelectItem value="Front Counter">Front Counter</SelectItem>
-                  <SelectItem value="Drive Thru">Drive Thru</SelectItem>
-                  <SelectItem value="Kitchen">Kitchen</SelectItem>
-                  <SelectItem value="Everything">Everything</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectGroup>
+                    <SelectLabel>Departments</SelectLabel>
+                    <SelectItem value="Front Counter">Front Counter</SelectItem>
+                    <SelectItem value="Drive Thru">Drive Thru</SelectItem>
+                    <SelectItem value="Kitchen">Kitchen</SelectItem>
+                    <SelectItem value="Everything">Everything</SelectItem>
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Shifts</SelectLabel>
+                    <SelectItem value="day">Day Shift</SelectItem>
+                    <SelectItem value="night">Night Shift</SelectItem>
+                  </SelectGroup>
                   {currentUser?.role === 'admin' && (
                     <SelectItem value="myTeam">My Team</SelectItem>
                   )}
