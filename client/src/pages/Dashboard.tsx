@@ -80,7 +80,7 @@ export default function Dashboard() {
     return <TeamMemberDashboard />;
   }
 
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
       const response = await api.get('/api/dashboard/stats');
@@ -88,21 +88,21 @@ export default function Dashboard() {
     }
   });
 
-  if (isLoading) {
+  const { data: performanceData, isLoading: performanceLoading } = useQuery({
+    queryKey: ['performanceTrends'],
+    queryFn: async () => {
+      const response = await api.get('/api/analytics/performance-trends');
+      return response.data.performanceTrends;
+    }
+  });
+
+  if (statsLoading || performanceLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636]" />
       </div>
     );
   }
-
-  // Mock data for the area chart
-  const performanceData = [
-    { name: 'Week 1', FOH: 85, BOH: 78 },
-    { name: 'Week 2', FOH: 88, BOH: 82 },
-    { name: 'Week 3', FOH: 87, BOH: 85 },
-    { name: 'Week 4', FOH: 92, BOH: 88 },
-  ];
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
@@ -291,24 +291,61 @@ export default function Dashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" stroke="#27251F" />
-                    <YAxis stroke="#27251F" />
-                    <Tooltip />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#27251F"
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="#27251F" 
+                      domain={[0, 100]}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip 
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-white p-3 rounded-lg shadow-lg border">
+                              <p className="font-medium text-[#27251F] mb-2">{label}</p>
+                              {payload.map((entry: any, index: number) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <div 
+                                    className="h-2 w-2 rounded-full"
+                                    style={{ backgroundColor: entry.color }}
+                                  />
+                                  <span className="text-[#27251F]">
+                                    {entry.name}: {entry.value === null ? 'No data' : `${entry.value}%`}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
                     <Area 
                       type="monotone" 
                       dataKey="FOH" 
+                      name="Front of House"
                       stroke="#E51636" 
                       fillOpacity={1}
                       fill="url(#FOHGradient)"
                       strokeWidth={2}
+                      connectNulls={false}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="BOH" 
+                      name="Back of House"
                       stroke="#DD0031" 
                       fillOpacity={1}
                       fill="url(#BOHGradient)"
                       strokeWidth={2}
+                      connectNulls={false}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

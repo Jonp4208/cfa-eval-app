@@ -1113,4 +1113,131 @@ router.get('/team-scores', auth, async (req, res) => {
   }
 });
 
+// Performance Trends Endpoint
+router.get('/performance-trends', auth, async (req, res) => {
+  try {
+    // Get evaluations from the last 4 weeks
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 28); // 4 weeks ago
+
+    console.log('Fetching evaluations between:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    });
+
+    const evaluations = await Evaluation.find({
+      store: req.user.store._id,
+      status: 'completed',
+      completedDate: { $gte: startDate, $lte: endDate }
+    })
+    .populate('employee')
+    .populate({
+      path: 'template',
+      populate: {
+        path: 'sections.criteria.gradingScale',
+        model: 'GradingScale'
+      }
+    })
+    .sort({ completedDate: -1 }); // Sort by most recent first
+
+    console.log(`Found ${evaluations.length} evaluations`);
+
+    // Get default grading scale
+    const defaultScale = await GradingScale.findOne({ 
+      store: req.user.store._id,
+      isDefault: true,
+      isActive: true
+    });
+
+    // Group evaluations by week
+    const weeks = {};
+    const fohDepartments = ['Front Counter', 'Drive Thru'];
+    const bohDepartments = ['Kitchen'];
+
+    evaluations.forEach(evaluation => {
+      if (!evaluation.employee?.departments) {
+        console.log('Skipping evaluation - no employee departments:', evaluation._id);
+        return;
+      }
+
+      const evalDate = new Date(evaluation.completedDate);
+      // Get week start date (Sunday)
+      const weekStart = new Date(evalDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      const weekKey = weekStart.toISOString().split('T')[0];
+
+      if (!weeks[weekKey]) {
+        weeks[weekKey] = {
+          FOH: { total: 0, count: 0, totalPossible: 0 },
+          BOH: { total: 0, count: 0, totalPossible: 0 }
+        };
+      }
+
+      // Calculate evaluation score
+      let totalScore = 0;
+      let totalPossible = 0;
+
+      const managerEvaluation = evaluation.managerEvaluation instanceof Map 
+        ? Object.fromEntries(evaluation.managerEvaluation)
+        : evaluation.managerEvaluation;
+
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.criteria.forEach((criterion, questionIndex) => {
+          const key = `${sectionIndex}-${questionIndex}`;
+          const score = managerEvaluation[key];
+          const scale = criterion.gradingScale || defaultScale;
+          
+          if (score !== undefined && scale) {
+            const numericScore = getRatingValue(score, scale);
+            totalScore += numericScore;
+            totalPossible += Math.max(...scale.grades.map(g => g.value));
+          }
+        });
+      });
+
+      // Determine if employee is FOH or BOH based on departments
+      const isFOH = evaluation.employee.departments.some(dept => fohDepartments.includes(dept));
+      const isBOH = evaluation.employee.departments.some(dept => bohDepartments.includes(dept));
+
+      if (isFOH) {
+        weeks[weekKey].FOH.total += totalScore;
+        weeks[weekKey].FOH.totalPossible += totalPossible;
+        weeks[weekKey].FOH.count++;
+      }
+      if (isBOH) {
+        weeks[weekKey].BOH.total += totalScore;
+        weeks[weekKey].BOH.totalPossible += totalPossible;
+        weeks[weekKey].BOH.count++;
+      }
+    });
+
+    // Convert to array and sort by week
+    const sortedWeeks = Object.entries(weeks)
+      .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+      .slice(0, 4); // Get last 4 weeks
+
+    // Format response
+    const performanceTrends = sortedWeeks.map(([date, scores], index) => {
+      const weekNumber = index + 1;
+      return {
+        name: `Week ${4 - index}`,
+        FOH: scores.FOH.count > 0 
+          ? Number(((scores.FOH.total / scores.FOH.totalPossible) * 100).toFixed(1))
+          : null,
+        BOH: scores.BOH.count > 0 
+          ? Number(((scores.BOH.total / scores.BOH.totalPossible) * 100).toFixed(1))
+          : null
+      };
+    }).reverse(); // Reverse so Week 1 is oldest
+
+    console.log('Final performance trends:', performanceTrends);
+
+    res.json({ performanceTrends });
+  } catch (error) {
+    console.error('Error fetching performance trends:', error);
+    res.status(500).json({ message: 'Failed to fetch performance trends' });
+  }
+});
+
 export default router; 
