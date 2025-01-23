@@ -9,21 +9,100 @@ router.get('/quick-stats', auth, async (req, res) => {
   try {
     // Get total team members for the store
     const teamMembers = await User.countDocuments({ store: req.user.store._id });
+    console.log('Total team members:', teamMembers);
 
     // Calculate average performance from evaluations
     const recentEvaluations = await Evaluation.find({
       store: req.user.store._id,
-      status: 'completed',
-      completedDate: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } // Last 90 days
+      status: 'completed'
+    })
+    .populate('employee')
+    .populate({
+      path: 'template',
+      populate: {
+        path: 'sections.criteria.gradingScale',
+        model: 'GradingScale'
+      }
+    });
+
+    console.log('Found evaluations:', recentEvaluations.length);
+    console.log('Sample evaluation:', recentEvaluations[0]);
+
+    // Get default grading scale
+    const defaultScale = await GradingScale.findOne({ 
+      store: req.user.store._id,
+      isDefault: true,
+      isActive: true
     });
 
     let avgPerformance = 0;
     if (recentEvaluations.length > 0) {
-      const totalScore = recentEvaluations.reduce((sum, evaluation) => {
-        // Assuming each evaluation has a finalScore or calculate it from criteria
-        return sum + (evaluation.finalScore || 0);
-      }, 0);
-      avgPerformance = Math.round((totalScore / recentEvaluations.length) * 100);
+      const evaluationScores = recentEvaluations.map(evaluation => {
+        // Ensure we have the required data
+        if (!evaluation.managerEvaluation || !evaluation.template) {
+          console.log('Skipping evaluation - missing data:', evaluation._id);
+          return { score: 0, totalPossible: 0 };
+        }
+
+        // Convert managerEvaluation Map to object if needed
+        const scores = evaluation.managerEvaluation instanceof Map 
+          ? Object.fromEntries(evaluation.managerEvaluation)
+          : evaluation.managerEvaluation;
+
+        console.log('Processing scores:', scores);
+
+        let totalScore = 0;
+        let totalPossible = 0;
+
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+          section.criteria.forEach((criterion, criterionIndex) => {
+            const key = `${sectionIndex}-${criterionIndex}`;
+            const score = scores[key];
+            const scale = criterion.gradingScale || defaultScale;
+            
+            if (score !== undefined && scale && scale.grades) {
+              const numericScore = mapScoreToNumeric(score);
+              totalScore += numericScore;
+              
+              // Calculate max possible score from the grading scale
+              const maxPossible = Math.max(...scale.grades.map(g => g.value));
+              totalPossible += maxPossible;
+
+              console.log('Criterion calculation:', {
+                key,
+                score,
+                numericScore,
+                maxPossible
+              });
+            }
+          });
+        });
+
+        console.log('Evaluation calculation:', {
+          evaluationId: evaluation._id,
+          totalScore,
+          totalPossible,
+          scores
+        });
+
+        return { score: totalScore, totalPossible };
+      });
+
+      // Filter out evaluations with no possible points to avoid division by zero
+      const validScores = evaluationScores.filter(score => score.totalPossible > 0);
+      
+      if (validScores.length > 0) {
+        const totalScore = validScores.reduce((sum, evalScore) => sum + evalScore.score, 0);
+        const totalPossible = validScores.reduce((sum, evalScore) => sum + evalScore.totalPossible, 0);
+        avgPerformance = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
+        
+        console.log('Final calculation:', {
+          totalScore,
+          totalPossible,
+          numberOfEvaluations: validScores.length,
+          avgPerformance
+        });
+      }
     }
 
     // Calculate development goals progress
@@ -1002,7 +1081,7 @@ router.get('/team-scores', auth, async (req, res) => {
         model: 'GradingScale'
       }
     })
-    .sort({ completedDate: -1 });
+    .sort({ completedAt: -1 });
 
     // Get default grading scale
     const defaultScale = await GradingScale.findOne({ 
@@ -1080,7 +1159,7 @@ router.get('/team-scores', auth, async (req, res) => {
       teamScores[employeeId].evaluations.push({
         score: totalScore,
         totalPossible: totalPossible,
-        date: evaluation.completedDate
+        date: evaluation.completedAt
       });
     });
 
@@ -1239,5 +1318,26 @@ router.get('/performance-trends', auth, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch performance trends' });
   }
 });
+
+// Add score mapping function
+const mapScoreToNumeric = (score) => {
+  // Handle numeric scores
+  if (!isNaN(score)) {
+    return Number(score);
+  }
+
+  // Handle text-based scores
+  const scoreMap = {
+    '- Star': 4,
+    '- Excellent': 5,
+    '- Very Good': 4,
+    '- Valued': 3,
+    '- Performer': 2,
+    '- Improvement Needed': 1,
+    '- Improvment Needed': 1 // Handle misspelling
+  };
+
+  return scoreMap[score] || 0;
+};
 
 export default router; 

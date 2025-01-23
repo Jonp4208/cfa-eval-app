@@ -119,9 +119,10 @@ const scheduleUserEvaluations = async () => {
 
         await evaluation.save();
         
-        // Update next evaluation date
+        // Calculate next evaluation date properly
         const newNextDate = new Date(today);
-        newNextDate.setDate(today.getDate() + user.schedulingPreferences.frequency);
+        // Use setTime to add milliseconds instead of setDate
+        newNextDate.setTime(newNextDate.getTime() + (user.schedulingPreferences.frequency * 24 * 60 * 60 * 1000));
         
         await User.findByIdAndUpdate(user._id, {
           $set: {
