@@ -20,6 +20,7 @@ interface UserFormData {
   status: string;
   isAdmin: boolean;
   role: string;
+  shift: string;
   manager?: string;
   schedulingPreferences?: {
     autoSchedule: boolean;
@@ -39,7 +40,8 @@ export default function EditUser() {
     position: '',
     status: 'active',
     isAdmin: false,
-    role: 'user'
+    role: 'user',
+    shift: 'day'
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +65,7 @@ export default function EditUser() {
         status: user.status || 'active',
         isAdmin: user.position === 'Director',
         role: user.role || 'user',
+        shift: user.shift || 'day',
         manager: user.manager?._id || user.manager,
         schedulingPreferences: {
           autoSchedule: user.schedulingPreferences?.autoSchedule || false,
@@ -87,6 +90,7 @@ export default function EditUser() {
           position: data.position,
           role: data.role,
           status: data.status,
+          shift: data.shift,
           manager: data.manager,
           schedulingPreferences: data.schedulingPreferences ? {
             autoSchedule: data.schedulingPreferences.autoSchedule,
@@ -256,6 +260,21 @@ export default function EditUser() {
                       <SelectItem value="Trainer">Trainer</SelectItem>
                       <SelectItem value="Leader">Leader</SelectItem>
                       <SelectItem value="Director">Director</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Shift</label>
+                  <Select
+                    value={formData.shift}
+                    onValueChange={(value: string) => setFormData({ ...formData, shift: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select shift" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">Day</SelectItem>
+                      <SelectItem value="night">Night</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

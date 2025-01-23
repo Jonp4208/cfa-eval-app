@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema({
     enum: ['Front Counter', 'Drive Thru', 'Kitchen', 'Everything'],
     required: true
   }],
+  shift: {
+    type: String,
+    enum: ['day', 'night'],
+    required: true
+  },
   position: {
     type: String,
     enum: [

@@ -1081,7 +1081,7 @@ router.get('/team-scores', auth, async (req, res) => {
         model: 'GradingScale'
       }
     })
-    .sort({ completedAt: -1 });
+    .sort({ completedDate: -1 });
 
     // Get default grading scale
     const defaultScale = await GradingScale.findOne({ 
@@ -1159,7 +1159,7 @@ router.get('/team-scores', auth, async (req, res) => {
       teamScores[employeeId].evaluations.push({
         score: totalScore,
         totalPossible: totalPossible,
-        date: evaluation.completedAt
+        date: evaluation.completedDate
       });
     });
 

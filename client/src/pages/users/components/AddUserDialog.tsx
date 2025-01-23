@@ -33,6 +33,7 @@ interface User {
     _id: string;
     name: string;
   };
+  shift: string;
 }
 
 interface FormData {
@@ -41,6 +42,7 @@ interface FormData {
   departments: string[];
   position: string;
   role: string;
+  shift: string;
   managerId?: string;
 }
 
@@ -59,6 +61,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     departments: [],
     position: '',
     role: 'user',
+    shift: 'day',
     managerId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -97,6 +100,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         departments: user.departments || [],
         position: user.position || '',
         role: user.role || 'user',
+        shift: user.shift || 'day',
         managerId: user.manager?._id || ''
       });
     } else if (open) {
@@ -106,6 +110,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         departments: [],
         position: '',
         role: 'user',
+        shift: 'day',
         managerId: ''
       });
     }
@@ -119,6 +124,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     if (!formData.email) newErrors.email = 'Email is required';
     if (!formData.position) newErrors.position = 'Position is required';
     if (formData.departments.length === 0) newErrors.departments = 'At least one department is required';
+    if (!formData.shift) newErrors.shift = 'Shift is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -137,7 +143,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
           email: formData.email,
           departments: formData.departments,
           position: formData.position,
-          role: formData.role
+          role: formData.role,
+          shift: formData.shift
         });
 
         // Update manager if changed
@@ -153,7 +160,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
           email: formData.email,
           departments: formData.departments,
           position: formData.position,
-          role: formData.role
+          role: formData.role,
+          shift: formData.shift
         });
 
         // Set manager for new user if selected
@@ -178,6 +186,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         departments: [],
         position: '',
         role: 'user',
+        shift: 'day',
         managerId: ''
       });
       
@@ -195,7 +204,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[#27251F]">{user ? 'Edit Team Member' : 'Add Team Member'}</DialogTitle>
           <DialogDescription className="text-[#27251F]/60">
@@ -251,7 +260,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                 value={formData.position}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
               >
-                <SelectTrigger id="position" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
+                <SelectTrigger className="border-gray-200">
                   <SelectValue placeholder="Select position" />
                 </SelectTrigger>
                 <SelectContent>
@@ -262,6 +271,23 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                 </SelectContent>
               </Select>
               {errors.position && <p className="text-sm text-[#E51636]">{errors.position}</p>}
+            </div>
+
+            <div className="grid gap-2">
+              <label htmlFor="shift" className="text-sm font-medium text-[#27251F]">Shift</label>
+              <Select
+                value={formData.shift}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, shift: value }))}
+              >
+                <SelectTrigger className="border-gray-200">
+                  <SelectValue placeholder="Select shift" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Day</SelectItem>
+                  <SelectItem value="night">Night</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.shift && <p className="text-sm text-[#E51636]">{errors.shift}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -301,6 +327,19 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
               </Select>
             </div>
           </div>
+
+          {user && (
+            <div className="flex justify-start py-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => window.location.href = `/users/${user._id}/edit`}
+                className="border-[#E51636] text-[#E51636] hover:bg-[#E51636]/10"
+              >
+                Setup Auto-Scheduling ↗
+              </Button>
+            </div>
+          )}
 
           <DialogFooter>
             <Button 
