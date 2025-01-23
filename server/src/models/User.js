@@ -209,7 +209,24 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   },
   resetPasswordToken: String,
-  resetPasswordExpiry: Date
+  resetPasswordExpiry: Date,
+  schedulingPreferences: {
+    autoSchedule: { 
+      type: Boolean, 
+      default: false 
+    },
+    frequency: { 
+      type: Number, 
+      default: 90 // Default to quarterly (90 days)
+    },
+    nextEvaluationDate: Date,
+    lastCalculatedAt: Date,
+    cycleStart: {
+      type: String,
+      enum: ['hire_date', 'last_evaluation'],
+      default: 'hire_date'
+    }
+  }
 });
 
 // Generate a random password for new users

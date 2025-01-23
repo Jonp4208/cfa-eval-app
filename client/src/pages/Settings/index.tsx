@@ -24,7 +24,6 @@ const SettingsPage = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isDirector = user?.position === 'Director';
 
   // State to track form changes
   const [formState, setFormState] = useState({
@@ -78,18 +77,38 @@ const SettingsPage = () => {
 
   // Update mutations
   const updateSettingsMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await api.patch('/api/settings', data);
-      return response.data;
-    },
-    onSuccess: () => {
-      setSuccess('Settings updated successfully');
+    mutationFn: settingsService.updateSettings,
+    onSuccess: (data) => {
+      // If this was an auto-schedule enable, show scheduling results
+      if (data.schedulingResults) {
+        setSuccess(`Auto-scheduling enabled successfully. ${data.schedulingResults.scheduled} employees scheduled for evaluation.`);
+      } else {
+        setSuccess('Settings updated successfully');
+      }
       setTimeout(() => setSuccess(''), 3000);
       setError('');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
     onError: (error: any) => {
-      setError(error.response?.data?.message || 'Failed to update settings');
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to update settings';
+      const issues = error.response?.data?.issues || [];
+      
+      // Update the settings with configuration issues
+      if (error.response?.data?.configurationIssues) {
+        queryClient.setQueryData(['settings'], (oldData: any) => ({
+          ...oldData,
+          evaluations: {
+            ...oldData.evaluations,
+            configurationIssues: error.response.data.configurationIssues
+          }
+        }));
+      }
+
+      console.error('Settings mutation error:', errorMessage, issues);
+      setError(errorMessage);
+      if (issues.length > 0) {
+        setError(`${errorMessage}:\n${issues.join('\n')}`);
+      }
       setSuccess('');
     }
   });
@@ -157,6 +176,28 @@ const SettingsPage = () => {
     }
   };
 
+  const handleEvaluationSettingUpdate = (section: string, value: any) => {
+    // For scheduling section, ensure we maintain the proper structure
+    if (section === 'scheduling') {
+      const updateData = {
+        evaluations: {
+          scheduling: value  // Use the value directly since it's already properly structured
+        }
+      };
+      console.log('Sending settings update:', updateData);
+      updateSettingsMutation.mutate(updateData);
+    } else {
+      // For other sections, use the original structure
+      const updateData = {
+        evaluations: {
+          [section]: value
+        }
+      };
+      console.log('Sending settings update:', updateData);
+      updateSettingsMutation.mutate(updateData);
+    }
+  };
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -188,23 +229,53 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* Error and Success Messages */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-[20px] shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="shrink-0 mt-1">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="currentColor"/>
+                </svg>
+              </div>
+              <div>
+                {error.split('\n').map((line, index) => (
+                  <p key={index} className={index === 0 ? 'font-medium text-base' : 'mt-1 text-sm'}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-[20px] shadow-sm">
+            <div className="flex items-center gap-3">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
+              </svg>
+              <p>{success}</p>
+            </div>
+          </div>
+        )}
+
         {/* Settings Content */}
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList className="bg-white rounded-[20px] p-1 h-auto flex flex-wrap gap-2">
             <TabsTrigger value="general" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
               General
             </TabsTrigger>
-            {isDirector && (
+            {isAdmin && (
               <TabsTrigger value="users" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
                 User Access
               </TabsTrigger>
             )}
-            {isDirector && (
+            {isAdmin && (
               <TabsTrigger value="evaluation" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
                 Evaluation
               </TabsTrigger>
             )}
-            {isDirector && (
+            {isAdmin && (
               <TabsTrigger value="grading-scales" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
                 Grading Scales
               </TabsTrigger>
@@ -345,7 +416,7 @@ const SettingsPage = () => {
             </Card>
           </TabsContent>
 
-          {isDirector && (
+          {isAdmin && (
             <TabsContent value="users">
               <UserAccessSettings 
                 settings={settings?.userAccess}
@@ -355,33 +426,22 @@ const SettingsPage = () => {
             </TabsContent>
           )}
 
-          {isDirector && (
+          {isAdmin && (
             <TabsContent value="evaluation">
               <EvaluationSettings 
-                settings={settings?.evaluations}
-                onUpdate={(data) => updateSettingsMutation.mutate({ evaluations: data })}
-                isUpdating={updateSettingsMutation.isPending}
+                settings={settings}
+                onUpdate={handleEvaluationSettingUpdate}
+                updateSettings={settingsService.updateSettings}
               />
             </TabsContent>
           )}
 
-          {isDirector && (
+          {isAdmin && (
             <TabsContent value="grading-scales">
               <GradingScales />
             </TabsContent>
           )}
         </Tabs>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
-            {success}
-          </div>
-        )}
       </div>
     </div>
   );

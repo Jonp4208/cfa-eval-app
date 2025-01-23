@@ -1,4 +1,5 @@
 import { User } from '../models/index.js';
+import { Evaluation } from '../models/index.js';
 
 // Update user metrics
 export const updateUserMetrics = async (req, res) => {
@@ -32,45 +33,83 @@ export const updateUserMetrics = async (req, res) => {
 };
 
 // Update user
-export const updateUser = async (req, res, normalizedData) => {
+export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = normalizedData || req.body;
+    const updates = req.body;
+    
+    // Handle scheduling preferences
+    if (updates.schedulingPreferences) {
+      const { autoSchedule, frequency, cycleStart } = updates.schedulingPreferences;
+      
+      // If auto-schedule is enabled, calculate next evaluation date
+      if (autoSchedule) {
+        try {
+          // Get user's last evaluation
+          const lastEvaluation = await Evaluation.findOne({ 
+            employee: id,
+            status: 'completed'
+          }).sort({ completedAt: -1 });
 
-    // Remove any sensitive fields that shouldn't be updated directly
-    delete updates.password;
-    delete updates.store; // Store should only be changed through specific endpoints
+          let nextEvaluationDate;
+          const today = new Date();
 
-    console.log('Updating user with normalized data:', {
-      id,
-      updates,
-      departments: updates.departments,
-      position: updates.position
-    });
+          if (cycleStart === 'last_evaluation' && lastEvaluation?.completedAt) {
+            // Calculate from last evaluation date
+            nextEvaluationDate = new Date(lastEvaluation.completedAt);
+            if (!isNaN(nextEvaluationDate.getTime())) {
+              nextEvaluationDate.setDate(nextEvaluationDate.getDate() + Number(frequency));
+              
+              // If calculated date is in the past, schedule from today
+              if (nextEvaluationDate < today) {
+                nextEvaluationDate = new Date(today);
+                nextEvaluationDate.setDate(today.getDate() + Number(frequency));
+              }
+            } else {
+              // Invalid last evaluation date, fallback to today
+              nextEvaluationDate = new Date(today);
+              nextEvaluationDate.setDate(today.getDate() + Number(frequency));
+            }
+          } else {
+            // No previous evaluation or using hire date, schedule from today
+            nextEvaluationDate = new Date(today);
+            nextEvaluationDate.setDate(today.getDate() + Number(frequency));
+          }
+
+          // Validate the calculated date
+          if (isNaN(nextEvaluationDate.getTime())) {
+            throw new Error('Invalid evaluation date calculated');
+          }
+
+          updates.schedulingPreferences.nextEvaluationDate = nextEvaluationDate;
+          updates.schedulingPreferences.lastCalculatedAt = today;
+        } catch (dateError) {
+          console.error('Error calculating evaluation dates:', dateError);
+          return res.status(400).json({ 
+            error: 'Failed to calculate evaluation dates',
+            details: dateError.message 
+          });
+        }
+      } else {
+        // If auto-schedule disabled, clear dates
+        updates.schedulingPreferences.nextEvaluationDate = null;
+        updates.schedulingPreferences.lastCalculatedAt = null;
+      }
+    }
 
     const user = await User.findByIdAndUpdate(
       id,
       { $set: updates },
       { new: true, runValidators: true }
-    ).populate('store', 'name storeNumber');
+    ).populate('evaluator');
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({
-      message: 'User updated successfully',
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        departments: user.departments,
-        position: user.position,
-        store: user.store
-      }
-    });
+    res.json(user);
   } catch (error) {
-    console.error('Error in updateUser:', error);
-    res.status(500).json({ message: 'Failed to update user' });
+    console.error('Error updating user:', error);
+    res.status(400).json({ error: error.message });
   }
 }; 

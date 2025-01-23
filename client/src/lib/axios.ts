@@ -38,6 +38,9 @@ api.interceptors.request.use((config) => {
   }
   
   return config;
+}, (error) => {
+  console.error('Request interceptor error:', error);
+  return Promise.reject(error);
 });
 
 api.interceptors.response.use(
@@ -51,6 +54,15 @@ api.interceptors.response.use(
       errorObject: error
     });
 
+    if (error.code === 'ERR_NETWORK') {
+      toast({
+        title: 'Connection Error',
+        description: 'Unable to connect to the server. Please check your connection and try again.',
+        variant: 'destructive',
+      });
+      return Promise.reject(error);
+    }
+
     // Handle 401 Unauthorized errors, but not for login/register routes
     const isPublicRoute = PUBLIC_ROUTES.some(route => error.config?.url?.includes(route));
     
@@ -60,10 +72,23 @@ api.interceptors.response.use(
         console.log('Unauthorized request - redirecting to login');
         localStorage.removeItem('token');
         window.location.href = '/login';
+      } else {
+        // For login/register routes, show error message
+        toast({
+          title: 'Authentication Error',
+          description: error.response?.data?.message || 'Invalid credentials',
+          variant: 'destructive',
+        });
       }
+    } else if (error.response) {
+      // Handle other error responses
+      toast({
+        title: 'Error',
+        description: error.response.data?.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
     }
 
-    // Always reject the promise with the error
     return Promise.reject(error);
   }
 );

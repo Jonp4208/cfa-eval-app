@@ -180,6 +180,12 @@ router.get('/:id', auth, async (req, res) => {
         goalAchievement: user.metrics?.goalAchievement || 0,
         leadershipScore: user.metrics?.leadershipScore || 0,
         heartsAndHands: user.metrics?.heartsAndHands || { x: 50, y: 50 }
+      },
+      schedulingPreferences: {
+        autoSchedule: user.schedulingPreferences?.autoSchedule || false,
+        frequency: user.schedulingPreferences?.frequency || 90,
+        nextEvaluationDate: user.schedulingPreferences?.nextEvaluationDate,
+        lastCalculatedAt: user.schedulingPreferences?.lastCalculatedAt
       }
     };
 
@@ -267,54 +273,36 @@ router.post('/', auth, async (req, res) => {
 // Update user
 router.put('/:id', auth, async (req, res) => {
   try {
-    // Leadership keywords that indicate authority
-    const leadershipKeywords = ['Director', 'Leader'];
+    const { id } = req.params;
+    const updates = req.body;
 
-    const userToUpdate = await User.findById(req.params.id);
-    if (!userToUpdate) {
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if user has permission to update
-    const hasLeadershipPosition = leadershipKeywords.some(keyword => 
-      req.user.position?.includes(keyword)
-    );
-    const isSameStore = userToUpdate.store.toString() === req.user.store._id.toString();
-    const isUpdatingSelf = req.user._id.toString() === req.params.id;
-
-    console.log('Update permission check:', {
-      userPosition: req.user.position,
-      hasLeadershipPosition,
-      isSameStore,
-      isUpdatingSelf,
-      leadershipMatch: leadershipKeywords.find(keyword => 
-        req.user.position?.includes(keyword)
-      )
-    });
-
-    if (!hasLeadershipPosition && !isUpdatingSelf) {
+    // Ensure user belongs to the same store
+    if (user.store.toString() !== req.user.store._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to update this user' });
     }
 
-    // If updating another user, ensure they're in the same store
-    if (!isUpdatingSelf && !isSameStore) {
-      return res.status(403).json({ message: 'Not authorized to update users from other stores' });
+    // Check if user has permission to update
+    const isLeadership = ['Director', 'Leader'].some(keyword => req.user.position?.includes(keyword));
+    const isUpdatingSelf = req.user._id.toString() === id;
+
+    if (!isLeadership && !isUpdatingSelf) {
+      return res.status(403).json({ message: 'Not authorized to update this user' });
     }
 
-    console.log('Request body before normalization:', req.body);
-    
-    // Normalize the user data before updating
-    const normalizedData = normalizeUserData(req.body);
-    console.log('Normalized data:', normalizedData);
-    
-    await updateUser(req, res, normalizedData);
+    // Forward to controller for processing
+    await updateUser(req, res);
   } catch (error) {
-    console.error('Error updating user:', error);
-    if (error.name === 'ValidationError') {
-      console.error('Validation error details:', error.errors);
-      return res.status(400).json({ message: 'Invalid updates', errorObject: error.errors });
-    }
-    res.status(500).json({ message: 'Failed to update user' });
+    console.error('Error in user update route:', error);
+    res.status(500).json({ 
+      message: 'Failed to update user', 
+      error: error.message 
+    });
   }
 });
 

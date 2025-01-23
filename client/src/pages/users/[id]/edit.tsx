@@ -10,6 +10,7 @@ import { ArrowLeft } from 'lucide-react';
 import api from '@/lib/axios';
 import { Toaster } from '@/components/ui/toaster';
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Switch } from "@/components/ui/switch";
 
 interface UserFormData {
   name: string;
@@ -19,6 +20,12 @@ interface UserFormData {
   status: string;
   isAdmin: boolean;
   role: string;
+  manager?: string;
+  schedulingPreferences?: {
+    autoSchedule: boolean;
+    frequency: number;
+    cycleStart: 'hire_date' | 'last_evaluation';
+  };
 }
 
 export default function EditUser() {
@@ -55,7 +62,13 @@ export default function EditUser() {
         position: user.position || '',
         status: user.status || 'active',
         isAdmin: user.position === 'Director',
-        role: user.role || 'user'
+        role: user.role || 'user',
+        manager: user.manager?._id || user.manager,
+        schedulingPreferences: {
+          autoSchedule: user.schedulingPreferences?.autoSchedule || false,
+          frequency: user.schedulingPreferences?.frequency || 90,
+          cycleStart: user.schedulingPreferences?.cycleStart || 'hire_date'
+        }
       };
       setFormData(transformedData);
     }
@@ -66,7 +79,24 @@ export default function EditUser() {
     mutationFn: async (data: UserFormData) => {
       try {
         setError(null);
-        const response = await api.put(`/api/users/${id}`, data);
+        // Transform the data to match server expectations
+        const transformedData = {
+          name: data.name,
+          email: data.email,
+          departments: data.departments,
+          position: data.position,
+          role: data.role,
+          status: data.status,
+          manager: data.manager,
+          schedulingPreferences: data.schedulingPreferences ? {
+            autoSchedule: data.schedulingPreferences.autoSchedule,
+            frequency: Number(data.schedulingPreferences.frequency),
+            cycleStart: data.schedulingPreferences.cycleStart
+          } : undefined
+        };
+        
+        console.log('Sending data to server:', transformedData);
+        const response = await api.put(`/api/users/${id}`, transformedData);
         return response.data;
       } catch (error: any) {
         const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error occurred';
@@ -97,6 +127,26 @@ export default function EditUser() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     updateUserMutation.mutate(formData);
+  };
+
+  // Add frequency options
+  const frequencyOptions = [
+    { value: 30, label: 'Monthly (30 days)' },
+    { value: 60, label: 'Bi-Monthly (60 days)' },
+    { value: 90, label: 'Quarterly (90 days)' },
+    { value: 180, label: 'Semi-Annually (180 days)' },
+    { value: 365, label: 'Annually (365 days)' }
+  ];
+
+  // Handle scheduling preference changes
+  const handleSchedulingChange = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      schedulingPreferences: {
+        ...prev.schedulingPreferences,
+        [field]: value
+      }
+    }));
   };
 
   if (isLoading) {
@@ -246,6 +296,67 @@ export default function EditUser() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+            </div>
+
+            {/* Evaluation Scheduling Section */}
+            <div className="space-y-4 pt-4 border-t">
+              <h2 className="text-lg font-semibold text-gray-700">Evaluation Scheduling</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <label className="text-sm font-medium text-gray-700">Auto-schedule Evaluations</label>
+                    <p className="text-sm text-gray-500">Automatically schedule evaluations for this team member</p>
+                  </div>
+                  <Switch
+                    checked={formData.schedulingPreferences?.autoSchedule || false}
+                    onCheckedChange={(checked) => handleSchedulingChange('autoSchedule', checked)}
+                  />
+                </div>
+                
+                {formData.schedulingPreferences?.autoSchedule && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Evaluation Frequency</label>
+                      <Select
+                        value={String(formData.schedulingPreferences?.frequency || 90)}
+                        onValueChange={(value) => handleSchedulingChange('frequency', Number(value))}
+                      >
+                        <SelectTrigger className="border-gray-200">
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {frequencyOptions.map((option) => (
+                            <SelectItem key={option.value} value={String(option.value)}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Start Cycle From</label>
+                      <Select
+                        value={formData.schedulingPreferences?.cycleStart || 'hire_date'}
+                        onValueChange={(value) => handleSchedulingChange('cycleStart', value)}
+                      >
+                        <SelectTrigger className="border-gray-200">
+                          <SelectValue placeholder="Select start date" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="hire_date">Hire Date</SelectItem>
+                          <SelectItem value="last_evaluation">Last Evaluation Date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-gray-500">
+                        {formData.schedulingPreferences?.cycleStart === 'hire_date' 
+                          ? "First evaluation will be scheduled based on hire date, subsequent evaluations will follow the frequency"
+                          : "All evaluations will be scheduled based on the last completed evaluation date"}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

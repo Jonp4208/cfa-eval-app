@@ -13,7 +13,7 @@ import {
   TrendingUp, ClipboardList, Star, 
   FileText, AlertCircle, BookOpen,
   CheckCircle, Activity, Target,
-  ArrowLeft
+  ArrowLeft, Pencil
 } from 'lucide-react';
 import api from '@/lib/axios';
 import Draggable from 'react-draggable';
@@ -343,14 +343,26 @@ export default function UserProfile() {
               <h1 className="text-3xl md:text-4xl font-semibold text-white mb-2">{profile.name}</h1>
               <p className="text-white/60">View and manage user profile details</p>
             </div>
-            <Button 
-              variant="outline"
-              onClick={() => navigate(currentUser?._id === profile._id ? '/' : '/users')}
-              className="w-fit bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {currentUser?._id === profile._id ? 'Back to Dashboard' : 'Back to Users'}
-            </Button>
+            <div className="flex items-center gap-4">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/users/${id}/edit`)}
+                  className="w-fit bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white flex items-center gap-2"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit Profile
+                </Button>
+              )}
+              <Button 
+                variant="outline"
+                onClick={() => navigate(currentUser?._id === profile._id ? '/' : '/users')}
+                className="w-fit bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                {currentUser?._id === profile._id ? 'Back to Dashboard' : 'Back to Users'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -370,41 +382,15 @@ export default function UserProfile() {
                       <span>Manager: {profile.manager.name}</span>
                     </>
                   )}
-                </p>
-              </div>
-              <div className="mt-4 md:mt-0 flex items-center gap-4">
-                {isAdmin && (
-                  <div className="min-w-[200px] relative">
-                    <label className="text-sm font-medium text-[#27251F]/60 block mb-1">Manager</label>
-                    <select
-                      value={selectedManagerId}
-                      onChange={(e) => {
-                        setSelectedManagerId(e.target.value);
-                        updateManager.mutate(e.target.value);
-                      }}
-                      className="w-full h-12 px-4 rounded-xl border border-[#27251F]/10 focus:outline-none focus:ring-2 focus:ring-[#E51636]/20 focus:border-[#E51636] bg-white"
-                      disabled={loadingManagers || updateManager.isPending}
-                      style={{ transform: 'none' }}
-                    >
-                      <option value="">No Manager Assigned</option>
-                      {potentialManagers?.map((manager: any) => (
-                        <option key={manager._id} value={manager._id}>
-                          {manager.name} ({manager.position})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="text-sm font-medium text-[#27251F]/60 block mb-1">Status</label>
-                  <span className={`inline-block px-4 py-2 rounded-xl text-sm font-medium ${
+                  <span className="mx-2">|</span>
+                  <span className={`inline-block px-3 py-1 rounded-xl text-sm font-medium ${
                     profile.status === 'active' 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-gray-100 text-gray-800'
                   }`}>
                     {profile.status}
                   </span>
-                </div>
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

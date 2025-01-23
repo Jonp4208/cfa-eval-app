@@ -1,18 +1,121 @@
 // File: src/pages/Settings/components/EvaluationSettings.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
+import { toast } from "@/components/ui/use-toast";
+import { Label } from "@/components/ui/label";
 
 interface EvaluationSettingsProps {
   settings: any;
-  onUpdate: (section: string, settings: any) => void;
-  isUpdating: boolean;
+  onUpdate: (section: string, values: any) => void;
+  updateSettings: (settings: any) => Promise<any>;
 }
 
-const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettingsProps) => {
+const EvaluationSettings = ({ settings, onUpdate, updateSettings }: EvaluationSettingsProps) => {
+  const navigate = useNavigate();
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Clear validation errors when settings change
+  useEffect(() => {
+    if (settings?.evaluations?.scheduling?.autoSchedule === false) {
+      setValidationErrors([]);
+    }
+  }, [settings?.evaluations?.scheduling?.autoSchedule]);
+
+  const handleAutoScheduleChange = async (checked: boolean) => {
+    setIsUpdating(true);
+    setValidationErrors([]); // Clear previous validation errors
+    try {
+      // When enabling, include all required fields with existing values
+      const schedulingSettings = checked ? {
+        autoSchedule: true,
+        frequency: settings?.evaluations?.scheduling?.frequency || 90,
+        cycleStart: settings?.evaluations?.scheduling?.cycleStart || 'hire_date',
+        transitionMode: settings?.evaluations?.scheduling?.transitionMode || 'complete_cycle'
+      } : {
+        autoSchedule: false
+      };
+
+      const updateData = {
+        evaluations: {
+          scheduling: schedulingSettings
+        }
+      };
+      
+      const response = await updateSettings(updateData);
+      
+      // Clear any existing validation errors on success
+      setValidationErrors([]);
+      
+      // Update settings with response data including scheduling results
+      onUpdate('evaluations', {
+        ...response.evaluations,
+        schedulingResults: response.schedulingResults,
+        configurationIssues: response.evaluations.configurationIssues
+      });
+      
+      // Show appropriate success message
+      if (response.schedulingResults) {
+        toast({
+          title: 'Auto-scheduling enabled',
+          description: `Successfully scheduled ${response.schedulingResults.scheduled} evaluations${
+            response.schedulingResults.skipped ? ` (${response.schedulingResults.skipped} skipped)` : ''
+          }.`,
+          variant: 'default',
+        });
+      } else if (!checked) {
+        toast({
+          title: 'Auto-scheduling disabled',
+          description: 'Automatic evaluation scheduling has been disabled.',
+          variant: 'default',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error updating auto-schedule setting:', error);
+      
+      // Handle validation errors
+      if (error.response?.status === 400) {
+        const issues = error.response.data.issues || [];
+        setValidationErrors(issues);
+        
+        // Update settings with configuration issues from error response
+        if (error.response.data.currentSettings) {
+          onUpdate('evaluations', {
+            ...error.response.data.currentSettings.evaluations,
+            configurationIssues: error.response.data.configurationIssues
+          });
+        }
+        
+        // Show error toast with main message
+        toast({
+          title: 'Configuration Error',
+          description: error.response.data.error || 'Failed to update auto-schedule setting',
+          variant: 'destructive',
+        });
+        
+        // Reset the toggle state since enabling failed
+        onUpdate('scheduling', { 
+          ...settings?.evaluations?.scheduling,
+          autoSchedule: false 
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred while updating settings.',
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <Card className="bg-white rounded-[20px] shadow-md">
       <CardHeader>
@@ -20,6 +123,48 @@ const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettin
         <CardDescription className="text-[#27251F]/60">Configure evaluation process and requirements</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Configuration Issues Alert */}
+        {settings?.evaluations?.configurationIssues && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-[20px] overflow-hidden">
+            <div className="px-6 py-4 bg-amber-100/50 border-b border-amber-200">
+              <h3 className="text-amber-800 font-medium">Configuration Required</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                The following issues need to be resolved before enabling auto-scheduling:
+              </p>
+            </div>
+            <div className="px-6 py-4">
+              {settings.evaluations.configurationIssues.unassignedEvaluators > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-amber-800 font-medium">Employees Missing Evaluators</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        {settings.evaluations.configurationIssues.unassignedEvaluators} employees need evaluators assigned
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => navigate('/employees?filter=no_evaluator')}
+                      className="bg-amber-100 hover:bg-amber-200 text-amber-900 border-0"
+                    >
+                      Assign Evaluators
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {validationErrors.length > 0 && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm font-medium text-red-800 mb-2">Please address the following issues:</p>
+            <ul className="list-disc list-inside text-sm text-red-700">
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <Accordion type="single" collapsible className="w-full space-y-4">
           {/* Scheduling */}
           <AccordionItem value="scheduling" className="border-b-0">
@@ -31,106 +176,129 @@ const EvaluationSettings = ({ settings, onUpdate, isUpdating }: EvaluationSettin
             </AccordionTrigger>
             <AccordionContent className="pt-2 pb-6">
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-[#27251F]">Automatic Scheduling</label>
-                    <p className="text-sm text-[#27251F]/60">Enable automatic evaluation scheduling</p>
+                    <Label>Enable automatic evaluation scheduling</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically schedule evaluations based on settings
+                    </p>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={settings?.evaluations?.scheduling?.autoSchedule}
-                    onCheckedChange={(checked) => 
-                      onUpdate('scheduling', { autoSchedule: checked })
-                    }
-                    className="data-[state=checked]:bg-[#E51636]"
+                    onCheckedChange={handleAutoScheduleChange}
+                    disabled={isUpdating}
                   />
                 </div>
 
                 {settings?.evaluations?.scheduling?.autoSchedule && (
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <label className="text-sm font-medium text-[#27251F]">Transition Handling</label>
-                      <p className="text-sm text-[#27251F]/60">How to handle existing evaluation cycles</p>
+                  <>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Evaluation Frequency</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Set default evaluation frequency
+                        </p>
+                        <Select
+                          value={settings?.evaluations?.scheduling?.frequency?.toString()}
+                          onValueChange={(value) =>
+                            onUpdate('evaluations.scheduling.frequency', parseInt(value))
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="30">Monthly</SelectItem>
+                            <SelectItem value="90">Quarterly</SelectItem>
+                            <SelectItem value="180">Semi-Annually</SelectItem>
+                            <SelectItem value="365">Annually</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>Cycle Start Date</Label>
+                        <p className="text-sm text-muted-foreground">
+                          When to start the evaluation cycle
+                        </p>
+                        <Select
+                          value={settings?.evaluations?.scheduling?.cycleStart}
+                          onValueChange={(value) =>
+                            onUpdate('evaluations.scheduling.cycleStart', value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select cycle start" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="hire_date">Employee Start Date</SelectItem>
+                            <SelectItem value="last_evaluation">Last Evaluation</SelectItem>
+                            <SelectItem value="calendar_year">Calendar Year</SelectItem>
+                            <SelectItem value="fiscal_year">Fiscal Year</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>Transition Handling</Label>
+                        <p className="text-sm text-muted-foreground">
+                          How to handle existing evaluation cycles
+                        </p>
+                        <Select
+                          value={settings?.evaluations?.scheduling?.transitionMode}
+                          onValueChange={(value) =>
+                            onUpdate('evaluations.scheduling.transitionMode', value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select transition mode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="complete_cycle">Complete Current Cycle</SelectItem>
+                            <SelectItem value="immediate">Start New Cycle Immediately</SelectItem>
+                            <SelectItem value="next_period">Start Next Period</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Add Scheduling Summary */}
+                      <div className="mt-6 p-4 bg-muted rounded-lg">
+                        <h4 className="font-medium mb-2">Scheduling Summary</h4>
+                        {settings?.evaluations?.scheduling?.autoSchedule && (
+                          <div className="space-y-2">
+                            <p className="text-sm">
+                              Total Employees: {settings?.evaluations?.configurationIssues?.totalEmployees || 0}
+                            </p>
+                            <p className="text-sm">
+                              Ready for Scheduling: {(settings?.evaluations?.configurationIssues?.totalEmployees || 0) - 
+                                (settings?.evaluations?.configurationIssues?.unassignedEvaluators || 0)}
+                            </p>
+                            {settings?.evaluations?.configurationIssues?.unassignedEvaluators > 0 && (
+                              <p className="text-sm text-yellow-600">
+                                Skipped (No Evaluator): {settings.evaluations.configurationIssues.unassignedEvaluators}
+                              </p>
+                            )}
+                            {settings?.evaluations?.schedulingResults ? (
+                              <>
+                                <p className="text-sm text-green-600">
+                                  Successfully Scheduled: {settings.evaluations.schedulingResults.scheduled || 0}
+                                </p>
+                                {settings.evaluations.schedulingResults.errors > 0 && (
+                                  <p className="text-sm text-red-600">
+                                    Failed to Schedule: {settings.evaluations.schedulingResults.errors}
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                No evaluations currently scheduled
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <Select 
-                      defaultValue={settings?.evaluations?.scheduling?.transitionMode}
-                      onValueChange={(value) => 
-                        onUpdate('scheduling', { transitionMode: value })
-                      }
-                    >
-                      <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
-                        <SelectValue placeholder="Select handling" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="immediate">Start Next Period</SelectItem>
-                        <SelectItem value="complete_cycle">Complete Current Cycle</SelectItem>
-                        <SelectItem value="align_next">Align to Next Date</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <label className="text-sm font-medium text-[#27251F]">Evaluation Frequency</label>
-                    <p className="text-sm text-[#27251F]/60">Set default evaluation frequency</p>
-                  </div>
-                  <Select 
-                    defaultValue={settings?.evaluations?.scheduling?.frequency?.toString()}
-                    onValueChange={(value) => 
-                      onUpdate('scheduling', { frequency: parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">Monthly</SelectItem>
-                      <SelectItem value="90">Quarterly</SelectItem>
-                      <SelectItem value="180">Semi-Annually</SelectItem>
-                      <SelectItem value="365">Annually</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <label className="text-sm font-medium text-[#27251F]">Cycle Start Date</label>
-                    <p className="text-sm text-[#27251F]/60">When to start the evaluation cycle</p>
-                  </div>
-                  <Select 
-                    defaultValue={settings?.evaluations?.scheduling?.cycleStart}
-                    onValueChange={(value) => 
-                      onUpdate('scheduling', { cycleStart: value })
-                    }
-                  >
-                    <SelectTrigger className="w-[180px] h-12 rounded-xl border-gray-200">
-                      <SelectValue placeholder="Select start date" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hire_date">Employee Start Date</SelectItem>
-                      <SelectItem value="last_evaluation">Last Evaluation Date</SelectItem>
-                      <SelectItem value="calendar_year">Calendar Year (Jan 1)</SelectItem>
-                      <SelectItem value="fiscal_year">Fiscal Year (Oct 1)</SelectItem>
-                      <SelectItem value="custom">Custom Date</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {settings?.evaluations?.scheduling?.cycleStart === 'custom' && (
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <label className="text-sm font-medium text-[#27251F]">Custom Start Date</label>
-                      <p className="text-sm text-[#27251F]/60">Set specific date to start cycle</p>
-                    </div>
-                    <Input 
-                      type="date"
-                      value={settings?.evaluations?.scheduling?.customStartDate}
-                      onChange={(e) => 
-                        onUpdate('scheduling', { customStartDate: e.target.value })
-                      }
-                      className="w-[180px] h-12 rounded-xl border-gray-200"
-                    />
-                  </div>
+                  </>
                 )}
               </div>
             </AccordionContent>
