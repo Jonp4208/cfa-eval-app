@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Settings as SettingsIcon, Users, FileText, Bell, BarChart, Save, RotateCcw, ChevronLeft, Scale, Mail } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import UserAccessSettings from './components/UserAccessSettings';
-import EvaluationSettings from './components/EvaluationSettings';
 import ChangePasswordForm from './components/ChangePasswordForm';
 import { settingsService } from '@/lib/services/settings';
 import api from '@/lib/axios';
@@ -33,9 +32,7 @@ const SettingsPage = () => {
     storePhone: '',
     storeEmail: '',
     visionStatement: '',
-    missionStatement: '',
-    darkMode: false,
-    compactMode: false
+    missionStatement: ''
   });
 
   // Fetch settings and store info
@@ -54,9 +51,7 @@ const SettingsPage = () => {
         storePhone: settings.storePhone || '',
         storeEmail: settings.storeEmail || '',
         visionStatement: settings.visionStatement || '',
-        missionStatement: settings.missionStatement || '',
-        darkMode: settings.darkMode || false,
-        compactMode: settings.compactMode || false
+        missionStatement: settings.missionStatement || ''
       });
     }
   }, [settings]);
@@ -163,8 +158,6 @@ const SettingsPage = () => {
       }
 
       await updateSettingsMutation.mutateAsync({
-        darkMode: formState.darkMode,
-        compactMode: formState.compactMode,
         storeName: formState.storeName,
         storeNumber: formState.storeNumber,
         storeAddress: formState.storeAddress,
@@ -173,28 +166,6 @@ const SettingsPage = () => {
       });
     } catch (error) {
       console.error('Failed to save settings:', error);
-    }
-  };
-
-  const handleEvaluationSettingUpdate = (section: string, value: any) => {
-    // For scheduling section, ensure we maintain the proper structure
-    if (section === 'scheduling') {
-      const updateData = {
-        evaluations: {
-          scheduling: value  // Use the value directly since it's already properly structured
-        }
-      };
-      console.log('Sending settings update:', updateData);
-      updateSettingsMutation.mutate(updateData);
-    } else {
-      // For other sections, use the original structure
-      const updateData = {
-        evaluations: {
-          [section]: value
-        }
-      };
-      console.log('Sending settings update:', updateData);
-      updateSettingsMutation.mutate(updateData);
     }
   };
 
@@ -271,11 +242,6 @@ const SettingsPage = () => {
               </TabsTrigger>
             )}
             {isAdmin && (
-              <TabsTrigger value="evaluation" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
-                Evaluation
-              </TabsTrigger>
-            )}
-            {isAdmin && (
               <TabsTrigger value="grading-scales" className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-[14px] h-10">
                 Grading Scales
               </TabsTrigger>
@@ -335,30 +301,6 @@ const SettingsPage = () => {
                       rows={3}
                       disabled={!isAdmin}
                     />
-                  </div>
-                  <div className="space-y-6 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <label className="text-sm font-medium text-[#27251F]">Dark Mode</label>
-                        <p className="text-sm text-[#27251F]/60">Enable dark mode for the application</p>
-                      </div>
-                      <Switch
-                        checked={formState.darkMode}
-                        onCheckedChange={(checked) => handleSettingChange('darkMode', checked)}
-                        className="data-[state=checked]:bg-[#E51636]"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <label className="text-sm font-medium text-[#27251F]">Compact Mode</label>
-                        <p className="text-sm text-[#27251F]/60">Show more content with less spacing</p>
-                      </div>
-                      <Switch
-                        checked={formState.compactMode}
-                        onCheckedChange={(checked) => handleSettingChange('compactMode', checked)}
-                        className="data-[state=checked]:bg-[#E51636]"
-                      />
-                    </div>
                   </div>
                   <div className="flex justify-end">
                     <Button 
@@ -422,16 +364,6 @@ const SettingsPage = () => {
                 settings={settings?.userAccess}
                 onUpdate={(data) => updateSettingsMutation.mutate({ userAccess: data })}
                 isUpdating={updateSettingsMutation.isPending}
-              />
-            </TabsContent>
-          )}
-
-          {isAdmin && (
-            <TabsContent value="evaluation">
-              <EvaluationSettings 
-                settings={settings}
-                onUpdate={handleEvaluationSettingUpdate}
-                updateSettings={settingsService.updateSettings}
               />
             </TabsContent>
           )}
