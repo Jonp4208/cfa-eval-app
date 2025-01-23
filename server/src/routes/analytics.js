@@ -60,6 +60,12 @@ router.get('/department/:department', auth, async (req, res) => {
       return res.status(400).json({ message: 'Invalid department' });
     }
 
+    // Map department to array of specific departments
+    const departmentMap = {
+      'foh': ['Front Counter', 'Drive Thru'],
+      'boh': ['Kitchen']
+    };
+
     // Calculate date range based on timeframe
     const startDate = new Date();
     switch (timeframe) {
@@ -84,7 +90,7 @@ router.get('/department/:department', auth, async (req, res) => {
     })
     .populate({
       path: 'employee',
-      match: { department: department.toUpperCase() }
+      match: { departments: { $in: departmentMap[department] } }
     })
     .populate('template');
 
@@ -199,7 +205,7 @@ router.get('/department/:department', auth, async (req, res) => {
       })
       .populate({
         path: 'employee',
-        match: { department: department.toUpperCase() }
+        match: { departments: { $in: departmentMap[department] } }
       })
       .populate('template');
 
@@ -482,6 +488,13 @@ router.get('/performance', auth, async (req, res) => {
         break;
     }
 
+    // Map department to array of specific departments
+    const departmentMap = {
+      'foh': ['Front Counter', 'Drive Thru'],
+      'boh': ['Kitchen'],
+      'all': ['Front Counter', 'Drive Thru', 'Kitchen', 'Everything']
+    };
+
     // Build base query
     const baseQuery = {
       createdAt: { $gte: startDate, $lte: endDate },
@@ -490,7 +503,7 @@ router.get('/performance', auth, async (req, res) => {
 
     // Add department filter if specified
     if (department !== 'all') {
-      baseQuery['employee.department'] = department.toUpperCase();
+      baseQuery['employee.departments'] = { $in: departmentMap[department] };
     }
 
     // Add shift filter if specified
@@ -532,9 +545,12 @@ router.get('/performance', auth, async (req, res) => {
       const score = evaluation.finalScore || 0;
       scores.overall.push(score);
       
-      if (evaluation.employee?.department === 'FOH') {
+      // Check if employee has any FOH departments
+      if (evaluation.employee?.departments?.some(d => departmentMap['foh'].includes(d))) {
         scores.foh.push(score);
-      } else if (evaluation.employee?.department === 'BOH') {
+      }
+      // Check if employee has any BOH departments
+      if (evaluation.employee?.departments?.some(d => departmentMap['boh'].includes(d))) {
         scores.boh.push(score);
       }
 
@@ -574,9 +590,12 @@ router.get('/performance', auth, async (req, res) => {
               criteriaScores[section.title] = { foh: [], boh: [] };
             }
             
-            if (evaluation.employee?.department === 'FOH') {
+            // Check if employee has any FOH departments
+            if (evaluation.employee?.departments?.some(d => departmentMap['foh'].includes(d))) {
               criteriaScores[section.title].foh.push(score);
-            } else if (evaluation.employee?.department === 'BOH') {
+            }
+            // Check if employee has any BOH departments
+            if (evaluation.employee?.departments?.some(d => departmentMap['boh'].includes(d))) {
               criteriaScores[section.title].boh.push(score);
             }
           }
@@ -1024,11 +1043,36 @@ router.get('/team-scores', auth, async (req, res) => {
       });
 
       if (!teamScores[employeeId]) {
+        // Map departments array to primary department
+        let primaryDepartment = 'N/A';
+        if (evaluation.employee.departments && evaluation.employee.departments.length > 0) {
+          // Map specific departments to FOH/BOH
+          const fohDepartments = ['Front Counter', 'Drive Thru'];
+          const bohDepartments = ['Kitchen'];
+          
+          // Check if user has departments from both FOH and BOH
+          const hasFOH = evaluation.employee.departments.some(dept => fohDepartments.includes(dept));
+          const hasBOH = evaluation.employee.departments.some(dept => bohDepartments.includes(dept));
+          
+          if (evaluation.employee.departments.includes('Everything')) {
+            primaryDepartment = 'All Departments';
+          } else if (hasFOH && hasBOH) {
+            primaryDepartment = 'FOH/BOH';
+          } else if (hasFOH) {
+            primaryDepartment = 'FOH';
+          } else if (hasBOH) {
+            primaryDepartment = 'BOH';
+          } else {
+            // If no standard mappings found, join all departments
+            primaryDepartment = evaluation.employee.departments.join(', ');
+          }
+        }
+
         teamScores[employeeId] = {
           id: employeeId,
           name: evaluation.employee.name,
           position: evaluation.employee.position,
-          department: evaluation.employee.department,
+          department: primaryDepartment,
           evaluations: []
         };
       }
@@ -1057,13 +1101,10 @@ router.get('/team-scores', auth, async (req, res) => {
         averageScore: Number(averagePercentage.toFixed(2)),
         numberOfEvaluations: member.evaluations.length,
         recentScore: recentScore,
-        recentPoints: `${recentEval?.score || 0}/${recentEval?.totalPossible || 0}`,
-        recentEvaluationDate: recentEval?.date || null
+        recentPoints: recentEval ? `${recentEval.score}/${recentEval.totalPossible}` : null,
+        recentEvaluationDate: recentEval ? recentEval.date : null
       };
     });
-
-    // Sort by average score descending
-    teamMembers.sort((a, b) => b.averageScore - a.averageScore);
 
     res.json({ teamMembers });
   } catch (error) {
