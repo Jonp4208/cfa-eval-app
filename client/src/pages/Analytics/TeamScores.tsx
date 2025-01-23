@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, TrendingUp } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -50,14 +51,8 @@ export default function TeamScores() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
-        <div className="max-w-7xl mx-auto">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">Loading team scores...</div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636]" />
       </div>
     );
   }
@@ -69,37 +64,39 @@ export default function TeamScores() {
         <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
           <div className="relative">
-            <h1 className="text-3xl md:text-4xl font-bold">Team Performance Scores</h1>
-            <p className="text-white/80 mt-2 text-lg">
-              Overview of all team members' evaluation scores
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Team Performance Scores</h1>
+                <p className="text-white/80 mt-2 text-lg">Overview of all team members' evaluation scores</p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Scores Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Team Member Scores</CardTitle>
+        <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300">
+          <CardHeader className="border-b bg-white p-8">
+            <CardTitle className="text-xl font-semibold text-[#27251F]">Team Member Scores</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead className="text-right">Average Score</TableHead>
-                  <TableHead className="text-right">Recent Score</TableHead>
-                  <TableHead className="text-right"># of Evaluations</TableHead>
-                  <TableHead>Last Evaluation</TableHead>
+                <TableRow className="hover:bg-[#F4F4F4]">
+                  <TableHead className="font-semibold text-[#27251F]/60">Name</TableHead>
+                  <TableHead className="font-semibold text-[#27251F]/60">Position</TableHead>
+                  <TableHead className="font-semibold text-[#27251F]/60">Department</TableHead>
+                  <TableHead className="text-right font-semibold text-[#27251F]/60">Average Score</TableHead>
+                  <TableHead className="text-right font-semibold text-[#27251F]/60">Recent Score</TableHead>
+                  <TableHead className="text-right font-semibold text-[#27251F]/60"># of Evaluations</TableHead>
+                  <TableHead className="font-semibold text-[#27251F]/60">Last Evaluation</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data?.teamMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell>{member.position}</TableCell>
-                    <TableCell>{member.department}</TableCell>
+                  <TableRow key={member.id} className="hover:bg-[#F4F4F4]">
+                    <TableCell className="font-medium text-[#27251F]">{member.name}</TableCell>
+                    <TableCell className="text-[#27251F]">{member.position}</TableCell>
+                    <TableCell className="text-[#27251F]">{member.department}</TableCell>
                     <TableCell className={`text-right font-medium ${getScoreColor(member.averageScore)}`}>
                       {formatScore(member.averageScore)}
                     </TableCell>
@@ -107,8 +104,8 @@ export default function TeamScores() {
                       <div>{member.recentPoints || "N/A"}</div>
                       <div className="text-sm text-[#27251F]/60">{formatScore(member.recentScore)}</div>
                     </TableCell>
-                    <TableCell className="text-right">{member.numberOfEvaluations}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-right text-[#27251F]">{member.numberOfEvaluations}</TableCell>
+                    <TableCell className="text-[#27251F]">
                       {member.recentEvaluationDate
                         ? new Date(member.recentEvaluationDate).toLocaleDateString()
                         : "N/A"}

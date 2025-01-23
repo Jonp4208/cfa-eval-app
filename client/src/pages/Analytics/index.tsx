@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { BarChart3, Users, TrendingUp, GitCompare, Brain, ArrowLeft, Heart, Medal } from 'lucide-react';
+import { BarChart3, Users, TrendingUp, GitCompare, Brain, ArrowLeft, Heart, Medal, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
@@ -36,6 +36,7 @@ interface QuickStats {
 const AnalyticsHub = () => {
   const location = useLocation();
   const isMainAnalyticsPage = location.pathname === '/analytics';
+  const navigate = useNavigate();
 
   const { data: quickStats, isLoading } = useQuery<QuickStats>({
     queryKey: ['analytics-quick-stats'],
@@ -95,103 +96,125 @@ const AnalyticsHub = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Analytics Hub</h1>
-        <div className="flex gap-4">
-          <Select defaultValue="last30">
-            <SelectTrigger className="w-[180px] rounded-xl">
-              <SelectValue placeholder="Select timeframe" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="last30">Last 30 Days</SelectItem>
-              <SelectItem value="last60">Last 60 Days</SelectItem>
-              <SelectItem value="last90">Last 90 Days</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Analytics Hub</h1>
+                <p className="text-white/80 mt-2 text-lg">Comprehensive analytics and reporting tools</p>
+              </div>
+              <div className="flex gap-4">
+                <Button 
+                  variant="secondary" 
+                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6"
+                  onClick={() => navigate('/')}
+                >
+                  <LayoutDashboard className="w-5 h-5 mr-2" />
+                  Back to Dashboard
+                </Button>
+                <Select defaultValue="last30">
+                  <SelectTrigger className="w-[180px] bg-white text-[#E51636] hover:bg-white/90 border-0 h-12">
+                    <SelectValue placeholder="Select timeframe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="last30">Last 30 Days</SelectItem>
+                    <SelectItem value="last60">Last 60 Days</SelectItem>
+                    <SelectItem value="last90">Last 90 Days</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {isLoading ? (
-          // Loading skeleton
-          <>
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-16 bg-gray-100 rounded-xl"></div>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {isLoading ? (
+            <>
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300">
+                  <CardContent className="p-8">
+                    <div className="h-16 bg-[#F4F4F4] rounded-xl animate-pulse"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : !quickStats ? (
+            <Card className="md:col-span-3 bg-white rounded-[20px] shadow-md">
+              <CardContent className="p-8 text-center text-[#27251F]/60">
+                <p>No analytics data available</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                <CardContent className="p-8">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-[#27251F]/60 font-medium">Team Members</p>
+                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{quickStats.teamMembers}</h3>
+                    </div>
+                    <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                      <Users className="h-7 w-7 text-[#E51636]" />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </>
-        ) : !quickStats ? (
-          // Empty state
-          <Card className="md:col-span-3">
-            <CardContent className="p-6 text-center">
-              <p className="text-gray-500">No analytics data available</p>
-            </CardContent>
-          </Card>
-        ) : (
-          // Data state
-          <>
-            <Card className="rounded-xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Team Members</p>
-                    <p className="text-2xl font-semibold mt-1">{quickStats.teamMembers}</p>
+              <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                <CardContent className="p-8">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-[#27251F]/60 font-medium">Avg Performance</p>
+                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{quickStats.avgPerformance}%</h3>
+                    </div>
+                    <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                      <TrendingUp className="h-7 w-7 text-[#E51636]" />
+                    </div>
                   </div>
-                  <Users className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="rounded-xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Avg Performance</p>
-                    <p className="text-2xl font-semibold mt-1">{quickStats.avgPerformance}%</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer">
+                <CardContent className="p-8">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-[#27251F]/60 font-medium">Development Goals</p>
+                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{quickStats.developmentGoals}% ↑</h3>
+                    </div>
+                    <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                      <Brain className="h-7 w-7 text-[#E51636]" />
+                    </div>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="rounded-xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Development Goals</p>
-                    <p className="text-2xl font-semibold mt-1">{quickStats.developmentGoals}% ↑</p>
-                  </div>
-                  <Brain className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
 
-      {/* Analytics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {analyticsCards.map((card) => (
-          <Link key={card.link} to={card.link}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full rounded-xl">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {card.title}
-                </CardTitle>
-                <card.icon className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {card.description}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {/* Analytics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {analyticsCards.map((card) => (
+            <Link key={card.link} to={card.link}>
+              <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer h-full">
+                <CardContent className="p-8">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold text-[#27251F]">{card.title}</h3>
+                      <p className="mt-2 text-[#27251F]/60 text-sm">{card.description}</p>
+                    </div>
+                    <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                      <card.icon className="h-7 w-7 text-[#E51636]" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
