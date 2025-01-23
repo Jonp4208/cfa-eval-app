@@ -777,7 +777,7 @@ export default function UserProfile() {
                         Engagement & Commitment
                       </div>
                       
-                      <div className="absolute -right-32 top-1/2 -translate-y-1/2 text-sm text-[#27251F]/60 font-medium rotate-90">
+                      <div className="absolute -right-16 sm:-right-32 top-1/2 -translate-y-1/2 text-sm text-[#27251F]/60 font-medium rotate-90">
                         Skills & Abilities
                       </div>
 
