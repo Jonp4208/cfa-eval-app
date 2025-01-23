@@ -49,6 +49,18 @@ export default function TeamScores() {
     return `${score.toFixed(2)}%`;
   };
 
+  const calculateTeamStats = () => {
+    if (!data?.teamMembers.length) return { avgScore: null, totalEvals: 0 };
+    
+    const validScores = data.teamMembers.filter(m => m.averageScore !== null);
+    const totalEvals = data.teamMembers.reduce((sum, m) => sum + m.numberOfEvaluations, 0);
+    const avgScore = validScores.length 
+      ? validScores.reduce((sum, m) => sum + (m.averageScore || 0), 0) / validScores.length 
+      : null;
+
+    return { avgScore, totalEvals };
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -71,6 +83,41 @@ export default function TeamScores() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Team Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-8">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">Team Average</p>
+                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">
+                    {formatScore(calculateTeamStats().avgScore)}
+                  </h3>
+                </div>
+                <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                  <TrendingUp className="h-7 w-7 text-[#E51636]" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[20px] shadow-md hover:shadow-xl transition-all duration-300">
+            <CardContent className="p-8">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">Total Evaluations</p>
+                  <h3 className="text-3xl font-bold mt-2 text-[#27251F]">
+                    {calculateTeamStats().totalEvals}
+                  </h3>
+                </div>
+                <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
+                  <Loader2 className="h-7 w-7 text-[#E51636]" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Scores Table */}
