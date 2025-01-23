@@ -155,8 +155,8 @@ export default function EditUser() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
-        <Card>
+      <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+        <Card className="bg-white rounded-[20px] shadow-md">
           <CardContent className="p-6">
             Loading team member data...
           </CardContent>
@@ -166,237 +166,247 @@ export default function EditUser() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">❌</div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+          <div className="relative">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">Edit Team Member</h1>
+                <p className="text-white/80 mt-2 text-lg">Update team member information and settings</p>
+              </div>
+              <Button
+                variant="secondary"
+                className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6"
+                onClick={() => navigate('/users')}
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back to Team Members
+              </Button>
             </div>
           </div>
         </div>
-      )}
-      
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Edit Team Member</h1>
-          <p className="text-gray-500">Update team member information</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/users')}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Team Members
-        </Button>
-      </div>
 
-      <Card className="shadow-md">
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information Section */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-700">Personal Information</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Name</label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    className="border-gray-200"
-                    placeholder="Enter full name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Email</label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="border-gray-200"
-                    placeholder="Enter email address"
-                  />
-                </div>
+        {error && (
+          <Card className="bg-white rounded-[20px] shadow-md border-l-4 border-[#E51636]">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 text-[#E51636]">
+                <span>❌</span>
+                <p>{error}</p>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Departments & Position Section */}
-            <div className="space-y-4 pt-4 border-t">
-              <h2 className="text-lg font-semibold text-gray-700">Departments & Position</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Departments</label>
-                  <MultiSelect
-                    options={[
-                      { value: 'Front Counter', label: 'Front Counter' },
-                      { value: 'Drive Thru', label: 'Drive Thru' },
-                      { value: 'Kitchen', label: 'Kitchen' }
-                    ]}
-                    selected={formData.departments}
-                    onChange={(value) => setFormData({ ...formData, departments: value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Position</label>
-                  <Select
-                    value={formData.position}
-                    onValueChange={(value: string) => {
-                      setFormData({ 
-                        ...formData, 
-                        position: value,
-                        isAdmin: value === 'Director'
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="border-gray-200">
-                      <SelectValue placeholder="Select position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Team Member">Team Member</SelectItem>
-                      <SelectItem value="Trainer">Trainer</SelectItem>
-                      <SelectItem value="Leader">Leader</SelectItem>
-                      <SelectItem value="Director">Director</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Shift</label>
-                  <Select
-                    value={formData.shift}
-                    onValueChange={(value: string) => setFormData({ ...formData, shift: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select shift" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="day">Day</SelectItem>
-                      <SelectItem value="night">Night</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Section */}
-            <div className="space-y-4 pt-4 border-t">
-              <h2 className="text-lg font-semibold text-gray-700">Role & Status</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Role</label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value) => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger className="border-gray-200">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Account Status</label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger className="border-gray-200">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Evaluation Scheduling Section */}
-            <div className="space-y-4 pt-4 border-t">
-              <h2 className="text-lg font-semibold text-gray-700">Evaluation Scheduling</h2>
+        <Card className="bg-white rounded-[20px] shadow-md">
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Personal Information Section */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <label className="text-sm font-medium text-gray-700">Auto-schedule Evaluations</label>
-                    <p className="text-sm text-gray-500">Automatically schedule evaluations for this team member</p>
+                <h2 className="text-xl font-semibold text-[#27251F]">Personal Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]">Name</label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...prev, name: e.target.value })}
+                      required
+                      className="border-gray-200"
+                      placeholder="Enter full name"
+                    />
                   </div>
-                  <Switch
-                    checked={formData.schedulingPreferences?.autoSchedule || false}
-                    onCheckedChange={(checked) => handleSchedulingChange('autoSchedule', checked)}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]">Email</label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...prev, email: e.target.value })}
+                      required
+                      className="border-gray-200"
+                      placeholder="Enter email address"
+                    />
+                  </div>
                 </div>
-                
-                {formData.schedulingPreferences?.autoSchedule && (
-                  <>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Evaluation Frequency</label>
-                      <Select
-                        value={String(formData.schedulingPreferences?.frequency || 90)}
-                        onValueChange={(value) => handleSchedulingChange('frequency', Number(value))}
-                      >
-                        <SelectTrigger className="border-gray-200">
-                          <SelectValue placeholder="Select frequency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {frequencyOptions.map((option) => (
-                            <SelectItem key={option.value} value={String(option.value)}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Start Cycle From</label>
-                      <Select
-                        value={formData.schedulingPreferences?.cycleStart || 'hire_date'}
-                        onValueChange={(value) => handleSchedulingChange('cycleStart', value)}
-                      >
-                        <SelectTrigger className="border-gray-200">
-                          <SelectValue placeholder="Select start date" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="hire_date">Hire Date</SelectItem>
-                          <SelectItem value="last_evaluation">Last Evaluation Date</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-sm text-gray-500">
-                        {formData.schedulingPreferences?.cycleStart === 'hire_date' 
-                          ? "First evaluation will be scheduled based on hire date, subsequent evaluations will follow the frequency"
-                          : "All evaluations will be scheduled based on the last completed evaluation date"}
-                      </p>
-                    </div>
-                  </>
-                )}
               </div>
-            </div>
 
-            <div className="flex justify-end space-x-4 pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/users')}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={updateUserMutation.isPending}
-              >
-                {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              {/* Departments & Position Section */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h2 className="text-xl font-semibold text-[#27251F]">Departments & Position</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]">Departments</label>
+                    <MultiSelect
+                      options={[
+                        { value: 'Front Counter', label: 'Front Counter' },
+                        { value: 'Drive Thru', label: 'Drive Thru' },
+                        { value: 'Kitchen', label: 'Kitchen' }
+                      ]}
+                      selected={formData.departments}
+                      onChange={(value) => setFormData({ ...prev, departments: value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]">Position</label>
+                    <Select
+                      value={formData.position}
+                      onValueChange={(value: string) => {
+                        setFormData({ 
+                          ...prev, 
+                          position: value,
+                          isAdmin: value === 'Director'
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="border-gray-200">
+                        <SelectValue placeholder="Select position" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Team Member">Team Member</SelectItem>
+                        <SelectItem value="Trainer">Trainer</SelectItem>
+                        <SelectItem value="Leader">Leader</SelectItem>
+                        <SelectItem value="Director">Director</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]">Shift</label>
+                    <Select
+                      value={formData.shift}
+                      onValueChange={(value: string) => setFormData({ ...prev, shift: value })}
+                    >
+                      <SelectTrigger className="border-gray-200">
+                        <SelectValue placeholder="Select shift" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="day">Day</SelectItem>
+                        <SelectItem value="night">Night</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Role & Status Section */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h2 className="text-xl font-semibold text-[#27251F]">Role & Status</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]">Role</label>
+                    <Select
+                      value={formData.role}
+                      onValueChange={(value) => setFormData({ ...prev, role: value })}
+                    >
+                      <SelectTrigger className="border-gray-200">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-[#27251F]">Account Status</label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...prev, status: value })}
+                    >
+                      <SelectTrigger className="border-gray-200">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Auto-Scheduling Section */}
+              {formData.schedulingPreferences && (
+                <div className="space-y-4 pt-4 border-t border-gray-200">
+                  <h2 className="text-xl font-semibold text-[#27251F]">Auto-Scheduling Settings</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <label className="text-sm font-medium text-[#27251F]">Enable Auto-Scheduling</label>
+                        <p className="text-sm text-[#27251F]/60">Automatically schedule evaluations for this team member</p>
+                      </div>
+                      <Switch
+                        checked={formData.schedulingPreferences.autoSchedule}
+                        onCheckedChange={(checked) => handleSchedulingChange('autoSchedule', checked)}
+                      />
+                    </div>
+
+                    {formData.schedulingPreferences.autoSchedule && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-[#27251F]">Evaluation Frequency</label>
+                          <Select
+                            value={formData.schedulingPreferences.frequency.toString()}
+                            onValueChange={(value) => handleSchedulingChange('frequency', parseInt(value))}
+                          >
+                            <SelectTrigger className="border-gray-200">
+                              <SelectValue placeholder="Select frequency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {frequencyOptions.map(option => (
+                                <SelectItem key={option.value} value={option.value.toString()}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-[#27251F]">Cycle Start Reference</label>
+                          <Select
+                            value={formData.schedulingPreferences.cycleStart}
+                            onValueChange={(value: 'hire_date' | 'last_evaluation') => 
+                              handleSchedulingChange('cycleStart', value)
+                            }
+                          >
+                            <SelectTrigger className="border-gray-200">
+                              <SelectValue placeholder="Select cycle start" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hire_date">Hire Date</SelectItem>
+                              <SelectItem value="last_evaluation">Last Evaluation</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Form Actions */}
+              <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate('/users')}
+                  className="border-[#E51636] text-[#E51636] hover:bg-[#E51636]/10"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-[#E51636] text-white hover:bg-[#E51636]/90"
+                  disabled={updateUserMutation.isPending}
+                >
+                  {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
       <Toaster />
     </div>
   );
