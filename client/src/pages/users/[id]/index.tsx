@@ -133,6 +133,15 @@ export default function UserProfile() {
     }
   });
 
+  // Add new query for evaluation scores
+  const { data: evaluationScores } = useQuery({
+    queryKey: ['evaluationScores', id],
+    queryFn: async () => {
+      const response = await api.get(`/api/users/${id}/evaluation-scores`);
+      return response.data.evaluationScores;
+    }
+  });
+
   // Update positions when profile data changes
   useEffect(() => {
     const initializePosition = () => {
@@ -472,7 +481,7 @@ export default function UserProfile() {
                 <CardContent className="p-6">
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={profile.metrics?.evaluationScores || []}>
+                      <LineChart data={evaluationScores || []}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#27251F/10" />
                         <XAxis 
                           dataKey="date" 

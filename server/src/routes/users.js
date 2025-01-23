@@ -7,6 +7,8 @@ import multer from 'multer';
 import { parse } from 'csv-parse';
 import { Readable } from 'stream';
 import { updateUserMetrics, updateUser } from '../controllers/users.js';
+import Evaluation from '../models/Evaluation.js';
+import GradingScale from '../models/GradingScale.js';
 
 dotenv.config();
 
@@ -544,5 +546,65 @@ router.patch('/:id', auth, async (req, res) => {
 
 // Update user metrics
 router.patch('/:id/metrics', auth, updateUserMetrics);
+
+// Get user's evaluation scores
+router.get('/:userId/evaluation-scores', auth, async (req, res) => {
+  try {
+    const evaluations = await Evaluation.find({
+      employee: req.params.userId,
+      store: req.user.store._id,
+      status: 'completed'
+    })
+    .populate({
+      path: 'template',
+      populate: {
+        path: 'sections.criteria.gradingScale',
+        model: 'GradingScale'
+      }
+    })
+    .sort('completedDate');
+
+    // Get default grading scale
+    const defaultScale = await GradingScale.findOne({ 
+      store: req.user.store._id,
+      isDefault: true,
+      isActive: true
+    });
+
+    // Calculate scores for each evaluation
+    const evaluationScores = evaluations.map(evaluation => {
+      let totalScore = 0;
+      let totalPossible = 0;
+
+      // Calculate total score from manager evaluation
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.criteria.forEach((criterion, criterionIndex) => {
+          const key = `${sectionIndex}-${criterionIndex}`;
+          const score = evaluation.managerEvaluation.get(key);
+          const scale = criterion.gradingScale || defaultScale;
+          
+          if (score !== undefined && scale && scale.grades) {
+            const numericScore = Number(score);
+            totalScore += numericScore;
+            totalPossible += Math.max(...scale.grades.map(g => g.value));
+          }
+        });
+      });
+
+      // Calculate percentage score
+      const percentageScore = Math.round((totalScore / totalPossible) * 100);
+
+      return {
+        date: evaluation.completedDate,
+        score: percentageScore
+      };
+    });
+
+    res.json({ evaluationScores });
+  } catch (error) {
+    console.error('Error getting evaluation scores:', error);
+    res.status(500).json({ message: 'Error getting evaluation scores' });
+  }
+});
 
 export default router; 

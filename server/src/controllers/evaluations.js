@@ -622,7 +622,13 @@ export const completeManagerEvaluation = async (req, res) => {
         .populate('employee')
         .populate('evaluator')
         .populate('store')
-        .populate('template');
+        .populate({
+            path: 'template',
+            populate: {
+                path: 'sections.criteria.gradingScale',
+                model: 'GradingScale'
+            }
+        });
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Evaluation not found or not in valid state for completion' });
@@ -634,7 +640,55 @@ export const completeManagerEvaluation = async (req, res) => {
         evaluation.status = 'completed';
         evaluation.completedDate = new Date();
 
-        await evaluation.save();
+        // Calculate overall score
+        let totalScore = 0;
+        let totalPossible = 0;
+
+        // Get default grading scale
+        const defaultScale = await GradingScale.findOne({ 
+            store: req.user.store._id,
+            isDefault: true,
+            isActive: true
+        });
+
+        // Calculate total score from manager evaluation
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+            section.criteria.forEach((criterion, criterionIndex) => {
+                const key = `${sectionIndex}-${criterionIndex}`;
+                const score = managerEvaluation[key];
+                const scale = criterion.gradingScale || defaultScale;
+                
+                if (score !== undefined && scale && scale.grades) {
+                    const numericScore = Number(score);
+                    totalScore += numericScore;
+                    totalPossible += Math.max(...scale.grades.map(g => g.value));
+                }
+            });
+        });
+
+        // Calculate percentage score
+        const percentageScore = Math.round((totalScore / totalPossible) * 100);
+
+        // Update user's metrics
+        const user = await User.findById(evaluation.employee._id);
+        if (!user.metrics) {
+            user.metrics = {};
+        }
+        if (!user.metrics.evaluationScores) {
+            user.metrics.evaluationScores = [];
+        }
+
+        // Add new evaluation score
+        user.metrics.evaluationScores.push({
+            date: evaluation.completedDate,
+            score: percentageScore
+        });
+
+        // Save both evaluation and user
+        await Promise.all([
+            evaluation.save(),
+            user.save()
+        ]);
 
         // Create notification for the employee
         const notification = new Notification({
