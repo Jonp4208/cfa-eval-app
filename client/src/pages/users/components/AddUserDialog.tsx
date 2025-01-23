@@ -33,7 +33,7 @@ interface User {
     _id: string;
     name: string;
   };
-  shift: string;
+  shift?: 'day' | 'night';
 }
 
 interface FormData {
