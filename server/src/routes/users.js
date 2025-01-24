@@ -467,8 +467,10 @@ router.post('/:id/reset-password', auth, async (req, res) => {
 
     // Generate a new password
     const newPassword = User.generateRandomPassword();
+    
+    // Update password and use pre-save middleware for hashing
     user.password = newPassword;
-    await user.save();
+    await user.save({ validateModifiedOnly: true }); // Only validate the modified field (password)
 
     // Send email with new password using the centralized email utility
     await sendEmail({
