@@ -12,9 +12,11 @@ import { useNavigate } from 'react-router-dom';
 import disciplinaryService, { CreateIncidentData } from '@/services/disciplinaryService';
 import userService, { User } from '@/services/userService';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function NewIncidentForm() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState<User[]>([]);
   const [formData, setFormData] = useState<CreateIncidentData>({
@@ -32,8 +34,31 @@ export default function NewIncidentForm() {
   });
 
   useEffect(() => {
+    // Debug logging
+    console.log('NewIncident - Current user:', {
+      name: user?.name,
+      position: user?.position,
+      role: user?.role
+    });
+
+    // Check if user has permission to access this page
+    const hasAccess = user?.position === 'Director' || user?.position === 'Leader';
+    
+    console.log('NewIncident - Permission check:', {
+      userPosition: user?.position,
+      hasAccess
+    });
+                      
+    if (!hasAccess) {
+      console.log('NewIncident - Access denied, redirecting to home');
+      toast.error('You do not have permission to create disciplinary incidents');
+      navigate('/');
+      return;
+    }
+
+    console.log('NewIncident - Access granted, loading employees');
     loadEmployees();
-  }, []);
+  }, [user, navigate]);
 
   const loadEmployees = async () => {
     try {
