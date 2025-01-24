@@ -225,15 +225,6 @@ export default function Evaluations() {
 
   const filteredEvaluations = evaluations
     ?.filter((evaluation: Evaluation) => {
-      console.log('Processing evaluation:', {
-        id: evaluation._id,
-        employee: evaluation.employee?.name,
-        status: evaluation.status,
-        view,
-        departmentFilter,
-        searchQuery
-      });
-
       let shouldShow = true;
 
       // Status filter
@@ -242,14 +233,11 @@ export default function Evaluations() {
       } else if (view === 'completed') {
         shouldShow = evaluation.status === 'completed';
       }
-      
-      console.log('After status filter:', { shouldShow });
 
       // Department filter
       if (shouldShow && departmentFilter !== 'all') {
         const employeeDepartment = evaluation.employee?.position?.split(' ')[0];
         shouldShow = employeeDepartment === departmentFilter;
-        console.log('After department filter:', { employeeDepartment, departmentFilter, shouldShow });
       }
 
       // Search filter
@@ -257,10 +245,8 @@ export default function Evaluations() {
         const searchLower = searchQuery.toLowerCase();
         shouldShow = evaluation.employee?.name?.toLowerCase().includes(searchLower) ||
                     evaluation.template?.name?.toLowerCase().includes(searchLower);
-        console.log('After search filter:', { searchQuery, shouldShow });
       }
 
-      console.log('Final decision for evaluation:', { id: evaluation._id, shouldShow });
       return shouldShow;
     })
     .sort(sortEvaluations);

@@ -87,30 +87,28 @@ router.get('/', auth, async (req, res) => {
 
     console.log('Initial query filter:', JSON.stringify(query, null, 2));
 
-    // Leadership positions that can view all users in their store
-    const leadershipKeywords = ['Director', 'Leader'];
-
-    // Check if user has a leadership position by checking if their position contains any leadership keywords
-    const hasLeadershipPosition = leadershipKeywords.some(keyword => 
-      String(req.user.position).includes(keyword)
-    );
-
-    console.log('Authorization check:', {
-      userPosition: req.user.position,
-      hasLeadershipPosition,
-      leadershipKeywords,
-      positionMatch: leadershipKeywords.find(keyword => 
-        String(req.user.position).includes(keyword)
-      ),
-      positionType: typeof req.user.position,
-      positionValue: String(req.user.position)
-    });
-
-    if (hasLeadershipPosition) {
-      console.log('Leadership position - fetching all users in store');
-    } else {
-      console.log('Unauthorized position attempted to fetch users:', req.user.position);
+    // If user is admin, they can see all users they manage
+    if (req.user.role === 'admin') {
+      console.log('Admin user - fetching managed employees');
+      query.manager = req.user._id;
+    }
+    // For users with leadership positions, they can view their team
+    else if (req.user.position === 'Director' || req.user.position === 'Team Leader' || 
+             req.user.position === 'Shift Leader' || req.user.position === 'Manager') {
+      console.log('Leadership position - fetching managed employees');
+      query.manager = req.user._id;
+    }
+    // For other roles, they shouldn't access this endpoint
+    else {
+      console.log('Unauthorized role/position attempted to fetch users:', 
+                 { role: req.user.role, position: req.user.position });
       return res.status(403).json({ message: 'Not authorized to view users' });
+    }
+
+    // If a specific manager's team is requested and user is admin
+    if (managerId && req.user.role === 'admin') {
+      query.manager = managerId;
+      console.log('Admin filtering by specific manager:', managerId);
     }
 
     console.log('Final query:', JSON.stringify(query, null, 2));

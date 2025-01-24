@@ -5,25 +5,25 @@ const RETRY_DELAY = 5000; // 5 seconds
 
 // Create reusable transporter object using SMTP transport
 const createTransporter = () => {
-  console.log('Creating email transporter with config:', {
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD ? '****' : undefined
-    }
-  });
-
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT),
+  const config = {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
     }
+  };
+
+  console.log('Creating email transporter with config:', {
+    ...config,
+    auth: {
+      user: config.auth.user,
+      pass: config.auth.pass ? '****' : undefined
+    }
   });
+
+  return nodemailer.createTransport(config);
 };
 
 export const verifyEmailConfig = async () => {

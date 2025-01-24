@@ -83,9 +83,42 @@ export const createEvaluation = async (req, res) => {
             });
 
             await notification.save();
+
+            // Send email to employee
+            try {
+                await sendEmail({
+                    to: employee.email,
+                    subject: 'New Evaluation Scheduled - Growth Hub',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h1 style="color: white; margin: 0;">New Evaluation Scheduled</h1>
+                            </div>
+                            
+                            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h2 style="color: #333; margin-top: 0;">Evaluation Details</h2>
+                                <p><strong>Scheduled Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
+                                <p><strong>Evaluator:</strong> ${req.user.name}</p>
+                            </div>
+
+                            <div style="margin-bottom: 30px;">
+                                <p>Please log in to Growth Hub to complete your self-evaluation before the scheduled date.</p>
+                                <p>Your input is valuable for your professional development.</p>
+                            </div>
+
+                            <p style="margin-top: 30px;">
+                                Best regards,<br>Growth Hub Team
+                            </p>
+                        </div>
+                    `
+                });
+                console.log(`[Email] ✓ Sent evaluation notification to ${employee.email}`);
+            } catch (emailError) {
+                console.error(`[Email] ✕ Failed to send evaluation notification to ${employee.email}:`, emailError.message);
+            }
         }
 
-        console.log('Created evaluations:', createdEvaluations);
+        console.log(`[Evaluation] Created ${createdEvaluations.length} evaluation(s)`);
 
         res.status(201).json({
             message: 'Evaluations created successfully',
@@ -93,7 +126,7 @@ export const createEvaluation = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Create evaluation error:', error);
+        console.error('[Evaluation] Error creating evaluation:', error.message);
         res.status(500).json({ message: 'Error creating evaluation' });
     }
 };

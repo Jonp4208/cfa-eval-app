@@ -92,57 +92,47 @@ export default function NewEvaluation() {
     queryKey: ['employees'],
     queryFn: async () => {
       const response = await api.get('/api/users');
-      console.log('Fetched employees:', response.data.users);
-
+      
       // Fetch all evaluations to check for pending ones
       const evaluationsResponse = await api.get('/api/evaluations');
       const pendingEvaluations = evaluationsResponse.data.evaluations.filter(
         (evaluation: any) => evaluation.status !== 'completed'
       );
 
-      return response.data.users.map((user: any) => {
-        // Find any pending evaluation for this user
-        const pendingEval = pendingEvaluations.find(
+      return response.data.users.map((user: any) => ({
+        _id: user._id,
+        name: user.name,
+        position: user.position || 'Employee',
+        department: user.department || 'Uncategorized',
+        imageUrl: user.imageUrl,
+        email: user.email,
+        lastEvaluation: user.lastEvaluation,
+        manager: user.manager || null,
+        pendingEvaluation: pendingEvaluations.find(
           (evaluation: any) => evaluation.employee._id === user._id
-        );
-
-        return {
-          _id: user._id,
-          name: user.name,
-          position: user.position || 'Employee',
-          department: user.department || 'Uncategorized',
-          imageUrl: user.imageUrl,
-          email: user.email,
-          lastEvaluation: user.lastEvaluation,
-          manager: user.manager || null,
-          pendingEvaluation: pendingEval ? {
-            status: pendingEval.status,
-            scheduledDate: pendingEval.scheduledDate
-          } : undefined
-        };
-      });
+        ) ? {
+          status: pendingEval.status,
+          scheduledDate: pendingEval.scheduledDate
+        } : undefined
+      }));
     }
   });
 
   // Filter employees by search query and department
   const filteredEmployees = React.useMemo(() => {
     if (!employees) return [];
-    console.log('Current user:', user); // Debug log
-    console.log('Filtering employees:', employees); // Debug log
     return employees.filter((emp: Employee) => {
       // Exclude current user (manager) from the list
       if (emp._id === user?._id) return false;
       
       // Only show employees that report to the current user
-      // Handle manager as either an ObjectId or an object with _id
       const reportsToCurrentUser = typeof emp.manager === 'string' 
         ? emp.manager === user?._id
         : emp.manager?._id === user?._id;
-      console.log(`Employee ${emp.name} reports to current user: ${reportsToCurrentUser}`); // Debug log
 
       const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         emp.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         emp.position.toLowerCase().includes(searchQuery.toLowerCase());
+                          emp.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          emp.position.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDepartment = selectedDepartment === 'all' || emp.department === selectedDepartment;
       return reportsToCurrentUser && matchesSearch && matchesDepartment;
     });
@@ -174,48 +164,18 @@ export default function NewEvaluation() {
   // Create evaluation mutation
   const createEvaluation = useMutation({
     mutationFn: (evaluationData: any) => {
-      console.log('Submitting evaluation with template:', selectedTemplate);
       return evaluationService.createEvaluation(evaluationData);
     },
-    onSuccess: (data) => {
-      // Create and show success notification
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
-      notification.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span>Evaluation created successfully</span>
-      `;
-      document.body.appendChild(notification);
-
-      // Remove the notification after 3 seconds
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
-
-      // Invalidate evaluations query
-      queryClient.invalidateQueries({ queryKey: ['evaluations'] });
-      
-      // Navigate to evaluations page
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Evaluation created successfully",
+        duration: 5000,
+      });
       navigate('/evaluations');
     },
     onError: (error: any) => {
-      // Create and show error notification
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
-      notification.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-        <span>${error.response?.data?.message || 'Failed to create evaluation'}</span>
-      `;
-      document.body.appendChild(notification);
-
-      // Remove the notification after 3 seconds
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
+      handleError(error);
     }
   });
 
@@ -258,8 +218,6 @@ export default function NewEvaluation() {
       });
       return;
     }
-
-    console.log('Submitting evaluation with template:', selectedTemplate);
 
     createEvaluation.mutate({
       employeeIds: selectedEmployees.map(emp => emp._id),
