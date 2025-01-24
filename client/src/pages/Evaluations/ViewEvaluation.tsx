@@ -254,6 +254,20 @@ export default function ViewEvaluation() {
     return questionNumber + currentQuestionIndex.question;
   };
 
+  // Validate answers
+  const validateAnswers = () => {
+    const errors: string[] = [];
+    evaluation?.template.sections.forEach((section: Section, sectionIndex: number) => {
+      section.questions.forEach((question: Question, questionIndex: number) => {
+        const answer = answers[`${sectionIndex}-${questionIndex}`];
+        if (question.required && (!answer || answer.trim() === '')) {
+          errors.push(`${section.title} - ${question.text}`);
+        }
+      });
+    });
+    return errors;
+  };
+
   // Submit self-evaluation mutation
   const submitSelfEvaluation = useMutation({
     mutationFn: async () => {
@@ -511,21 +525,6 @@ export default function ViewEvaluation() {
     return Math.round((answeredQuestions / totalQuestions) * 100);
   };
 
-  // Validate answers
-  const validateAnswers = () => {
-    const errors: string[] = [];
-    evaluation?.template.sections.forEach((section: Section, sectionIndex: number) => {
-      section.questions.forEach((question: Question, questionIndex: number) => {
-        const answer = answers[`${sectionIndex}-${questionIndex}`];
-        if (question.required && (!answer || answer.trim() === '')) {
-          errors.push(`${section.title} - ${question.text}`);
-        }
-      });
-    });
-    setValidationErrors(errors);
-    return errors.length === 0;
-  };
-
   // Add helper function to calculate rating value
   const getRatingValue = (rating: string | number | undefined, gradingScale?: GradingScale): number => {
     if (!rating || !gradingScale) return 0;
@@ -775,8 +774,11 @@ export default function ViewEvaluation() {
 
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  if (validateAnswers()) {
+                  const errors = validateAnswers();
+                  if (errors.length === 0) {
                     submitSelfEvaluation.mutate();
+                  } else {
+                    setValidationErrors(errors);
                   }
                 }}>
                   {validationErrors.length > 0 && (
@@ -913,7 +915,7 @@ export default function ViewEvaluation() {
 
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  if (validateAnswers()) {
+                  if (validateAnswers().length === 0) {
                     setShowSummary(true);
                   }
                 }}>
@@ -1175,7 +1177,7 @@ export default function ViewEvaluation() {
                           <Button
                             type="button"
                             onClick={() => {
-                              if (validateAnswers()) {
+                              if (validateAnswers().length === 0) {
                                 setShowConfirmSubmit(true);
                               }
                             }}
