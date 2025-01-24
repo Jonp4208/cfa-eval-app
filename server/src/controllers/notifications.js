@@ -79,7 +79,8 @@ export const deleteNotification = async (req, res) => {
       userId: req.user._id
     });
 
-    const notification = await Notification.findOneAndDelete({
+    // First find and mark as read
+    const notification = await Notification.findOne({
       _id: req.params.notificationId,
       user: req.user._id
     });
@@ -92,7 +93,15 @@ export const deleteNotification = async (req, res) => {
       return res.status(404).json({ message: 'Notification not found' });
     }
 
-    console.log('Notification deleted successfully:', {
+    // Mark as read first
+    notification.read = true;
+    notification.readAt = new Date();
+    await notification.save();
+
+    // Then delete
+    await Notification.findByIdAndDelete(notification._id);
+
+    console.log('Notification marked as read and deleted successfully:', {
       notificationId: notification._id,
       userId: notification.user
     });
