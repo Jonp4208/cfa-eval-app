@@ -61,7 +61,7 @@ export default function Users() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'position' | 'department' | 'role' | 'manager'>('name');
-  const [filterBy, setFilterBy] = useState<'all' | 'Front Counter' | 'Drive Thru' | 'Kitchen' | 'Everything' | 'myTeam' | 'day' | 'night'>('all');
+  const [filterBy, setFilterBy] = useState<'all' | 'FOH' | 'BOH' | 'myTeam'>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEmailResetDialog, setShowEmailResetDialog] = useState(false);
@@ -125,15 +125,15 @@ export default function Users() {
           return { users: [] };
         }
 
-        // For regular users, redirect to their dashboard
-        if (currentUser.role === 'user') {
+        // Only allow leaders and directors to access the page
+        if (currentUser.position?.toLowerCase() !== 'director' && !currentUser.position?.toLowerCase().includes('leader')) {
           navigate('/dashboard');
           return { users: [] };
         }
 
-        // For admins, fetch all users
+        // Fetch all users
         const response = await api.get('/api/users');
-        console.log('Fetched users:', response.data); // Debug log
+        console.log('Fetched users:', response.data);
         return response.data;
       } catch (error) {
         console.error('Error fetching users:', error);
@@ -156,25 +156,40 @@ export default function Users() {
   }
 
   const users = data?.users?.filter(user => user && typeof user === 'object');
+  console.log('Initial users:', users);
   
   // Filter users based on search query and filter selection
   const filteredUsers = users?.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-
+    
+    // Filter by department or my team
     let matchesFilter = true;
     if (filterBy !== 'all') {
-      if (filterBy === 'day' || filterBy === 'night') {
-        matchesFilter = user.shift === filterBy;
-      } else if (filterBy === 'myTeam') {
+      if (filterBy === 'myTeam') {
         matchesFilter = user.manager?._id === currentUser?._id;
-      } else {
+      } else if (filterBy === 'FOH' || filterBy === 'BOH') {
         matchesFilter = user.departments?.includes(filterBy);
       }
     }
 
-    return matchesSearch && matchesFilter;
+    // Only show users from the same store as the current user
+    const sameStore = user.store?._id === currentUser?.store?._id;
+    
+    console.log('Filtering user:', {
+      name: user.name,
+      position: user.position,
+      matchesSearch,
+      matchesFilter,
+      sameStore,
+      currentStore: currentUser?.store?._id,
+      userStore: user.store?._id
+    });
+
+    return matchesSearch && matchesFilter && sameStore;
   });
+  
+  console.log('Filtered users:', filteredUsers);
 
   // Sort users based on selected field
   const sortedUsers = [...(filteredUsers || [])].sort((a, b) => {
@@ -310,27 +325,21 @@ export default function Users() {
                 />
               </div>
 
-              <Select value={filterBy} onValueChange={(value: any) => setFilterBy(value)}>
-                <SelectTrigger className="h-12 rounded-xl bg-white border-gray-200 hover:border-gray-300">
-                  <SelectValue placeholder="Filter by" />
+              <Select value={filterBy} onValueChange={(value: 'all' | 'FOH' | 'BOH' | 'myTeam') => setFilterBy(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
                   <SelectGroup>
-                    <SelectLabel>Departments</SelectLabel>
-                    <SelectItem value="Front Counter">Front Counter</SelectItem>
-                    <SelectItem value="Drive Thru">Drive Thru</SelectItem>
-                    <SelectItem value="Kitchen">Kitchen</SelectItem>
-                    <SelectItem value="Everything">Everything</SelectItem>
-                  </SelectGroup>
-                  <SelectGroup>
-                    <SelectLabel>Shifts</SelectLabel>
-                    <SelectItem value="day">Day Shift</SelectItem>
-                    <SelectItem value="night">Night Shift</SelectItem>
-                  </SelectGroup>
-                  {currentUser?.role === 'admin' && (
+                    <SelectLabel>View</SelectLabel>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="myTeam">My Team</SelectItem>
-                  )}
+                  </SelectGroup>
+                  <SelectGroup>
+                    <SelectLabel>Department</SelectLabel>
+                    <SelectItem value="FOH">Front of House</SelectItem>
+                    <SelectItem value="BOH">Back of House</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
