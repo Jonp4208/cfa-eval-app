@@ -881,19 +881,31 @@ export default function ViewEvaluation() {
                     <div className="flex items-center justify-center gap-2 text-yellow-800">
                       <AlertCircle className="w-5 h-5" />
                       <p className="text-center font-medium">
-                        Action Required: Schedule Review Session
+                        Action Required: Schedule or Complete Review
                       </p>
                     </div>
                     <p className="text-center text-yellow-700">
-                      Please schedule a review session with the employee to complete the evaluation together.
+                      You can either schedule a review session with the employee or complete the evaluation now.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setShowScheduleReview(true)}
-                      className="inline-flex items-center justify-center px-6 py-3 bg-[#E51636] text-white font-medium rounded-xl hover:bg-[#E51636]/90 transition-colors"
-                    >
-                      Start Scheduling Review
-                    </button>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowScheduleReview(true)}
+                        className="inline-flex items-center justify-center px-6 py-3 bg-[#E51636] text-white font-medium rounded-xl hover:bg-[#E51636]/90 transition-colors"
+                      >
+                        Schedule Review Session
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowScheduleReview(false);
+                          setIsEditing(true);
+                        }}
+                        className="inline-flex items-center justify-center px-6 py-3 bg-white border border-[#E51636] text-[#E51636] font-medium rounded-xl hover:bg-[#E51636]/10 transition-colors"
+                      >
+                        Complete Now
+                      </button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

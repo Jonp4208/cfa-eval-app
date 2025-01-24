@@ -758,6 +758,7 @@ export const completeManagerEvaluation = async (req, res) => {
         evaluation.overallComments = overallComments;
         evaluation.status = 'completed';
         evaluation.completedDate = new Date();
+        evaluation.reviewSessionDate = evaluation.reviewSessionDate || new Date(); // Set review date to now if not already set
 
         // Calculate overall score
         let totalScore = 0;
@@ -827,6 +828,42 @@ export const completeManagerEvaluation = async (req, res) => {
         });
 
         await notification.save();
+
+        // Send email to employee
+        if (evaluation.employee.email) {
+            try {
+                await sendEmail({
+                    to: evaluation.employee.email,
+                    subject: 'Your Evaluation Has Been Completed',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h1 style="color: white; margin: 0;">Evaluation Completed</h1>
+                            </div>
+                            
+                            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h2 style="color: #333; margin-top: 0;">Evaluation Details</h2>
+                                <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
+                                <p><strong>Position:</strong> ${evaluation.employee.position || 'Team Member'}</p>
+                                <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
+                                <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
+                            </div>
+
+                            <div style="margin-bottom: 30px;">
+                                <p>Your evaluation has been completed. Please log in to Growth Hub to review and acknowledge your evaluation.</p>
+                            </div>
+
+                            <p style="margin-top: 30px;">
+                                Best regards,<br>Growth Hub Team
+                            </p>
+                        </div>
+                    `
+                });
+                console.log('Successfully sent completion email to employee:', evaluation.employee.email);
+            } catch (emailError) {
+                console.error('Failed to send completion email:', emailError);
+            }
+        }
 
         // Convert Map to object for response
         const evaluationResponse = evaluation.toObject();
