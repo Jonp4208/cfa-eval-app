@@ -643,7 +643,10 @@ export const scheduleReviewSession = async (req, res) => {
             evaluator: req.user._id,
             store: req.user.store._id,
             status: 'pending_manager_review'
-        }).populate('employee', 'name _id');
+        })
+        .populate('employee', 'name email position')
+        .populate('evaluator', 'name email')
+        .populate('store', 'name storeEmail');
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Evaluation not found or not ready for review' });
@@ -668,6 +671,53 @@ export const scheduleReviewSession = async (req, res) => {
                 department: evaluation.employee.department || 'Uncategorized'
             }
         });
+
+        // Send email to employee
+        if (evaluation.employee.email) {
+            try {
+                const formattedDate = new Date(reviewSessionDate).toLocaleString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    hour12: true
+                });
+
+                await sendEmail({
+                    to: evaluation.employee.email,
+                    subject: 'Your Evaluation Review Session Has Been Scheduled',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h1 style="color: white; margin: 0;">Evaluation Review Session Scheduled</h1>
+                            </div>
+                            
+                            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h2 style="color: #333; margin-top: 0;">Session Details</h2>
+                                <p><strong>Date and Time:</strong> ${formattedDate}</p>
+                                <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
+                                <p><strong>Position:</strong> ${evaluation.employee.position || 'Team Member'}</p>
+                                <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
+                            </div>
+
+                            <div style="margin-bottom: 30px;">
+                                <p>Your evaluation review session has been scheduled. Please ensure you are available at the specified time.</p>
+                                <p>During this session, you will review your self-evaluation with your manager and discuss your performance.</p>
+                            </div>
+
+                            <p style="margin-top: 30px;">
+                                Best regards,<br>Growth Hub Team
+                            </p>
+                        </div>
+                    `
+                });
+                console.log('Successfully sent review session email to employee:', evaluation.employee.email);
+            } catch (emailError) {
+                console.error('Failed to send review session email:', emailError);
+            }
+        }
 
         res.json({ evaluation });
     } catch (error) {
