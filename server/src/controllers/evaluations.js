@@ -470,6 +470,8 @@ export const submitSelfEvaluation = async (req, res) => {
         const { evaluationId } = req.params;
         const { selfEvaluation, preventStatusChange } = req.body;
 
+        console.log('Starting submitSelfEvaluation for evaluation:', evaluationId);
+
         const evaluation = await Evaluation.findById(evaluationId)
             .populate('employee', 'name email position')
             .populate('evaluator', 'name email')
@@ -477,6 +479,14 @@ export const submitSelfEvaluation = async (req, res) => {
                 path: 'store',
                 select: 'name storeEmail'
             });
+
+        console.log('Found evaluation:', {
+            id: evaluation?._id,
+            employeeName: evaluation?.employee?.name,
+            evaluatorName: evaluation?.evaluator?.name,
+            storeName: evaluation?.store?.name,
+            storeEmail: evaluation?.store?.storeEmail
+        });
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Evaluation not found' });
@@ -491,69 +501,85 @@ export const submitSelfEvaluation = async (req, res) => {
             
             // Send email to manager only when actually submitting
             if (evaluation.evaluator.email) {
-                await sendEmail({
-                    to: evaluation.evaluator.email,
-                    subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
-                            </div>
-                            
-                            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
-                                <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
-                                <p><strong>Position:</strong> ${evaluation.employee.position}</p>
-                                <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
-                            </div>
-
-                            <div style="margin-bottom: 30px;">
-                                <p>The employee has completed their self-evaluation. Please log in to Growth Hub to schedule the review session.</p>
-                                <div style="margin-top: 20px; text-align: center;">
-                                    <a href="${process.env.CLIENT_URL}/evaluations/${evaluation._id}" 
-                                        style="background-color: #E4002B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                                        Schedule Review Session
-                                    </a>
+                console.log('Attempting to send email to evaluator:', evaluation.evaluator.email);
+                try {
+                    await sendEmail({
+                        to: evaluation.evaluator.email,
+                        subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                                <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                    <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
                                 </div>
-                            </div>
+                                
+                                <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                    <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
+                                    <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
+                                    <p><strong>Position:</strong> ${evaluation.employee.position}</p>
+                                    <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
+                                </div>
 
-                            <p style="margin-top: 30px;">
-                                Best regards,<br>Growth Hub Team
-                            </p>
-                        </div>
-                    `
-                });
+                                <div style="margin-bottom: 30px;">
+                                    <p>The employee has completed their self-evaluation. Please log in to Growth Hub to schedule the review session.</p>
+                                    <div style="margin-top: 20px; text-align: center;">
+                                        <a href="${process.env.CLIENT_URL}/evaluations/${evaluation._id}" 
+                                            style="background-color: #E4002B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                                            Schedule Review Session
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <p style="margin-top: 30px;">
+                                    Best regards,<br>Growth Hub Team
+                                </p>
+                            </div>
+                        `
+                    });
+                    console.log('Successfully sent email to evaluator');
+                } catch (emailError) {
+                    console.error('Failed to send evaluator email:', emailError);
+                }
+            } else {
+                console.warn('No evaluator email found for evaluation:', evaluationId);
             }
 
             // Also send to store email if configured
             if (evaluation.store?.storeEmail) {
-                await sendEmail({
-                    to: evaluation.store.storeEmail,
-                    subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
-                            </div>
-                            
-                            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
-                                <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
-                                <p><strong>Position:</strong> ${evaluation.employee.position}</p>
-                                <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
-                                <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
-                            </div>
+                console.log('Attempting to send email to store:', evaluation.store.storeEmail);
+                try {
+                    await sendEmail({
+                        to: evaluation.store.storeEmail,
+                        subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                                <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                    <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
+                                </div>
+                                
+                                <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                    <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
+                                    <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
+                                    <p><strong>Position:</strong> ${evaluation.employee.position}</p>
+                                    <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
+                                    <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
+                                </div>
 
-                            <div style="margin-bottom: 30px;">
-                                <p>The employee has completed their self-evaluation. The evaluator will schedule a review session soon.</p>
-                            </div>
+                                <div style="margin-bottom: 30px;">
+                                    <p>The employee has completed their self-evaluation. The evaluator will schedule a review session soon.</p>
+                                </div>
 
-                            <p style="margin-top: 30px;">
-                                Best regards,<br>Growth Hub Team
-                            </p>
-                        </div>
-                    `
-                });
+                                <p style="margin-top: 30px;">
+                                    Best regards,<br>Growth Hub Team
+                                </p>
+                            </div>
+                        `
+                    });
+                    console.log('Successfully sent email to store');
+                } catch (emailError) {
+                    console.error('Failed to send store email:', emailError);
+                }
+            } else {
+                console.warn('No store email configured for store:', evaluation.store?._id);
             }
         }
 

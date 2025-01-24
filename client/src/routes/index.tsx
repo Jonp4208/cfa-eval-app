@@ -22,6 +22,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import AnalyticsHub from '@/pages/Analytics';
 import HeartsAndHands from '@/pages/Analytics/HeartsAndHands';
+import DayVsNight from '@/pages/Analytics/DayVsNight';
 import DisciplinaryPage from '@/pages/Disciplinary';
 import NewIncident from '@/pages/Disciplinary/NewIncident';
 import IncidentDetail from '@/pages/Disciplinary/[id]';
@@ -102,6 +103,7 @@ export default function AppRoutes() {
       <Route path="/analytics" element={<PrivateRoute><AnalyticsHub /></PrivateRoute>}>
         <Route path="hearts-and-hands" element={<HeartsAndHands />} />
         <Route path="team-scores" element={<TeamScores />} />
+        <Route path="day-vs-night" element={<DayVsNight />} />
       </Route>
       <Route path="/future" element={<PrivateRoute><FuturePage /></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />

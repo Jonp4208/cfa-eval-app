@@ -293,6 +293,11 @@ export default function UserProfile() {
     }
   }, [profile]);
 
+  const handleManagerChange = (newManagerId: string) => {
+    setSelectedManagerId(newManagerId);
+    updateManager.mutate(newManagerId);
+  };
+
   // Add this new effect to fetch disciplinary incidents
   useEffect(() => {
     const fetchDisciplinaryIncidents = async () => {

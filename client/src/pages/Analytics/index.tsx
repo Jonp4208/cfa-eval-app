@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Heart, Medal, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, Heart, Medal, LayoutDashboard, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
@@ -60,6 +60,12 @@ const AnalyticsHub = () => {
       description: "View all team members and their evaluation scores",
       icon: Medal,
       link: "team-scores",
+    },
+    {
+      title: "Day vs Night",
+      description: "Compare performance between day and night shifts",
+      icon: Sun,
+      link: "day-vs-night",
     },
   ];
 

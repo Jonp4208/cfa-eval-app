@@ -179,13 +179,13 @@ router.get('/department/:department', auth, async (req, res) => {
     // Initialize department data structure
     const departmentData = {
       categories: department === 'foh' ? {
-        'Guest Service': 0,
+        'Front of House': 0,
         'Speed of Service': 0,
         'Order Accuracy': 0,
         'Cleanliness': 0,
         'Team Collaboration': 0
       } : {
-        'Food Safety': 0,
+        'Back of House': 0,
         'Food Quality': 0,
         'Kitchen Efficiency': 0,
         'Cleanliness': 0,
@@ -399,14 +399,14 @@ router.get('/development', auth, async (req, res) => {
       ],
       softSkills: [
         {
-          name: 'Guest Service',
+          name: 'Front of House',
           description: 'Ability to handle guest interactions effectively',
           level: 0,
           recentAchievement: 'Improved guest satisfaction scores',
           nextGoal: 'Achieve consistent 5-star ratings'
         },
         {
-          name: 'Time Management',
+          name: 'Back of House',
           description: 'Efficient handling of tasks and responsibilities',
           level: 0,
           recentAchievement: 'Reduced order preparation time',
@@ -1339,5 +1339,211 @@ const mapScoreToNumeric = (score) => {
 
   return scoreMap[score] || 0;
 };
+
+router.get('/shift-comparison', auth, async (req, res) => {
+  try {
+    const { timeframe = 'month', store } = req.query;
+    const storeId = store || req.user.store._id; // Get the actual ObjectId
+
+    console.log('Querying with storeId:', storeId);
+
+    // Get the date range based on timeframe
+    const endDate = new Date();
+    const startDate = new Date();
+    switch (timeframe) {
+      case 'week':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(startDate.getMonth() - 1);
+        break;
+      case 'quarter':
+        startDate.setMonth(startDate.getMonth() - 3);
+        break;
+      case 'year':
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      default:
+        startDate.setMonth(startDate.getMonth() - 1);
+    }
+
+    // First find all employees by shift
+    const dayShiftEmployees = await User.find({
+      store: storeId,
+      shift: 'day',
+      status: 'active' // Only get active employees
+    }).select('_id name position');
+
+    console.log('Day shift employees found:', dayShiftEmployees.length);
+
+    const nightShiftEmployees = await User.find({
+      store: storeId,
+      shift: 'night',
+      status: 'active' // Only get active employees
+    }).select('_id name position');
+
+    console.log('Night shift employees found:', nightShiftEmployees.length);
+
+    // Get evaluations for day shift employees
+    const dayShiftEvaluations = await Evaluation.find({
+      store: storeId,
+      employee: { $in: dayShiftEmployees.map(emp => emp._id) },
+      createdAt: { $gte: startDate, $lte: endDate },
+      status: 'completed'
+    }).populate('template');
+
+    console.log('Day shift evaluations found:', dayShiftEvaluations.length);
+
+    // Get evaluations for night shift employees
+    const nightShiftEvaluations = await Evaluation.find({
+      store: storeId,
+      employee: { $in: nightShiftEmployees.map(emp => emp._id) },
+      createdAt: { $gte: startDate, $lte: endDate },
+      status: 'completed'
+    }).populate('template');
+
+    console.log('Night shift evaluations found:', nightShiftEvaluations.length);
+
+    // Initialize metrics
+    const dayShiftScores = [];
+    const nightShiftScores = [];
+    const metrics = {};
+
+    // Process day shift evaluations
+    dayShiftEvaluations.forEach(evaluation => {
+      const employee = dayShiftEmployees.find(emp => emp._id.toString() === evaluation.employee.toString());
+      if (!employee) return;
+
+      const scores = evaluation.managerEvaluation instanceof Map 
+        ? Object.fromEntries(evaluation.managerEvaluation)
+        : evaluation.managerEvaluation;
+
+      let totalScore = 0;
+      let totalPossible = 0;
+
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.criteria.forEach((criterion, criterionIndex) => {
+          const key = `${sectionIndex}-${criterionIndex}`;
+          const score = scores[key];
+          if (score !== undefined) {
+            const numericScore = mapScoreToNumeric(score);
+            totalScore += numericScore;
+            totalPossible += criterion.gradingScale?.grades 
+              ? Math.max(...criterion.gradingScale.grades.map(g => g.value))
+              : 5; // Default max score if no grading scale
+
+            // Add to category metrics
+            if (!metrics[section.title]) {
+              metrics[section.title] = { day: [], night: [] };
+            }
+            metrics[section.title].day.push(numericScore);
+          }
+        });
+      });
+
+      if (totalPossible > 0) {
+        const avgScore = (totalScore / totalPossible) * 100;
+        dayShiftScores.push({
+          score: avgScore,
+          name: employee.name,
+          position: employee.position
+        });
+      }
+    });
+
+    // Process night shift evaluations
+    nightShiftEvaluations.forEach(evaluation => {
+      const employee = nightShiftEmployees.find(emp => emp._id.toString() === evaluation.employee.toString());
+      if (!employee) return;
+
+      const scores = evaluation.managerEvaluation instanceof Map 
+        ? Object.fromEntries(evaluation.managerEvaluation)
+        : evaluation.managerEvaluation;
+
+      let totalScore = 0;
+      let totalPossible = 0;
+
+      evaluation.template.sections.forEach((section, sectionIndex) => {
+        section.criteria.forEach((criterion, criterionIndex) => {
+          const key = `${sectionIndex}-${criterionIndex}`;
+          const score = scores[key];
+          if (score !== undefined) {
+            const numericScore = mapScoreToNumeric(score);
+            totalScore += numericScore;
+            totalPossible += criterion.gradingScale?.grades 
+              ? Math.max(...criterion.gradingScale.grades.map(g => g.value))
+              : 5; // Default max score if no grading scale
+
+            // Add to category metrics
+            if (!metrics[section.title]) {
+              metrics[section.title] = { day: [], night: [] };
+            }
+            metrics[section.title].night.push(numericScore);
+          }
+        });
+      });
+
+      if (totalPossible > 0) {
+        const avgScore = (totalScore / totalPossible) * 100;
+        nightShiftScores.push({
+          score: avgScore,
+          name: employee.name,
+          position: employee.position
+        });
+      }
+    });
+
+    // Calculate averages for each category
+    const metricsArray = Object.entries(metrics).map(([category, scores]) => ({
+      category,
+      day: scores.day.length ? (scores.day.reduce((a, b) => a + b, 0) / scores.day.length) * 20 : 0,
+      night: scores.night.length ? (scores.night.reduce((a, b) => a + b, 0) / scores.night.length) * 20 : 0
+    }));
+
+    // Sort performers by score
+    const sortByScore = (a, b) => b.score - a.score;
+    const dayTopPerformers = dayShiftScores.sort(sortByScore);
+    const nightTopPerformers = nightShiftScores.sort(sortByScore);
+
+    // Calculate overall averages
+    const dayAverage = dayShiftScores.length 
+      ? dayShiftScores.reduce((acc, curr) => acc + curr.score, 0) / dayShiftScores.length 
+      : 0;
+    const nightAverage = nightShiftScores.length 
+      ? nightShiftScores.reduce((acc, curr) => acc + curr.score, 0) / nightShiftScores.length 
+      : 0;
+
+    // Calculate department comparisons
+    const departmentComparisons = [
+      {
+        category: 'Front of House',
+        day: dayShiftScores.length ? dayShiftScores.reduce((acc, curr) => acc + curr.score, 0) / dayShiftScores.length : 0,
+        night: nightShiftScores.length ? nightShiftScores.reduce((acc, curr) => acc + curr.score, 0) / nightShiftScores.length : 0
+      },
+      {
+        category: 'Back of House',
+        day: dayShiftScores.length ? dayShiftScores.reduce((acc, curr) => acc + curr.score, 0) / dayShiftScores.length : 0,
+        night: nightShiftScores.length ? nightShiftScores.reduce((acc, curr) => acc + curr.score, 0) / nightShiftScores.length : 0
+      }
+    ];
+
+    res.json({
+      metrics: metricsArray,
+      averages: {
+        day: dayAverage,
+        night: nightAverage
+      },
+      topPerformers: {
+        day: dayTopPerformers,
+        night: nightTopPerformers
+      },
+      departmentComparison: departmentComparisons
+    });
+
+  } catch (error) {
+    console.error('Error in shift comparison:', error);
+    res.status(500).json({ message: 'Error fetching shift comparison data' });
+  }
+});
 
 export default router; 

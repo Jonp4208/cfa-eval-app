@@ -6,9 +6,9 @@ const RETRY_DELAY = 5000; // 5 seconds
 // Create reusable transporter object using SMTP transport
 const createTransporter = () => {
   console.log('Creating email transporter with config:', {
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD ? '****' : undefined
@@ -16,9 +16,9 @@ const createTransporter = () => {
   });
 
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT),
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
@@ -98,5 +98,34 @@ export const sendEmailWithRetry = async ({ to, subject, html }, retries = 0) => 
 
 // Backward compatibility wrapper
 export const sendEmail = async ({ to, subject, html }) => {
-  return sendEmailWithRetry({ to, subject, html });
+  try {
+    console.log('Preparing to send email:', {
+      to,
+      subject,
+      from: process.env.EMAIL_USER
+    });
+
+    const transporter = createTransporter();
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to,
+      subject,
+      html
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', {
+      messageId: result.messageId,
+      response: result.response
+    });
+    return result;
+  } catch (error) {
+    console.error('Failed to send email:', {
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response
+    });
+    throw error;
+  }
 }; 
