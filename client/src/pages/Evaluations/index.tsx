@@ -622,20 +622,40 @@ export default function Evaluations() {
                         </div>
                       </div>
                       {(evaluation.status === 'pending_manager_review' || evaluation.status === 'in_review_session') && (
-                        <div className="mt-auto flex justify-center md:justify-end">
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(
-                                evaluation.status === 'pending_manager_review' 
-                                  ? `/evaluations/${evaluation._id}?showSchedule=true`
-                                  : `/evaluations/${evaluation._id}`
-                              );
-                            }}
-                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm w-full md:w-auto"
-                          >
-                            {evaluation.status === 'pending_manager_review' ? 'Schedule Review' : 'Complete Review'}
-                          </Button>
+                        <div className="mt-auto flex justify-center md:justify-end gap-2">
+                          {evaluation.status === 'pending_manager_review' && (
+                            <>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/evaluations/${evaluation._id}?showSchedule=true`);
+                                }}
+                                className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
+                              >
+                                Schedule Review
+                              </Button>
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/evaluations/${evaluation._id}?edit=true`);
+                                }}
+                                className="border border-[#E51636] text-[#E51636] hover:bg-[#E51636]/10 h-9 px-4 rounded-xl text-sm"
+                              >
+                                Complete Now
+                              </Button>
+                            </>
+                          )}
+                          {evaluation.status === 'in_review_session' && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/evaluations/${evaluation._id}`);
+                              }}
+                              className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
+                            >
+                              Complete Review
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>

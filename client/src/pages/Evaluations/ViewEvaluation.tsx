@@ -98,11 +98,15 @@ export default function ViewEvaluation() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState({ section: 0, question: 0 });
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Initialize showScheduleReview based on URL parameter
   useEffect(() => {
     if (searchParams.get('showSchedule') === 'true') {
       setShowScheduleReview(true);
+    }
+    if (searchParams.get('edit') === 'true') {
+      setIsEditing(true);
     }
   }, [searchParams]);
 
