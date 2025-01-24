@@ -99,43 +99,92 @@ export default function NewEvaluation() {
         (evaluation: any) => evaluation.status !== 'completed'
       );
 
-      return response.data.users.map((user: any) => ({
-        _id: user._id,
-        name: user.name,
-        position: user.position || 'Employee',
-        department: user.department || 'Uncategorized',
-        imageUrl: user.imageUrl,
-        email: user.email,
-        lastEvaluation: user.lastEvaluation,
-        manager: user.manager || null,
-        pendingEvaluation: pendingEvaluations.find(
+      console.log('Fetched users:', response.data.users);
+      console.log('Pending evaluations:', pendingEvaluations);
+
+      return response.data.users.map((user: any) => {
+        const pendingEval = pendingEvaluations.find(
           (evaluation: any) => evaluation.employee._id === user._id
-        ) ? {
-          status: pendingEval.status,
-          scheduledDate: pendingEval.scheduledDate
-        } : undefined
-      }));
+        );
+        
+        console.log(`Processing user ${user.name}:`, {
+          id: user._id,
+          manager: user.manager,
+          pendingEval: pendingEval
+        });
+
+        return {
+          _id: user._id,
+          name: user.name,
+          position: user.position || 'Employee',
+          department: user.department || 'Uncategorized',
+          imageUrl: user.imageUrl,
+          email: user.email,
+          lastEvaluation: user.lastEvaluation,
+          manager: user.manager || null,
+          pendingEvaluation: pendingEval ? {
+            status: pendingEval.status,
+            scheduledDate: pendingEval.scheduledDate
+          } : undefined
+        };
+      });
     }
   });
 
   // Filter employees by search query and department
   const filteredEmployees = React.useMemo(() => {
     if (!employees) return [];
-    return employees.filter((emp: Employee) => {
+    console.log('Filtering employees with:', {
+      currentUserId: user?._id,
+      totalEmployees: employees.length,
+      searchQuery,
+      selectedDepartment
+    });
+
+    const filtered = employees.filter((emp: Employee) => {
       // Exclude current user (manager) from the list
-      if (emp._id === user?._id) return false;
+      if (emp._id === user?._id) {
+        console.log(`Excluding self: ${emp.name}`);
+        return false;
+      }
       
-      // Only show employees that report to the current user
-      const reportsToCurrentUser = typeof emp.manager === 'string' 
+      // Check if current user is the employee's manager
+      const reportsToCurrentUser = typeof emp.manager === 'string'
         ? emp.manager === user?._id
         : emp.manager?._id === user?._id;
+
+      console.log(`Employee ${emp.name}:`, {
+        id: emp._id,
+        managerId: typeof emp.manager === 'string' ? emp.manager : emp.manager?._id,
+        currentUserId: user?._id,
+        reportsToCurrentUser,
+        department: emp.department,
+        selectedDepartment,
+        matchesDepartment: selectedDepartment === 'all' || emp.department === selectedDepartment,
+        searchQuery,
+        matchesSearch: emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      emp.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      emp.position.toLowerCase().includes(searchQuery.toLowerCase())
+      });
 
       const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           emp.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           emp.position.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDepartment = selectedDepartment === 'all' || emp.department === selectedDepartment;
+
       return reportsToCurrentUser && matchesSearch && matchesDepartment;
     });
+
+    console.log('Filtered results:', {
+      totalFiltered: filtered.length,
+      employees: filtered.map(emp => ({
+        name: emp.name,
+        department: emp.department,
+        hasPendingEval: !!emp.pendingEvaluation
+      }))
+    });
+
+    return filtered;
   }, [employees, searchQuery, selectedDepartment, user?._id]);
 
   // Group employees by department
