@@ -78,8 +78,13 @@ export const createEvaluation = async (req, res) => {
                 type: 'evaluation',
                 priority: 'high',
                 title: 'New Evaluation Scheduled',
-                message: `An evaluation has been scheduled for you on ${new Date(scheduledDate).toLocaleDateString()}`,
-                evaluationId: evaluation._id
+                message: `${employee.name}'s evaluation has been scheduled for ${new Date(scheduledDate).toLocaleDateString()}`,
+                evaluationId: evaluation._id,
+                employee: {
+                    name: employee.name,
+                    position: employee.position || 'Employee',
+                    department: employee.department || 'Uncategorized'
+                }
             });
 
             await notification.save();
@@ -654,9 +659,14 @@ export const scheduleReviewSession = async (req, res) => {
             store: req.user.store._id,
             type: 'evaluation',
             title: 'Review Session Scheduled',
-            message: `Your evaluation review session has been scheduled for ${new Date(reviewSessionDate).toLocaleDateString()}.`,
+            message: `${evaluation.employee.name}'s evaluation review session has been scheduled for ${new Date(reviewSessionDate).toLocaleDateString()}.`,
             relatedId: evaluation._id,
-            relatedModel: 'Evaluation'
+            relatedModel: 'Evaluation',
+            employee: {
+                name: evaluation.employee.name,
+                position: evaluation.employee.position || 'Employee',
+                department: evaluation.employee.department || 'Uncategorized'
+            }
         });
 
         res.json({ evaluation });
@@ -756,9 +766,14 @@ export const completeManagerEvaluation = async (req, res) => {
             type: 'evaluation',
             priority: 'high',
             title: 'Evaluation Completed',
-            message: `Your evaluation has been completed by ${evaluation.evaluator.name}`,
+            message: `${evaluation.employee.name}'s evaluation has been completed by ${evaluation.evaluator.name}`,
             relatedId: evaluation._id,
-            relatedModel: 'Evaluation'
+            relatedModel: 'Evaluation',
+            employee: {
+                name: evaluation.employee.name,
+                position: evaluation.employee.position || 'Employee',
+                department: evaluation.employee.department || 'Uncategorized'
+            }
         });
 
         await notification.save();
@@ -1198,8 +1213,13 @@ export const sendUnacknowledgedNotification = async (req, res) => {
             type: 'evaluation',
             priority: 'high',
             title: 'Evaluation Acknowledgement Required',
-            message: `Please acknowledge your completed evaluation from ${evaluation.evaluator.name}.`,
-            evaluationId: evaluation._id
+            message: `${evaluation.employee.name}'s evaluation from ${evaluation.evaluator.name} requires acknowledgement.`,
+            evaluationId: evaluation._id,
+            employee: {
+                name: evaluation.employee.name,
+                position: evaluation.employee.position || 'Employee',
+                department: evaluation.employee.department || 'Uncategorized'
+            }
         });
 
         await notification.save();

@@ -332,24 +332,12 @@ export default function ViewEvaluation() {
         navigate('/evaluations');
       }, 1000);
     },
-    onError: (error: any) => {
-      // Only show error notification if there's an actual error response
-      if (error.response) {
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-red-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
-        notification.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          <span>${error.response?.data?.message || 'Failed to complete evaluation'}</span>
-        `;
-        document.body.appendChild(notification);
-
-        // Remove the notification after 3 seconds
-        setTimeout(() => {
-          notification.remove();
-        }, 3000);
-      }
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to complete evaluation. Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -537,30 +525,6 @@ export default function ViewEvaluation() {
     setValidationErrors(errors);
     return errors.length === 0;
   };
-
-  // Submit manager evaluation mutation
-  const submitManagerEvaluation = useMutation({
-    mutationFn: async () => {
-      await api.post(`/api/evaluations/${id}/manager-evaluation`, {
-        managerEvaluation: answers,
-        overallComments
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Your evaluation has been submitted successfully.",
-      });
-      navigate('/dashboard');
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to submit evaluation. Please try again.",
-        variant: "destructive",
-      });
-    }
-  });
 
   // Add helper function to calculate rating value
   const getRatingValue = (rating: string | number | undefined, gradingScale?: GradingScale): number => {

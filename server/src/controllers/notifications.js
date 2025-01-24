@@ -9,12 +9,36 @@ export const getNotifications = async (req, res) => {
       user: req.user._id,
     })
     .sort({ createdAt: -1 })
-    .populate('evaluationId', 'status scheduledDate')
+    .populate({
+      path: 'evaluationId',
+      select: 'status scheduledDate employee evaluator',
+      populate: [
+        { path: 'employee', select: 'name position department' },
+        { path: 'evaluator', select: 'name' }
+      ]
+    })
     .lean();
 
     console.log('Found notifications:', notifications.length);
     
-    res.json({ notifications });
+    // Transform notifications to include employee details
+    const transformedNotifications = notifications.map(notification => {
+      if (notification.evaluationId) {
+        const evaluation = notification.evaluationId;
+        return {
+          ...notification,
+          employee: {
+            name: evaluation.employee?.name,
+            position: evaluation.employee?.position,
+            department: evaluation.employee?.department
+          },
+          evaluator: evaluation.evaluator?.name
+        };
+      }
+      return notification;
+    });
+    
+    res.json({ notifications: transformedNotifications });
   } catch (error) {
     console.error('Error fetching notifications:', error);
     res.status(500).json({ message: 'Error fetching notifications' });

@@ -40,6 +40,11 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Evaluation'
   },
+  employee: {
+    name: { type: String },
+    position: { type: String },
+    department: { type: String }
+  },
   acknowledgedAt: {
     type: Date
   },
