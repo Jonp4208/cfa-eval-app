@@ -219,10 +219,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Mark the notification as read
-      await api.post(`/api/notifications/${evaluation.notificationId}/mark-read`);
+      // Delete the notification instead of marking as read
+      await api.delete(`/api/notifications/${evaluation.notificationId}`);
 
-      console.log('Successfully marked notification as read');
+      console.log('Successfully deleted notification');
 
       // Update local state
       setUpcomingEvaluations(prev => {
