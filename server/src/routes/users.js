@@ -87,14 +87,13 @@ router.get('/', auth, async (req, res) => {
 
     console.log('Initial query filter:', JSON.stringify(query, null, 2));
 
-    // If user is admin, they can see all users they manage
-    if (req.user.role === 'admin') {
-      console.log('Admin user - fetching managed employees');
-      query.manager = req.user._id;
+    // If user is admin or Director, they can see all users in their store
+    if (req.user.role === 'admin' || req.user.position === 'Director') {
+      console.log('Admin/Director user - fetching all store users');
+      // No additional query needed - they can see all users in their store
     }
     // For users with leadership positions, they can view their team
-    else if (req.user.position === 'Director' || req.user.position === 'Team Leader' || 
-             req.user.position === 'Shift Leader' || req.user.position === 'Manager') {
+    else if (req.user.position === 'Team Leader' || req.user.position === 'Shift Leader' || req.user.position === 'Manager') {
       console.log('Leadership position - fetching managed employees');
       query.manager = req.user._id;
     }
@@ -105,10 +104,10 @@ router.get('/', auth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to view users' });
     }
 
-    // If a specific manager's team is requested and user is admin
-    if (managerId && req.user.role === 'admin') {
+    // If a specific manager's team is requested and user is admin/director
+    if (managerId && (req.user.role === 'admin' || req.user.position === 'Director')) {
       query.manager = managerId;
-      console.log('Admin filtering by specific manager:', managerId);
+      console.log('Admin/Director filtering by specific manager:', managerId);
     }
 
     console.log('Final query:', JSON.stringify(query, null, 2));
