@@ -345,10 +345,8 @@ export default function ViewEvaluation() {
         notification.remove();
       }, 3000);
 
-      // Navigate back to evaluations page after a short delay
-      setTimeout(() => {
-        navigate('/evaluations');
-      }, 1000);
+      // Navigate back to evaluations page immediately
+      navigate('/evaluations');
     },
     onError: (error) => {
       toast({
