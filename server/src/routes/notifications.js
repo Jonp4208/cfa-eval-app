@@ -2,7 +2,8 @@ import express from 'express';
 import { auth } from '../middleware/auth.js';
 import { 
   getNotifications,
-  markNotificationAsRead
+  markNotificationAsRead,
+  deleteNotification
 } from '../controllers/notifications.js';
 
 const router = express.Router();
@@ -12,5 +13,8 @@ router.get('/', auth, getNotifications);
 
 // Mark a notification as read
 router.post('/:notificationId/mark-read', auth, markNotificationAsRead);
+
+// Delete a notification permanently
+router.delete('/:notificationId', auth, deleteNotification);
 
 export default router; 

@@ -69,4 +69,47 @@ export const markNotificationAsRead = async (req, res) => {
     });
     res.status(500).json({ message: 'Error marking notification as read' });
   }
+};
+
+// Delete a notification permanently
+export const deleteNotification = async (req, res) => {
+  try {
+    console.log('Deleting notification:', {
+      notificationId: req.params.notificationId,
+      userId: req.user._id
+    });
+
+    const notification = await Notification.findOneAndDelete({
+      _id: req.params.notificationId,
+      user: req.user._id
+    });
+
+    if (!notification) {
+      console.log('Notification not found:', {
+        notificationId: req.params.notificationId,
+        userId: req.user._id
+      });
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+
+    console.log('Notification deleted successfully:', {
+      notificationId: notification._id,
+      userId: notification.user
+    });
+
+    res.json({ 
+      message: 'Notification deleted successfully',
+      notification: {
+        id: notification._id
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting notification:', {
+      error: error.message,
+      stack: error.stack,
+      notificationId: req.params.notificationId,
+      userId: req.user._id
+    });
+    res.status(500).json({ message: 'Error deleting notification' });
+  }
 }; 

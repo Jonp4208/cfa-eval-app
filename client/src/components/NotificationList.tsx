@@ -51,14 +51,13 @@ export function NotificationList({ onDismiss, isMobile = false }: NotificationLi
   const handleDismissNotification = async (notificationId: string) => {
     try {
       console.log('Dismissing notification:', notificationId);
-      await api.post(`/api/notifications/${notificationId}/mark-read`);
+      await api.delete(`/api/notifications/${notificationId}`);
       
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
       onDismiss();
-      showNotification('success', 'Success', 'Notification dismissed');
     } catch (error) {
       console.error('Error dismissing notification:', error);
-      showNotification('error', 'Error', 'Failed to dismiss notification');
+      showNotification('error', 'Error', 'Failed to delete notification');
     }
   };
 
