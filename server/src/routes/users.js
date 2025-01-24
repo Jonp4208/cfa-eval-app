@@ -9,6 +9,7 @@ import { Readable } from 'stream';
 import { updateUserMetrics, updateUser } from '../controllers/users.js';
 import Evaluation from '../models/Evaluation.js';
 import GradingScale from '../models/GradingScale.js';
+import { sendEmail } from '../utils/email.js';
 
 dotenv.config();
 
@@ -225,34 +226,43 @@ router.post('/', auth, async (req, res) => {
 
     await user.save();
 
-    // Send welcome email with password
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Welcome to Growth Hub - CFA Team Member Development',
+    // Send welcome email
+    await sendEmail({
+      to: user.email,
+      subject: 'Welcome to Growth Hub',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="text-align: center; padding: 20px;">
-            <h1 style="color: #E4002B;">Welcome to Growth Hub</h1>
-            <p style="color: #666;">Empowering Team Member Development</p>
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h1 style="color: white; margin: 0;">Welcome to Growth Hub!</h1>
           </div>
           
-          <div style="padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
-            <p>Hello ${name},</p>
-            <p>Welcome to Growth Hub! Your account has been created successfully.</p>
-            <p>Here are your login credentials:</p>
-            <ul>
-              <li>Email: ${email}</li>
-              <li>Temporary Password: ${password}</li>
-            </ul>
-            <p>Please change your password after your first login.</p>
-            <p>Best regards,<br>The Growth Hub Team</p>
+          <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <p>Hello ${user.name},</p>
+            <p>Your account has been created successfully. Here are your login credentials:</p>
+            
+            <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Login URL:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
+              <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
+            </div>
+            
+            <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
+            <p>For your security, please follow these steps:</p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+              <li>Log in using your email and temporary password</li>
+              <li>Change your password immediately upon first login</li>
+              <li>Keep your login credentials secure and do not share them</li>
+            </ol>
+            
+            <p>If you have any questions or need assistance, please contact your manager or administrator.</p>
+          </div>
+          
+          <div style="text-align: center; padding: 20px; color: #666;">
+            <p>Best regards,<br>Growth Hub Team</p>
           </div>
         </div>
       `
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
 
     res.status(201).json({ 
       message: 'User created successfully',
@@ -380,22 +390,20 @@ router.post('/bulk-import', auth, upload.single('file'), async (req, res) => {
 
             await user.save();
 
-            // Send welcome email with password
+            // Send welcome email
             try {
-              const mailOptions = {
-                from: process.env.EMAIL_USER,
+              await sendEmail({
                 to: row.email,
-                subject: 'Welcome to Growth Hub - CFA Team Member Development',
+                subject: 'Welcome to Growth Hub',
                 html: `
-                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="text-align: center; padding: 20px;">
-                      <h1 style="color: #E4002B;">Welcome to Growth Hub</h1>
-                      <p style="color: #666;">Empowering Team Member Development</p>
+                  <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                    <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                      <h1 style="color: white; margin: 0;">Welcome to Growth Hub!</h1>
                     </div>
                     
-                    <div style="padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+                    <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
                       <p>Hello ${row.name},</p>
-                      <p>Welcome to Growth Hub! Your account has been created successfully. Here are your login credentials:</p>
+                      <p>Your account has been created successfully. Here are your login credentials:</p>
                       
                       <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
                         <p style="margin: 5px 0;"><strong>Login URL:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
@@ -419,9 +427,7 @@ router.post('/bulk-import', auth, upload.single('file'), async (req, res) => {
                     </div>
                   </div>
                 `
-              };
-
-              await transporter.sendMail(mailOptions);
+              });
             } catch (emailError) {
               console.error('Failed to send welcome email:', emailError);
               errors.push(`User ${row.email} created but failed to send welcome email`);
@@ -464,9 +470,8 @@ router.post('/:id/reset-password', auth, async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    // Send email with new password
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    // Send email with new password using the centralized email utility
+    await sendEmail({
       to: user.email,
       subject: 'Password Reset - CFA Evaluation App',
       html: `
@@ -478,9 +483,7 @@ router.post('/:id/reset-password', auth, async (req, res) => {
         <p>Please login and change your password as soon as possible.</p>
         <p>Best regards,<br>CFA Evaluation Team</p>
       `
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
 
     res.json({ message: 'Password reset instructions sent successfully' });
   } catch (error) {
