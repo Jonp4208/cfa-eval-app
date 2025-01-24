@@ -100,7 +100,7 @@ export const createIncident = handleAsync(async (req, res) => {
   } = req.body;
 
   // Get employee's supervisor
-  const employee = await User.findById(employeeId);
+  const employee = await User.findById(employeeId).populate('store', 'name storeNumber');
   if (!employee) {
     return res.status(404).json({ message: 'Employee not found' });
   }
@@ -124,7 +124,7 @@ export const createIncident = handleAsync(async (req, res) => {
   });
 
   await incident.populate([
-    { path: 'employee', select: 'name position department' },
+    { path: 'employee', select: 'name position department email' },
     { path: 'supervisor', select: 'name' },
     { path: 'createdBy', select: 'name' }
   ]);
@@ -140,6 +140,65 @@ export const createIncident = handleAsync(async (req, res) => {
     relatedId: incident._id,
     relatedModel: 'Disciplinary'
   });
+
+  // Send email to employee
+  if (incident.employee.email) {
+    try {
+      await sendEmail({
+        to: incident.employee.email,
+        subject: 'New Disciplinary Incident Created',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+              <h1 style="color: white; margin: 0;">New Disciplinary Incident</h1>
+            </div>
+            
+            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+              <h2 style="color: #333; margin-top: 0;">Incident Details</h2>
+              <p><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+              <p><strong>Type:</strong> ${type}</p>
+              <p><strong>Severity:</strong> ${severity}</p>
+              <p><strong>Created By:</strong> ${incident.createdBy.name}</p>
+              <p><strong>Supervisor:</strong> ${incident.supervisor.name}</p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+              <h2 style="color: #333;">Description</h2>
+              <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <p style="margin: 0;">${description}</p>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+              <h2 style="color: #333;">Action Taken</h2>
+              <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <p style="margin: 0;">${actionTaken}</p>
+              </div>
+            </div>
+
+            ${followUpDate ? `
+              <div style="margin-bottom: 30px;">
+                <h2 style="color: #333;">Follow-up Information</h2>
+                <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                  <p><strong>Follow-up Date:</strong> ${new Date(followUpDate).toLocaleDateString()}</p>
+                  ${followUpActions ? `<p><strong>Follow-up Actions:</strong> ${followUpActions}</p>` : ''}
+                </div>
+              </div>
+            ` : ''}
+
+            <p style="margin-top: 30px;">
+              Please log in to the Growth Hub platform to acknowledge this incident and provide any comments.
+            </p>
+            <p>Best regards,<br>Growth Hub Team</p>
+          </div>
+        `
+      });
+      console.log('Disciplinary incident email sent to employee:', incident.employee.email);
+    } catch (emailError) {
+      console.error('Failed to send disciplinary incident email:', emailError);
+      // Don't throw the error, just log it - we don't want to fail the incident creation
+    }
+  }
 
   // Get all managers in the store
   const managers = await User.find({
