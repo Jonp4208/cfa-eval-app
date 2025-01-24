@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="16" fill="#4F46E5"/>
+  <!-- L -->
+  <path d="M10 8V22H14V12H18V8H10Z" fill="white"/>
+  <!-- D with growth arrow -->
+  <path d="M16 8V22H20C22 22 24 20 24 16C24 12 22 10 20 10H16ZM20 18H20V14H20C21 14 21 15 21 16C21 17 21 18 20 18Z" fill="white"/>
+  <!-- Growth arrow -->
+  <path d="M22 6L24 8L20 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg> 
