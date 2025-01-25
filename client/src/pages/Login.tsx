@@ -100,7 +100,7 @@ export default function Login() {
             <div className="flex items-center justify-center gap-2 mb-2">
               <TrendingUp className="h-8 w-8" />
               <h1 className="text-3xl md:text-4xl font-bold">
-                Growth Hub
+                LD Growth
                 <span className="bg-white/10 ml-2 px-2 rounded-lg">CFA</span>
               </h1>
             </div>

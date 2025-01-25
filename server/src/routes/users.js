@@ -226,11 +226,11 @@ router.post('/', auth, async (req, res) => {
     // Send welcome email
     await sendEmail({
       to: user.email,
-      subject: 'Welcome to Growth Hub',
+      subject: 'Welcome to LD Growth',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
           <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-            <h1 style="color: white; margin: 0;">Welcome to Growth Hub!</h1>
+            <h1 style="color: white; margin: 0;">Welcome to LD Growth!</h1>
           </div>
           
           <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
@@ -255,7 +255,7 @@ router.post('/', auth, async (req, res) => {
           </div>
           
           <div style="text-align: center; padding: 20px; color: #666;">
-            <p>Best regards,<br>Growth Hub Team</p>
+            <p>Best regards,<br>LD Growth Team</p>
           </div>
         </div>
       `
@@ -391,11 +391,11 @@ router.post('/bulk-import', auth, upload.single('file'), async (req, res) => {
             try {
               await sendEmail({
                 to: row.email,
-                subject: 'Welcome to Growth Hub',
+                subject: 'Welcome to LD Growth',
                 html: `
                   <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
                     <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                      <h1 style="color: white; margin: 0;">Welcome to Growth Hub!</h1>
+                      <h1 style="color: white; margin: 0;">Welcome to LD Growth!</h1>
                     </div>
                     
                     <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
@@ -420,7 +420,7 @@ router.post('/bulk-import', auth, upload.single('file'), async (req, res) => {
                     </div>
                     
                     <div style="text-align: center; padding: 20px; color: #666;">
-                      <p>Best regards,<br>Growth Hub Team</p>
+                      <p>Best regards,<br>LD Growth Team</p>
                     </div>
                   </div>
                 `

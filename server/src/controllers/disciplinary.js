@@ -187,9 +187,9 @@ export const createIncident = handleAsync(async (req, res) => {
             ` : ''}
 
             <p style="margin-top: 30px;">
-              Please log in to the Growth Hub platform to acknowledge this incident and provide any comments.
+              Please log in to the LD Growth platform to acknowledge this incident and provide any comments.
             </p>
-            <p>Best regards,<br>Growth Hub Team</p>
+            <p>Best regards,<br>LD Growth Team</p>
           </div>
         `
       });
@@ -340,9 +340,9 @@ export const acknowledgeIncident = handleAsync(async (req, res) => {
             </div>
 
             <p style="margin-top: 30px;">
-              For more details, please log in to the Growth Hub platform.
+              For more details, please log in to the LD Growth platform.
             </p>
-            <p>Best regards,<br>Growth Hub Team</p>
+            <p>Best regards,<br>LD Growth Team</p>
           </div>
         `
       });
@@ -615,9 +615,9 @@ export const sendDisciplinaryEmail = handleAsync(async (req, res) => {
         ` : ''}
 
         <p style="margin-top: 30px;">
-          For more details, please log in to the Growth Hub platform.
+          For more details, please log in to the LD Growth platform.
         </p>
-        <p>Best regards,<br>Growth Hub Team</p>
+        <p>Best regards,<br>LD Growth Team</p>
       </div>
     `
   });

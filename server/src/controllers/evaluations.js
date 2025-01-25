@@ -93,7 +93,7 @@ export const createEvaluation = async (req, res) => {
             try {
                 await sendEmail({
                     to: employee.email,
-                    subject: 'New Evaluation Scheduled - Growth Hub',
+                    subject: 'New Evaluation Scheduled - LD Growth',
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
                             <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
@@ -107,12 +107,12 @@ export const createEvaluation = async (req, res) => {
                             </div>
 
                             <div style="margin-bottom: 30px;">
-                                <p>Please log in to Growth Hub to complete your self-evaluation before the scheduled date.</p>
+                                <p>Please log in to LD Growth to complete your self-evaluation before the scheduled date.</p>
                                 <p>Your input is valuable for your professional development.</p>
                             </div>
 
                             <p style="margin-top: 30px;">
-                                Best regards,<br>Growth Hub Team
+                                Best regards,<br>LD Growth Team
                             </p>
                         </div>
                     `
@@ -558,7 +558,7 @@ export const submitSelfEvaluation = async (req, res) => {
                                 </div>
 
                                 <div style="margin-bottom: 30px;">
-                                    <p>The employee has completed their self-evaluation. Please log in to Growth Hub to schedule the review session.</p>
+                                    <p>The employee has completed their self-evaluation. Please log in to LD Growth to schedule the review session.</p>
                                     <div style="margin-top: 20px; text-align: center;">
                                         <a href="${process.env.CLIENT_URL}/evaluations/${evaluation._id}" 
                                             style="background-color: #E4002B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
@@ -568,7 +568,7 @@ export const submitSelfEvaluation = async (req, res) => {
                                 </div>
 
                                 <p style="margin-top: 30px;">
-                                    Best regards,<br>Growth Hub Team
+                                    Best regards,<br>LD Growth Team
                                 </p>
                             </div>
                         `
@@ -607,7 +607,7 @@ export const submitSelfEvaluation = async (req, res) => {
                                 </div>
 
                                 <p style="margin-top: 30px;">
-                                    Best regards,<br>Growth Hub Team
+                                    Best regards,<br>LD Growth Team
                                 </p>
                             </div>
                         `
@@ -708,7 +708,7 @@ export const scheduleReviewSession = async (req, res) => {
                             </div>
 
                             <p style="margin-top: 30px;">
-                                Best regards,<br>Growth Hub Team
+                                Best regards,<br>LD Growth Team
                             </p>
                         </div>
                     `
@@ -850,11 +850,11 @@ export const completeManagerEvaluation = async (req, res) => {
                             </div>
 
                             <div style="margin-bottom: 30px;">
-                                <p>Your evaluation has been completed. Please log in to Growth Hub to review and acknowledge your evaluation.</p>
+                                <p>Your evaluation has been completed. Please log in to LD Growth to review and acknowledge your evaluation.</p>
                             </div>
 
                             <p style="margin-top: 30px;">
-                                Best regards,<br>Growth Hub Team
+                                Best regards,<br>LD Growth Team
                             </p>
                         </div>
                     `
@@ -989,9 +989,9 @@ export const acknowledgeEvaluation = async (req, res) => {
                             ${summaryHtml}
 
                             <p style="margin-top: 30px;">
-                                For more details, please log in to the Growth Hub platform.
+                                For more details, please log in to the LD Growth platform.
                             </p>
-                            <p>Best regards,<br>Growth Hub Team</p>
+                            <p>Best regards,<br>LD Growth Team</p>
                         </div>
                     `
                 });

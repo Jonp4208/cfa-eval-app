@@ -92,7 +92,7 @@ export default function ResetPassword() {
           <div className="flex items-center justify-center gap-2 mb-2">
             <TrendingUp className="h-8 w-8 text-red-600" />
             <h1 className="text-3xl font-bold text-gray-900">
-              Growth Hub
+              LD Growth
               <span className="text-red-600 ml-2 bg-red-50 px-2 rounded text-3xl">CFA</span>
             </h1>
           </div>

@@ -271,7 +271,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           >
             <TrendingUp className="h-6 w-6 text-red-600" />
             <div className="flex flex-col">
-              <span className="font-bold">Growth Hub</span>
+              <span className="font-bold">LD Growth</span>
               <span className="text-xs text-gray-500">#{user?.store?.storeNumber || '00000'}</span>
             </div>
           </button>
@@ -301,7 +301,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               <TrendingUp className="h-6 w-6 text-red-600" />
               <div className="flex flex-col">
-                <span className="font-bold">Growth Hub</span>
+                <span className="font-bold">LD Growth</span>
                 <span className="text-xs text-gray-500">#{user?.store?.storeNumber || '00000'}</span>
               </div>
             </button>

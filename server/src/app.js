@@ -82,11 +82,11 @@ apiRouter.post('/test-email', async (req, res) => {
     console.log('Attempting to send test email to:', process.env.EMAIL_USER);
     const result = await sendEmail({
       to: process.env.EMAIL_USER,
-      subject: 'Test Email from Growth Hub',
+      subject: 'Test Email from LD Growth',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #E4002B;">Test Email</h1>
-          <p>This is a test email from Growth Hub to verify the email configuration.</p>
+          <p>This is a test email from LD Growth to verify the email configuration.</p>
           <p>If you received this email, it means your email configuration is working correctly!</p>
           <p>Time sent: ${new Date().toLocaleString()}</p>
         </div>

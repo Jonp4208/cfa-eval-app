@@ -17,8 +17,8 @@ const sendReminderEmail = async (evaluation, daysUntilDue) => {
             <p>This is a reminder that your evaluation is due in ${daysUntilDue} days.</p>
             <p><strong>Due Date:</strong> ${new Date(evaluation.scheduledDate).toLocaleDateString()}</p>
             <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
-            <p>Please log in to the Growth Hub platform to complete your evaluation.</p>
-            <p>Best regards,<br>Growth Hub Team</p>
+            <p>Please log in to the LD Growth platform to complete your evaluation.</p>
+            <p>Best regards,<br>LD Growth Team</p>
           </div>
         `
       });
