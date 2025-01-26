@@ -49,6 +49,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const notificationRef = useRef<HTMLDivElement>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Close notifications when clicking outside
   useEffect(() => {
@@ -113,6 +114,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Add useEffect for click outside handler
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    }
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   const menuItems = [
     {
@@ -286,7 +304,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent the click from triggering the outside click handler
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }}
             className="relative p-2 hover:bg-gray-50 rounded-xl touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <MenuIcon className="w-6 h-6 text-gray-600" />
@@ -478,7 +499,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 bg-gray-800 bg-opacity-50 z-40">
-          <div className="fixed top-0 right-0 bottom-0 w-64 bg-white shadow-lg">
+          <div ref={menuRef} className="fixed top-0 right-0 bottom-0 w-64 bg-white shadow-lg">
             <div className="p-4 border-b flex justify-between items-center">
               <span className="font-bold">Menu</span>
               <button 
