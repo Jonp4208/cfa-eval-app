@@ -34,12 +34,7 @@ export function MobileNav() {
       icon: BarChart,
       label: 'Analytics',
       href: '/analytics',
-    }] : []),
-    {
-      icon: Settings,
-      label: 'Settings',
-      href: '/settings',
-    },
+    }] : [])
   ];
 
   return (
