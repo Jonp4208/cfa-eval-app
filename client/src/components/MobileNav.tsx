@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, TrendingUp, ClipboardList, Settings, BarChart } from 'lucide-react';
+import { Home, Users, TrendingUp, ClipboardList, Settings, BarChart, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -14,6 +14,11 @@ export function MobileNav() {
       icon: Home,
       label: 'Home',
       href: '/',
+    },
+    {
+      icon: CheckSquare,
+      label: 'Tasks',
+      href: '/tasks',
     },
     {
       icon: Users,

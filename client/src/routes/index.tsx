@@ -5,6 +5,7 @@ import Layout from '../components/Layout';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Dashboard from '../pages/Dashboard';
+import TaskManagement from '../pages/TaskManagement';
 import Evaluations from '../pages/Evaluations/index';
 import NewEvaluation from '../pages/Evaluations/NewEvaluation';
 import { EmployeeReview } from '../pages/Evaluations/EmployeeReview';
@@ -78,6 +79,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<Register />} />
       
       <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+      <Route path="/tasks" element={<PrivateRoute><TaskManagement /></PrivateRoute>} />
       <Route path="/evaluations" element={<PrivateRoute><Evaluations /></PrivateRoute>} />
       <Route path="/evaluations/new" element={<PrivateRoute><NewEvaluation /></PrivateRoute>} />
       <Route path="/evaluations/:id/review" element={<PrivateRoute><EmployeeReview /></PrivateRoute>} />

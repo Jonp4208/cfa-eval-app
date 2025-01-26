@@ -19,7 +19,8 @@ import {
   Clock,
   Target,
   BarChart,
-  User2
+  User2,
+  CheckSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
@@ -118,6 +119,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       icon: Home,
       label: 'Dashboard',
       href: '/',
+      show: true,
+      badge: null
+    },
+    {
+      icon: CheckSquare,
+      label: 'Tasks',
+      href: '/tasks',
       show: true,
       badge: null
     },
