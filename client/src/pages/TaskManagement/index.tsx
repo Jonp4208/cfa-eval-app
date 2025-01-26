@@ -9,7 +9,7 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from '../../components/ui/use-toast';
-import { Loader2, Plus, Users, Clock, CheckCircle, Trash2, XCircle } from 'lucide-react';
+import { Loader2, Plus, Users, Clock, CheckCircle, Trash2, XCircle, Filter, ChevronDown } from 'lucide-react';
 import TaskList from './TaskList';
 import AssignTaskDialog from './AssignTaskDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -30,6 +30,10 @@ const TaskManagement = () => {
   const { user } = useAuth();
   const [selectedList, setSelectedList] = useState<TaskListType | null>(null);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Available departments
+  const departments: Department[] = ['Front Counter', 'Drive Thru', 'Kitchen'];
 
   // New task list form state
   const [newTaskList, setNewTaskList] = useState({
@@ -588,80 +592,107 @@ const TaskManagement = () => {
           </div>
         </div>
 
-        {/* Filters */}
-        <Card className="bg-white rounded-[20px]">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <Label>Area</Label>
-                <Select
-                  value={filters.area}
-                  onValueChange={(value: 'foh' | 'boh' | undefined) => 
-                    setFilters(prev => ({ ...prev, area: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={undefined}>All Areas</SelectItem>
-                    <SelectItem value="foh">Front of House</SelectItem>
-                    <SelectItem value="boh">Back of House</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Filter Section */}
+        <div className="mb-6">
+          <Card className="bg-white rounded-[20px]">
+            {/* Mobile Filter Toggle Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden w-full flex items-center justify-between p-4"
+            >
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-[#27251F]/60" />
+                <span className="font-medium">Filters</span>
               </div>
-              <div className="flex-1">
-                <Label>Department</Label>
-                <Select
-                  value={filters.department}
-                  onValueChange={(value: Department | undefined) => 
-                    setFilters(prev => ({ ...prev, department: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={undefined}>All Departments</SelectItem>
-                    <SelectItem value="Front Counter">Front Counter</SelectItem>
-                    <SelectItem value="Drive Thru">Drive Thru</SelectItem>
-                    <SelectItem value="Kitchen">Kitchen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex-1">
-                <Label>Shift</Label>
-                <Select
-                  value={filters.shift}
-                  onValueChange={(value: Shift | undefined) => 
-                    setFilters(prev => ({ ...prev, shift: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={undefined}>All Shifts</SelectItem>
-                    <SelectItem value="day">Day</SelectItem>
-                    <SelectItem value="night">Night</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button 
-                variant="outline" 
-                className="self-end"
-                onClick={() => setFilters({ 
-                  department: undefined, 
-                  shift: undefined, 
-                  status: 'all',
-                  area: undefined 
-                })}
-              >
-                Reset Filters
-              </Button>
+              <ChevronDown className={cn(
+                "w-5 h-5 text-[#27251F]/60 transition-transform",
+                showFilters && "rotate-180"
+              )} />
+            </button>
+
+            {/* Filter Content */}
+            <div className={cn(
+              "overflow-hidden transition-all duration-200 ease-in-out",
+              "md:block",
+              showFilters ? "block" : "hidden"
+            )}>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Area Filter */}
+                  <div className="space-y-2">
+                    <Label>Area</Label>
+                    <Select
+                      value={filters.area || "all"}
+                      onValueChange={(value) => setFilters(prev => ({ ...prev, area: value === "all" ? undefined : value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Areas</SelectItem>
+                        <SelectItem value="FOH">Front of House</SelectItem>
+                        <SelectItem value="BOH">Back of House</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Department Filter */}
+                  <div className="space-y-2">
+                    <Label>Department</Label>
+                    <Select
+                      value={filters.department || "all"}
+                      onValueChange={(value) => setFilters(prev => ({ ...prev, department: value === "all" ? undefined : value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Departments</SelectItem>
+                        {departments.map(dept => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Shift Filter */}
+                  <div className="space-y-2">
+                    <Label>Shift</Label>
+                    <Select
+                      value={filters.shift || "all"}
+                      onValueChange={(value) => setFilters(prev => ({ ...prev, shift: value === "all" ? undefined : value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Shifts</SelectItem>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="PM">PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Reset Filters Button */}
+                <div className="flex justify-end mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setFilters({
+                      area: '',
+                      department: '',
+                      shift: '',
+                      view: filters.view
+                    })}
+                    className="text-sm"
+                  >
+                    Reset Filters
+                  </Button>
+                </div>
+              </CardContent>
             </div>
-          </CardContent>
-        </Card>
+          </Card>
+        </div>
 
         {/* View Selection Tabs */}
         <div className="flex justify-center mb-6">
