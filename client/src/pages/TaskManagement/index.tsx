@@ -9,7 +9,7 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from '../../components/ui/use-toast';
-import { Loader2, Plus, Users, Clock, CheckCircle, Trash2, XCircle, Filter, ChevronDown, Pencil } from 'lucide-react';
+import { Loader2, Plus, Users, Clock, CheckCircle, Trash2, XCircle, Filter, ChevronDown, Pencil, ClipboardList } from 'lucide-react';
 import TaskList from './TaskList';
 import AssignTaskDialog from './AssignTaskDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -544,31 +544,40 @@ const TaskManagement = () => {
                         Create List
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
-                      <DialogHeader>
-                        <DialogTitle>{selectedList ? 'Edit Task List' : 'Create New Task List'}</DialogTitle>
+                    <DialogContent className="w-[95vw] sm:max-w-[600px] h-[90vh] sm:h-auto max-h-[90vh] overflow-hidden flex flex-col">
+                      <DialogHeader className="bg-gradient-to-r from-[#E51636] to-[#DD0031] text-white p-6 relative">
+                        <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
+                        <div className="relative">
+                          <DialogTitle className="text-lg sm:text-xl font-bold">
+                            {selectedList ? 'Edit Task List' : 'Create New Task List'}
+                          </DialogTitle>
+                          <p className="text-white/80 mt-1 text-sm">
+                            {selectedList ? 'Modify existing task list details' : 'Create a new task list to manage operations'}
+                          </p>
+                        </div>
                       </DialogHeader>
-                      <div className="space-y-4 mt-4 overflow-y-auto pr-2">
-                        <div>
-                          <Label htmlFor="name">List Name</Label>
+                      <div className="space-y-4 mt-4 overflow-y-auto px-4 sm:px-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="name" className="text-sm sm:text-base font-medium">List Name</Label>
                           <Input
                             id="name"
                             value={newTaskList.name}
                             onChange={(e) => setNewTaskList(prev => ({ ...prev, name: e.target.value }))}
                             placeholder="Enter list name"
+                            className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
                           />
                         </div>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>Department</Label>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm sm:text-base font-medium">Department</Label>
                             <Select
                               value={newTaskList.department}
                               onValueChange={(value: Department) => 
                                 setNewTaskList(prev => ({ ...prev, department: value }))
                               }
                             >
-                              <SelectTrigger>
+                              <SelectTrigger className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]">
                                 <SelectValue placeholder="Select department" />
                               </SelectTrigger>
                               <SelectContent>
@@ -578,27 +587,27 @@ const TaskManagement = () => {
                               </SelectContent>
                             </Select>
                           </div>
-                          
-                          <div>
-                            <Label>Shift</Label>
+
+                          <div className="space-y-2">
+                            <Label className="text-sm sm:text-base font-medium">Shift</Label>
                             <Select
                               value={newTaskList.shift}
                               onValueChange={(value: Shift) => 
                                 setNewTaskList(prev => ({ ...prev, shift: value }))
                               }
                             >
-                              <SelectTrigger>
+                              <SelectTrigger className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]">
                                 <SelectValue placeholder="Select shift" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="day">Day</SelectItem>
-                                <SelectItem value="night">Night</SelectItem>
+                                <SelectItem value="day">Day Shift</SelectItem>
+                                <SelectItem value="night">Night Shift</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 py-2">
                           <Checkbox
                             id="recurring"
                             checked={newTaskList.isRecurring}
@@ -611,14 +620,15 @@ const TaskManagement = () => {
                                 monthlyDate: 1
                               }))
                             }
+                            className="h-5 w-5 border-gray-200 text-[#E51636] focus:ring-[#E51636]"
                           />
-                          <Label htmlFor="recurring">Recurring Task List</Label>
+                          <Label htmlFor="recurring" className="text-sm sm:text-base font-medium">Recurring Task List</Label>
                         </div>
 
                         {newTaskList.isRecurring && (
-                          <div className="space-y-4">
-                            <div>
-                              <Label>Recurring Type</Label>
+                          <div className="space-y-4 bg-gray-50 rounded-lg p-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm sm:text-base font-medium">Recurring Type</Label>
                               <Select
                                 value={newTaskList.recurringType}
                                 onValueChange={(value: 'daily' | 'weekly' | 'monthly') => 
@@ -630,7 +640,7 @@ const TaskManagement = () => {
                                   }))
                                 }
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]">
                                   <SelectValue placeholder="Select recurring type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -640,78 +650,16 @@ const TaskManagement = () => {
                                 </SelectContent>
                               </Select>
                             </div>
-
-                            {newTaskList.recurringType === 'weekly' && (
-                              <div className="space-y-2">
-                                <Label>Select Days of Week</Label>
-                                <div className="flex flex-wrap gap-2">
-                                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                                    <div key={day} className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id={day}
-                                        checked={newTaskList.recurringDays.includes(day)}
-                                        onCheckedChange={(checked) => {
-                                          setNewTaskList(prev => ({
-                                            ...prev,
-                                            recurringDays: checked 
-                                              ? [...prev.recurringDays, day]
-                                              : prev.recurringDays.filter(d => d !== day)
-                                          }));
-                                        }}
-                                      />
-                                      <Label htmlFor={day} className="capitalize">{day}</Label>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {newTaskList.recurringType === 'monthly' && (
-                              <div>
-                                <Label>Day of Month</Label>
-                                <Select
-                                  value={newTaskList.monthlyDate.toString()}
-                                  onValueChange={(value) => 
-                                    setNewTaskList(prev => ({ 
-                                      ...prev, 
-                                      monthlyDate: parseInt(value)
-                                    }))
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select day of month" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                                      <SelectItem key={day} value={day.toString()}>
-                                        {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
                           </div>
                         )}
 
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
-                            <Label>Tasks</Label>
-                            <Button 
-                              type="button" 
-                              onClick={() => setNewTaskList(prev => ({ 
-                                ...prev, 
-                                tasks: [...prev.tasks, { title: '', description: '', estimatedTime: undefined, scheduledTime: undefined }] 
-                              }))} 
-                              variant="outline" 
-                              size="sm"
-                            >
-                              Add Task
-                            </Button>
+                            <Label className="text-sm sm:text-base font-medium">Tasks ({newTaskList.tasks.length})</Label>
                           </div>
                           
                           {newTaskList.tasks.map((task, index) => (
-                            <div key={index} className="space-y-2 border p-4 rounded-lg">
+                            <div key={index} className="space-y-3 bg-gray-50 p-4 rounded-lg">
                               <Input
                                 placeholder="Task title"
                                 value={task.title}
@@ -721,6 +669,7 @@ const TaskManagement = () => {
                                     i === index ? { ...t, title: e.target.value } : t
                                   )
                                 }))}
+                                className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
                               />
                               <Input
                                 placeholder="Description (optional)"
@@ -731,10 +680,11 @@ const TaskManagement = () => {
                                     i === index ? { ...t, description: e.target.value } : t
                                   )
                                 }))}
+                                className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
                               />
-                              <div className="flex gap-4">
-                                <div className="flex-1">
-                                  <Label>Estimated time (minutes)</Label>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-medium">Estimated time (minutes)</Label>
                                   <Input
                                     type="number"
                                     placeholder="Estimated time"
@@ -745,141 +695,93 @@ const TaskManagement = () => {
                                         i === index ? { ...t, estimatedTime: parseInt(e.target.value) || undefined } : t
                                       )
                                     }))}
+                                    className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
                                   />
                                 </div>
-                                <div className="flex-1">
-                                  <Label>Scheduled time</Label>
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-medium">Scheduled time</Label>
                                   <Input
                                     type="time"
+                                    placeholder="Scheduled time"
                                     value={task.scheduledTime || ''}
                                     onChange={(e) => setNewTaskList(prev => ({
                                       ...prev,
                                       tasks: prev.tasks.map((t, i) =>
-                                        i === index ? { ...t, scheduledTime: e.target.value || undefined } : t
+                                        i === index ? { ...t, scheduledTime: e.target.value } : t
                                       )
                                     }))}
+                                    className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
                                   />
                                 </div>
                               </div>
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="text-red-500 hover:text-red-700 mt-2"
+                                className="w-full h-9 sm:h-10 text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200"
                                 onClick={() => setNewTaskList(prev => ({
                                   ...prev,
                                   tasks: prev.tasks.filter((_, i) => i !== index)
                                 }))}
                               >
+                                <Trash2 className="w-4 h-4 mr-2" />
                                 Remove Task
                               </Button>
                             </div>
                           ))}
+                          
+                          {newTaskList.tasks.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                              <ClipboardList className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                              <p>No tasks added yet</p>
+                              <p className="text-sm text-gray-400 mt-1">Click the Add Task button below to get started</p>
+                            </div>
+                          )}
                         </div>
 
-                        <div className="flex justify-end space-x-2 pt-4">
-                          <Button variant="outline" onClick={() => {
-                            setCreateDialogOpen(false);
-                            setSelectedList(null);
-                            setNewTaskList({
-                              name: '',
-                              department: departments[0],
-                              shift: '' as Shift,
-                              isRecurring: false,
-                              recurringType: undefined,
-                              recurringDays: [],
-                              monthlyDate: 1,
-                              tasks: []
-                            });
-                          }}>
-                            Cancel
+                        <div className="flex justify-between items-center space-x-3 pt-4 sticky bottom-0 bg-white border-t p-4 -mx-6">
+                          <Button 
+                            type="button" 
+                            onClick={() => setNewTaskList(prev => ({ 
+                              ...prev, 
+                              tasks: [...prev.tasks, { title: '', description: '', estimatedTime: undefined, scheduledTime: undefined }] 
+                            }))} 
+                            variant="outline" 
+                            size="sm"
+                            className="h-10 sm:h-11 border-[#E51636] text-[#E51636] hover:bg-[#E51636]/5"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Task
                           </Button>
-                          <Button onClick={async () => {
-                            try {
-                              if (!newTaskList.name || !newTaskList.department || !newTaskList.shift) {
-                                return;
-                              }
 
-                              const taskListToSave = {
-                                name: newTaskList.name,
-                                department: newTaskList.department,
-                                shift: newTaskList.shift,
-                                isActive: true,
-                                isRecurring: newTaskList.isRecurring,
-                                tasks: newTaskList.tasks.map(task => ({
-                                  title: task.title,
-                                  description: task.description,
-                                  estimatedTime: task.estimatedTime,
-                                  scheduledTime: task.scheduledTime,
-                                  status: 'pending' as const
-                                })),
-                                recurringType: newTaskList.isRecurring ? newTaskList.recurringType : undefined,
-                                recurringDays: newTaskList.isRecurring && newTaskList.recurringType === 'weekly' ? newTaskList.recurringDays : undefined,
-                                monthlyDate: newTaskList.isRecurring && newTaskList.recurringType === 'monthly' ? newTaskList.monthlyDate : undefined
-                              };
-
-                              if (selectedList) {
-                                await taskService.updateList(getIdString(selectedList._id), taskListToSave);
-                                toast({
-                                  title: "Task List Updated",
-                                  description: (
-                                    <div className="mt-1 flex items-center gap-2 text-green-600">
-                                      <CheckCircle className="h-4 w-4" />
-                                      <span>Task list updated successfully</span>
-                                    </div>
-                                  ),
-                                  variant: "default",
-                                  className: "bg-green-50 border-green-200",
-                                  duration: 4000,
+                          <div className="flex space-x-3">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => {
+                                setCreateDialogOpen(false);
+                                setSelectedList(null);
+                                setNewTaskList({
+                                  name: '',
+                                  department: departments[0],
+                                  shift: '' as Shift,
+                                  isRecurring: false,
+                                  recurringType: undefined,
+                                  recurringDays: [],
+                                  monthlyDate: 1,
+                                  tasks: []
                                 });
-                              } else {
-                                await taskService.createList(taskListToSave);
-                                toast({
-                                  title: "Task List Created",
-                                  description: (
-                                    <div className="mt-1 flex items-center gap-2 text-green-600">
-                                      <CheckCircle className="h-4 w-4" />
-                                      <span>Task list created successfully</span>
-                                    </div>
-                                  ),
-                                  variant: "default",
-                                  className: "bg-green-50 border-green-200",
-                                  duration: 4000,
-                                });
-                              }
-                              
-                              await fetchData();
-                              setCreateDialogOpen(false);
-                              setSelectedList(null);
-                              setNewTaskList({
-                                name: '',
-                                department: departments[0],
-                                shift: '' as Shift,
-                                isRecurring: false,
-                                recurringType: undefined,
-                                recurringDays: [],
-                                monthlyDate: 1,
-                                tasks: []
-                              });
-                            } catch (error: unknown) {
-                              const errorMessage = error instanceof Error ? error.message : 
-                                typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
-                                `Failed to ${selectedList ? 'update' : 'create'} task list`;
-                              
-                              toast({
-                                title: selectedList ? "Error Updating Task List" : "Error Creating Task List",
-                                description: (
-                                  <div className="mt-1 flex items-center gap-2 text-destructive">
-                                    <XCircle className="h-4 w-4" />
-                                    <span>{errorMessage}</span>
-                                  </div>
-                                ),
-                                variant: "destructive",
-                                duration: 4000,
-                              });
-                            }
-                          }}>
-                            {selectedList ? 'Update Task List' : 'Create Task List'}
-                          </Button>
+                              }}
+                              className="h-10 sm:h-11 border-gray-200 hover:bg-gray-50"
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              onClick={handleCreateTaskList}
+                              className="h-10 sm:h-11 bg-[#E51636] hover:bg-[#DD0031] text-white"
+                            >
+                              {selectedList ? 'Update' : 'Create List'}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </DialogContent>
@@ -1382,14 +1284,6 @@ const TaskManagement = () => {
                   <div className="bg-[#F4F4F4] rounded-[20px] p-4">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-[#27251F]">Overall Progress</span>
-                      {(() => {
-                        const { metrics } = getListInstanceAndMetrics(selectedList ? getIdString(selectedList._id) : undefined);
-                        return metrics ? (
-                          <span className="text-sm font-medium text-[#27251F]">
-                            {metrics.completedTasks}/{metrics.totalTasks} Tasks ({Math.round(metrics.completionRate)}%)
-                          </span>
-                        ) : null;
-                      })()}
                     </div>
                     <div className="h-2 bg-white rounded-full overflow-hidden">
                       <div 

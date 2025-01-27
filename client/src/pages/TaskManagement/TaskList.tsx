@@ -23,8 +23,8 @@ const TaskList: React.FC<TaskListProps> = ({ instance, onTaskComplete, onAssignT
   }, {} as Record<string, TaskItem[]>);
 
   const renderTask = (task: TaskItem) => (
-    <div key={task._id} className="p-4 bg-gray-50 rounded-lg">
-      <div className="flex items-start gap-3">
+    <div key={task._id} className="p-2 sm:p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-start gap-2 sm:gap-3">
         <Checkbox
           checked={task.status === 'completed'}
           onCheckedChange={(checked) => 
@@ -32,28 +32,28 @@ const TaskList: React.FC<TaskListProps> = ({ instance, onTaskComplete, onAssignT
           }
           className="mt-1"
         />
-        <div className="flex-1">
-          <p className="font-medium">{task.title}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium break-words">{task.title}</p>
           {task.description && (
-            <p className="text-sm text-gray-500">{task.description}</p>
+            <p className="text-sm text-gray-500 break-words">{task.description}</p>
           )}
-          <div className="flex items-center gap-4 mt-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
             {task.estimatedTime && (
-              <div className="flex items-center text-sm text-gray-500">
-                <Clock className="w-4 h-4 mr-1" />
+              <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 {task.estimatedTime} min
               </div>
             )}
             {task.assignedTo ? (
-              <div className="flex items-center text-sm text-gray-500">
-                <User className="w-4 h-4 mr-1" />
-                {task.assignedTo.name}
+              <div className="flex items-center text-xs sm:text-sm text-gray-500">
+                <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="truncate">{task.assignedTo.name}</span>
               </div>
             ) : (
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-sm"
+                className="text-xs sm:text-sm h-7 sm:h-8"
                 onClick={() => {
                   // TODO: Open user selection dialog
                 }}
@@ -62,8 +62,9 @@ const TaskList: React.FC<TaskListProps> = ({ instance, onTaskComplete, onAssignT
               </Button>
             )}
             {task.completedBy && task.completedAt && (
-              <div className="text-sm text-gray-500">
-                Completed by {task.completedBy.name} {formatDistanceToNow(new Date(task.completedAt))} ago
+              <div className="text-xs sm:text-sm text-gray-500 w-full sm:w-auto mt-1 sm:mt-0">
+                Completed by <span className="truncate">{task.completedBy.name}</span>{' '}
+                {formatDistanceToNow(new Date(task.completedAt))} ago
               </div>
             )}
           </div>
