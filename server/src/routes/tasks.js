@@ -2,6 +2,7 @@ import express from 'express';
 import { auth } from '../middleware/auth.js';
 import TaskList from '../models/TaskList.js';
 import TaskInstance from '../models/TaskInstance.js';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -199,6 +200,54 @@ router.patch('/instances/:instanceId/tasks/:taskId', auth, async (req, res) => {
     await taskInstance.populate([
       { path: 'tasks.assignedTo', select: 'name' },
       { path: 'tasks.completedBy', select: 'name' }
+    ]);
+    
+    res.json(taskInstance);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Assign task to user
+router.patch('/instances/:instanceId/tasks/:taskId/assign', auth, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const taskInstance = await TaskInstance.findOne({
+      _id: req.params.instanceId,
+      store: req.user.store
+    }).populate('taskList');
+    
+    if (!taskInstance) {
+      return res.status(404).json({ message: 'Task instance not found' });
+    }
+    
+    const task = taskInstance.tasks.id(req.params.taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    
+    task.assignedTo = userId;
+    await taskInstance.save();
+    
+    // Create notification for assigned user
+    const notification = new Notification({
+      user: userId,
+      store: req.user.store,
+      type: 'task',
+      priority: 'high',
+      title: 'New Task Assignment',
+      message: `You have been assigned to task: ${task.title} in ${taskInstance.taskList.name}`,
+      relatedId: taskInstance._id,
+      relatedModel: 'TaskInstance'
+    });
+    await notification.save();
+    
+    // Populate the response with user details
+    await taskInstance.populate([
+      { path: 'taskList', populate: { path: 'createdBy', select: 'name' } },
+      { path: 'tasks.assignedTo', select: 'name' },
+      { path: 'tasks.completedBy', select: 'name' },
+      { path: 'createdBy', select: 'name' }
     ]);
     
     res.json(taskInstance);

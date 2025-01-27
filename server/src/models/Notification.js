@@ -13,7 +13,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['disciplinary', 'evaluation', 'goal', 'recognition', 'system', 'reminder'],
+    enum: ['disciplinary', 'evaluation', 'goal', 'recognition', 'system', 'reminder', 'task'],
     required: true
   },
   priority: {
@@ -59,7 +59,7 @@ const notificationSchema = new mongoose.Schema({
   },
   relatedModel: {
     type: String,
-    enum: ['Disciplinary', 'Evaluation', 'Goal', 'User']
+    enum: ['Disciplinary', 'Evaluation', 'Goal', 'User', 'TaskInstance']
   },
   createdAt: {
     type: Date,
