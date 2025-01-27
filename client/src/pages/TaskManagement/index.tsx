@@ -17,7 +17,7 @@ import { cn } from '../../lib/utils';
 import { MongoId } from '../../types/task';
 import userService from '../../services/userService';
 
-const getIdString = (id: string | MongoId): string => {
+const getIdString = (id: string | MongoId | undefined): string => {
   if (!id) return '';
   return typeof id === 'string' ? id : id.toString();
 };
@@ -147,15 +147,13 @@ const TaskManagement = () => {
         return;
       }
 
-      // Create a cleaned version of the task list without undefined values
-      const taskListToCreate = {
+      const taskListToSave = {
         name: newTaskList.name,
         department: newTaskList.department,
         shift: newTaskList.shift,
         isActive: true,
         isRecurring: newTaskList.isRecurring,
         tasks: newTaskList.tasks.map(task => ({
-          _id: crypto.randomUUID(),
           title: task.title,
           description: task.description,
           estimatedTime: task.estimatedTime,
@@ -167,7 +165,7 @@ const TaskManagement = () => {
         monthlyDate: newTaskList.isRecurring && newTaskList.recurringType === 'monthly' ? newTaskList.monthlyDate : undefined
       };
 
-      await taskService.createList(taskListToCreate);
+      await taskService.createList(taskListToSave);
       await fetchData(); // Refresh data after creating
       setCreateDialogOpen(false);
       setNewTaskList({
@@ -802,11 +800,17 @@ const TaskManagement = () => {
                               }
 
                               const taskListToSave = {
-                                ...newTaskList,
+                                name: newTaskList.name,
+                                department: newTaskList.department,
+                                shift: newTaskList.shift,
                                 isActive: true,
+                                isRecurring: newTaskList.isRecurring,
                                 tasks: newTaskList.tasks.map(task => ({
-                                  ...task,
-                                  _id: crypto.randomUUID()
+                                  title: task.title,
+                                  description: task.description,
+                                  estimatedTime: task.estimatedTime,
+                                  scheduledTime: task.scheduledTime,
+                                  status: 'pending' as const
                                 })),
                                 recurringType: newTaskList.isRecurring ? newTaskList.recurringType : undefined,
                                 recurringDays: newTaskList.isRecurring && newTaskList.recurringType === 'weekly' ? newTaskList.recurringDays : undefined,
@@ -1039,7 +1043,13 @@ const TaskManagement = () => {
                   })}
                 </h3>
                 <div className="space-y-4">
-                  {tasks.map(list => (
+                  {tasks.map(list => {
+                    // Fix createdBy name access
+                    const creatorName = typeof list.createdBy === 'object' && list.createdBy && 'name' in list.createdBy 
+                      ? list.createdBy.name 
+                      : 'Unknown';
+
+                    return (
                     <Card 
                       key={getIdString(list._id)}
                       className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full"
@@ -1061,7 +1071,7 @@ const TaskManagement = () => {
                               <span className="text-[#27251F]/60 capitalize">{list.shift} Shift</span>
                             </div>
                             <div className="mt-2 text-sm text-[#27251F]/60">
-                              Created by: {list.createdBy?.name || 'Unknown'}
+                                Created by: {creatorName}
                             </div>
                             <div className="mt-2 text-sm text-[#27251F]/60">
                               {`${list.tasks.length} tasks • Estimated total time: ${list.tasks.reduce((acc, task) => acc + (task.estimatedTime || 0), 0)} minutes`}
@@ -1073,7 +1083,8 @@ const TaskManagement = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -1421,7 +1432,7 @@ const TaskManagement = () => {
 
                         return (
                           <div
-                            key={getIdString(task._id)}
+                            key={task._id ? getIdString(task._id) : undefined}
                             className="border-b border-[#27251F]/10 py-4"
                           >
                             <div className="flex-1">
@@ -1482,8 +1493,9 @@ const TaskManagement = () => {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    if (!task._id) return;
                                     handleTaskComplete(
-                                      getIdString(selectedInstance._id),
+                                      getIdString(selectedInstance?._id || ''),
                                       getIdString(task._id),
                                       task.status === 'completed' ? 'pending' : 'completed'
                                     );
@@ -1520,9 +1532,9 @@ const TaskManagement = () => {
                       }
 
                       const tasks = selectedList.tasks;
-                      return tasks.map((task: { _id: string | MongoId; title: string; description?: string; estimatedTime?: number; scheduledTime?: string }, index) => (
+                      return tasks.map((task) => (
                         <div
-                          key={getIdString(task._id)}
+                          key={task._id ? getIdString(task._id) : undefined}
                           className="border-b border-[#27251F]/10 py-4"
                         >
                           <div className="flex items-start justify-between">
@@ -1553,6 +1565,7 @@ const TaskManagement = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  if (!task._id) return;
                                   handleTaskComplete(
                                     getIdString(selectedInstance?._id || ''),
                                     getIdString(task._id),

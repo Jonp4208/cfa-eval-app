@@ -20,40 +20,36 @@ export interface MongoId {
 export interface TaskList {
   _id: string | MongoId;
   name: string;
-  department: string;
-  shift: 'day' | 'night';
+  department: Department;
+  shift: Shift;
   isActive: boolean;
   isRecurring: boolean;
-  recurringType?: 'daily' | 'weekly' | 'monthly';
-  recurringDays?: string[];
-  monthlyDate?: number;
-  tasks: Array<{
-    _id: string | MongoId;
+  tasks: {
+    _id?: string | MongoId;  // Make _id optional for new tasks
     title: string;
     description?: string;
     estimatedTime?: number;
     scheduledTime?: string;
-  }>;
-  createdBy: {
-    _id: string | MongoId;
-    name: string;
-  };
+  }[];
+  recurringType?: 'daily' | 'weekly' | 'monthly';
+  recurringDays?: string[];
+  monthlyDate?: number;
+  createdBy: string | MongoId | { _id: string | MongoId; name: string; };
   store: string | MongoId;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
 
-export interface TaskItem extends Task {
-  assignedTo?: {
-    _id: string;
-    name: string;
-  };
-  completedBy?: {
-    _id: string;
-    name: string;
-  };
-  completedAt?: string;
-  status: TaskStatus;
+export interface TaskItem {
+  _id?: string | MongoId;
+  title: string;
+  description?: string;
+  estimatedTime?: number;
+  scheduledTime?: string;
+  status?: 'pending' | 'completed';
+  assignedTo?: { _id: string | MongoId; name: string; };
+  completedBy?: { _id: string | MongoId; name: string; } | string;
+  completedAt?: string | Date;
 }
 
 export interface TaskInstance {
