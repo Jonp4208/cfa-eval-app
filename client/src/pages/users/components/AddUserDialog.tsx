@@ -65,6 +65,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     managerId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Fetch evaluators
   const { data: evaluators } = useQuery({
@@ -115,6 +116,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
       });
     }
     setErrors({});
+    setStatusMessage(null);
   }, [open, user]);
 
   const validateForm = () => {
@@ -153,6 +155,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
             managerId: formData.managerId || null
           });
         }
+
+        setStatusMessage({ type: 'success', text: 'Team member has been updated successfully!' });
       } else {
         // Create new user
         const response = await api.post('/api/users', {
@@ -170,34 +174,30 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
             managerId: formData.managerId
           });
         }
+
+        setStatusMessage({ type: 'success', text: 'Team member has been added successfully!' });
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ['users'] });
       
-      toast({
-        title: "✅ Success",
-        description: user ? "Team member has been updated successfully" : "Team member has been added successfully",
-        duration: 5000,
-      });
-      
-      setFormData({
-        name: '',
-        email: '',
-        departments: [],
-        position: '',
-        role: 'user',
-        shift: 'day',
-        managerId: ''
-      });
-      
-      onOpenChange(false);
+      // Wait a bit to show the success message before closing
+      setTimeout(() => {
+        setFormData({
+          name: '',
+          email: '',
+          departments: [],
+          position: '',
+          role: 'user',
+          shift: 'day',
+          managerId: ''
+        });
+        onOpenChange(false);
+      }, 1500);
     } catch (error: any) {
       console.error('Error saving user:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || (user ? "Failed to update user" : "Failed to create user"),
-        variant: "destructive",
-        duration: 5000,
+      setStatusMessage({ 
+        type: 'error', 
+        text: error.response?.data?.message || (user ? "Failed to update team member" : "Failed to create team member")
       });
     }
   };
@@ -213,6 +213,18 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
               : 'Add a new team member to your organization.'}
           </DialogDescription>
         </DialogHeader>
+
+        {statusMessage && (
+          <div 
+            className={`p-4 mb-4 rounded-lg ${
+              statusMessage.type === 'success' 
+                ? 'bg-green-100 text-green-800 border border-green-200' 
+                : 'bg-red-100 text-red-800 border border-red-200'
+            }`}
+          >
+            {statusMessage.text}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 py-4">

@@ -65,6 +65,12 @@ const normalizeUserData = (data) => {
     data.isAdmin = data.position === 'Director'; // Keep isAdmin for backward compatibility
   }
 
+  // Normalize shift
+  if (data.shift) {
+    data.shift = data.shift.toLowerCase() === 'night' ? 'night' : 'day';
+    console.log('Normalized shift:', data.shift);
+  }
+
   return data;
 };
 
@@ -168,7 +174,7 @@ router.get('/:id', auth, async (req, res) => {
 // Create a new user
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, email, departments, position } = req.body;
+    const { name, email, departments, position, role, shift } = req.body;
 
     // Check if user with email already exists
     const existingUser = await User.findOne({ email });
@@ -179,8 +185,14 @@ router.post('/', auth, async (req, res) => {
     // Generate a random password
     const password = User.generateRandomPassword();
 
-    // Normalize the data and set admin status
-    const normalizedData = normalizeUserData({ name, email, departments, position });
+    // Normalize the data
+    const normalizedData = normalizeUserData({ 
+      name, 
+      email, 
+      departments, 
+      position,
+      shift: shift || 'day' // Default to 'day' if not provided
+    });
 
     // Create new user
     const user = new User({
@@ -234,13 +246,14 @@ router.post('/', auth, async (req, res) => {
         email: user.email,
         departments: user.departments,
         position: user.position,
-        isAdmin: user.isAdmin,
+        role: user.role,
+        shift: user.shift,
         status: user.status
       }
     });
   } catch (error) {
     console.error('Error creating user:', error);
-    res.status(500).json({ message: 'Failed to create user' });
+    res.status(500).json({ message: 'Failed to create user', error: error.message });
   }
 });
 

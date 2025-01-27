@@ -125,13 +125,13 @@ export default function Users() {
           return { users: [] };
         }
 
-        // Only allow leaders and directors to access the page
+        // For regular users, only show their own user data
         if (currentUser.position?.toLowerCase() !== 'director' && !currentUser.position?.toLowerCase().includes('leader')) {
-          navigate('/dashboard');
-          return { users: [] };
+          const response = await api.get(`/api/users/${currentUser._id}`);
+          return { users: [response.data] };
         }
 
-        // Fetch all users
+        // For leaders and directors, fetch all users
         const response = await api.get('/api/users');
         console.log('Fetched users:', response.data);
         return response.data;
