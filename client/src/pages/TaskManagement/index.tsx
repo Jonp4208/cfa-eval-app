@@ -14,8 +14,12 @@ import TaskList from './TaskList';
 import AssignTaskDialog from './AssignTaskDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { cn } from '../../lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { format } from 'date-fns';
+import { MongoId } from '../../types/task';
+
+const getIdString = (id: string | MongoId): string => {
+  if (!id) return '';
+  return typeof id === 'string' ? id : id.toString();
+};
 
 const TaskManagement = () => {
   // State
@@ -38,7 +42,7 @@ const TaskManagement = () => {
   // New task list form state
   const [newTaskList, setNewTaskList] = useState({
     name: '',
-    department: '' as Department,
+    department: departments[0],
     shift: '' as Shift,
     isRecurring: false,
     recurringType: undefined as 'daily' | 'weekly' | 'monthly' | undefined,
@@ -47,12 +51,20 @@ const TaskManagement = () => {
     tasks: [] as { title: string; description?: string; estimatedTime?: number; scheduledTime?: string }[]
   });
 
-  const [filters, setFilters] = useState({
-    department: undefined as Department | undefined,
-    shift: undefined as Shift | undefined,
-    status: 'all' as 'all' | 'in_progress' | 'completed',
-    area: undefined as 'foh' | 'boh' | undefined,
-    view: 'current' as 'current' | 'upcoming' | 'completed'
+  type Filters = {
+    department: Department | undefined;
+    shift: Shift | undefined;
+    status: 'all' | 'in_progress' | 'completed';
+    area: 'foh' | 'boh' | undefined;
+    view: 'current' | 'upcoming' | 'completed';
+  };
+
+  const [filters, setFilters] = useState<Filters>({
+    department: undefined,
+    shift: undefined,
+    status: 'all',
+    area: undefined,
+    view: 'current'
   });
 
   // Fetch task lists and active instances
@@ -86,7 +98,7 @@ const TaskManagement = () => {
     if (selectedList && createDialogOpen) {
       setNewTaskList({
         name: selectedList.name,
-        department: selectedList.department,
+        department: selectedList.department as Department,
         shift: selectedList.shift,
         isRecurring: selectedList.isRecurring,
         recurringType: selectedList.recurringType,
@@ -111,7 +123,19 @@ const TaskManagement = () => {
 
       // Create a cleaned version of the task list without undefined values
       const taskListToCreate = {
-        ...newTaskList,
+        name: newTaskList.name,
+        department: newTaskList.department,
+        shift: newTaskList.shift,
+        isActive: true,
+        isRecurring: newTaskList.isRecurring,
+        tasks: newTaskList.tasks.map(task => ({
+          _id: crypto.randomUUID(),
+          title: task.title,
+          description: task.description,
+          estimatedTime: task.estimatedTime,
+          scheduledTime: task.scheduledTime,
+          status: 'pending' as const
+        })),
         recurringType: newTaskList.isRecurring ? newTaskList.recurringType : undefined,
         recurringDays: newTaskList.isRecurring && newTaskList.recurringType === 'weekly' ? newTaskList.recurringDays : undefined,
         monthlyDate: newTaskList.isRecurring && newTaskList.recurringType === 'monthly' ? newTaskList.monthlyDate : undefined
@@ -122,7 +146,7 @@ const TaskManagement = () => {
       setCreateDialogOpen(false);
       setNewTaskList({
         name: '',
-        department: '' as Department,
+        department: departments[0],
         shift: '' as Shift,
         isRecurring: false,
         recurringType: undefined,
@@ -158,10 +182,10 @@ const TaskManagement = () => {
         if (!taskList) return;
         
         const newInstance = await taskService.createInstance({
-          taskListId: taskList._id,
+          taskListId: getIdString(taskList._id),
           date: new Date().toISOString()
         });
-        currentInstanceId = newInstance._id;
+        currentInstanceId = getIdString(newInstance._id);
       }
       
       // Update task status
@@ -179,19 +203,53 @@ const TaskManagement = () => {
         setTaskDialogOpen(false);
       }
 
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      throw error;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 
+        typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+        'An unexpected error occurred';
+      
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 4000,
+      });
     }
   };
 
   // Handle task assignment
   const handleAssignTask = async (taskId: string, userId: string) => {
     try {
-      // TODO: Implement task assignment API endpoint
+      if (!selectedInstance) return;
+      
+      await taskService.assignTask(getIdString(selectedInstance._id), taskId, userId);
       await fetchData();
-    } catch (error) {
-      console.error('Error assigning task:', error);
+      setAssignDialogOpen(false);
+      toast({
+        title: "Task Assigned",
+        description: (
+          <div className="mt-1 flex items-center gap-2 text-green-600">
+            <CheckCircle className="h-4 w-4" />
+            <span>Task assigned successfully</span>
+          </div>
+        ),
+        variant: "default",
+        className: "bg-green-50 border-green-200",
+        duration: 4000,
+      });
+    } catch (error: unknown) {
+      console.error('Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 
+        typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+        'Failed to assign task';
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 4000,
+      });
     }
   };
 
@@ -215,7 +273,7 @@ const TaskManagement = () => {
   // Filter task lists based on selected filters
   const filteredTaskLists = taskLists.filter(list => {
     // First check if there's a completed instance for this list
-    const instance = getActiveInstance(list._id);
+    const instance = getActiveInstance(getIdString(list._id));
     if (instance?.status === 'completed' && !list.isRecurring) {
       return false; // Don't show completed non-recurring tasks
     }
@@ -231,10 +289,8 @@ const TaskManagement = () => {
     // For weekly recurring tasks, only show on the specified days
     if (list.isRecurring && list.recurringType === 'weekly') {
       const today = new Date();
-      const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'lowercase' });
-      if (!list.recurringDays.includes(dayOfWeek)) {
-        return false; // Don't show if it's not one of the specified days
-      }
+      const dayName = today.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      return list.recurringDays?.includes(dayName) ?? false;
     }
 
     // Then apply other filters
@@ -269,30 +325,86 @@ const TaskManagement = () => {
   // Handle starting a task list
   const handleStartTaskList = async (listId: string) => {
     try {
+      if (!listId) {
+        console.error('No list ID provided');
+        toast({
+          title: "Error Starting Task List",
+          description: "No task list ID provided",
+          variant: "destructive",
+          duration: 4000,
+        });
+        return null;
+      }
+
       // Get the task list to check if it's recurring
       const list = taskLists.find(l => l._id === listId);
-      if (!list) return null;
+      if (!list) {
+        console.error('Task list not found:', listId);
+        toast({
+          title: "Error Starting Task List",
+          description: "The selected task list could not be found",
+          variant: "destructive",
+          duration: 4000,
+        });
+        return null;
+      }
 
       // Check if there's an existing instance
-      const existingInstance = activeInstances.find(i => 
-        (i.taskList === listId || i.taskList._id === listId)
-      );
+      const existingInstance = activeInstances.find(i => {
+        const instanceListId = typeof i.taskList === 'string' ? i.taskList : i.taskList?._id;
+        return instanceListId === listId;
+      });
 
       // For non-recurring tasks, if there's a completed instance, don't start a new one
       if (!list.isRecurring && existingInstance?.status === 'completed') {
         return existingInstance;
       }
 
-      console.log('Starting task list:', listId);
+      // If there's an existing incomplete instance, return that instead of creating a new one
+      if (existingInstance && existingInstance.status !== 'completed') {
+        return existingInstance;
+      }
+
+      // Create a new instance
+      console.log('Starting task list:', listId, list);
       const newInstance = await taskService.createInstance({
-        taskListId: listId,
+        taskListId: getIdString(list._id),
         date: new Date().toISOString()
       });
       console.log('Created new instance:', newInstance);
+
+      // Refresh data and return the new instance
       await fetchData();
-      return newInstance;
-    } catch (error) {
-      console.error('Error starting task list:', error);
+      
+      // Find the newly created instance in the updated activeInstances
+      const createdInstance = activeInstances.find(i => {
+        const instanceListId = typeof i.taskList === 'string' ? i.taskList : i.taskList?._id;
+        return instanceListId === listId && i._id === newInstance._id;
+      });
+
+      if (!createdInstance) {
+        console.error('Created instance not found in active instances');
+        toast({
+          title: "Error",
+          description: "Task list was created but could not be loaded. Please refresh the page.",
+          variant: "destructive",
+          duration: 4000,
+        });
+      }
+
+      return createdInstance || newInstance;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 
+        typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+        'An unexpected error occurred';
+      
+      console.error('Error:', error);
+      toast({
+        title: "Error Starting Task List",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 4000,
+      });
       return null;
     }
   };
@@ -304,10 +416,13 @@ const TaskManagement = () => {
     try {
       const taskList = taskLists.find(list => {
         const instance = activeInstances.find(i => i._id === instanceId);
-        return list._id === (typeof instance?.taskList === 'string' ? instance.taskList : instance.taskList._id);
+        if (instance && list._id === (typeof instance.taskList === 'string' ? instance.taskList : instance.taskList._id)) {
+          return true;
+        }
+        return false;
       });
 
-      if (!window.confirm(`Are you sure you want to delete this task instance${taskList ? ` for "${taskList.name}"` : ''}? This action cannot be undone.`)) {
+      if (taskList && !window.confirm(`Are you sure you want to delete this task instance for "${taskList.name}"? This action cannot be undone.`)) {
         return;
       }
       
@@ -325,14 +440,18 @@ const TaskManagement = () => {
         duration: 4000,
       });
       await fetchData(); // Refresh the data
-    } catch (error: any) {
-      console.error('Error deleting task instance:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 
+        typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+        'An unexpected error occurred';
+      
+      console.error('Error:', error);
       toast({
         title: "Error Deleting Task Instance",
         description: (
           <div className="mt-1 flex items-center gap-2 text-destructive">
             <XCircle className="h-4 w-4" />
-            <span>{error.response?.data?.message || 'Failed to delete task instance'}</span>
+            <span>{errorMessage}</span>
           </div>
         ),
         variant: "destructive",
@@ -357,8 +476,8 @@ const TaskManagement = () => {
         if (list.recurringType === 'daily') return true;
         
         if (list.recurringType === 'weekly') {
-          const dayName = futureDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
-          return list.recurringDays.includes(dayName);
+          const dayName = futureDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+          return list.recurringDays?.includes(dayName) ?? false;
         }
         
         if (list.recurringType === 'monthly') {
@@ -374,6 +493,27 @@ const TaskManagement = () => {
     }
     
     return upcoming;
+  };
+
+  const handleAreaChange = (value: string | undefined) => {
+    setFilters(prev => ({
+      ...prev,
+      area: value === "all" ? undefined : (value as 'foh' | 'boh' | undefined)
+    }));
+  };
+
+  const handleDepartmentChange = (value: string | undefined) => {
+    setFilters(prev => ({
+      ...prev,
+      department: value === "all" ? undefined : (value as Department | undefined)
+    }));
+  };
+
+  const handleShiftChange = (value: string | undefined) => {
+    setFilters(prev => ({
+      ...prev,
+      shift: value === "all" ? undefined : (value as Shift | undefined)
+    }));
   };
 
   if (loading) {
@@ -436,9 +576,9 @@ const TaskManagement = () => {
                                 <SelectValue placeholder="Select department" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Front Counter">Front Counter</SelectItem>
-                                <SelectItem value="Drive Thru">Drive Thru</SelectItem>
-                                <SelectItem value="Kitchen">Kitchen</SelectItem>
+                                {departments.map(dept => (
+                                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -646,7 +786,7 @@ const TaskManagement = () => {
                             setSelectedList(null);
                             setNewTaskList({
                               name: '',
-                              department: '' as Department,
+                              department: departments[0],
                               shift: '' as Shift,
                               isRecurring: false,
                               recurringType: undefined,
@@ -665,13 +805,18 @@ const TaskManagement = () => {
 
                               const taskListToSave = {
                                 ...newTaskList,
+                                isActive: true,
+                                tasks: newTaskList.tasks.map(task => ({
+                                  ...task,
+                                  _id: crypto.randomUUID()
+                                })),
                                 recurringType: newTaskList.isRecurring ? newTaskList.recurringType : undefined,
                                 recurringDays: newTaskList.isRecurring && newTaskList.recurringType === 'weekly' ? newTaskList.recurringDays : undefined,
                                 monthlyDate: newTaskList.isRecurring && newTaskList.recurringType === 'monthly' ? newTaskList.monthlyDate : undefined
                               };
 
                               if (selectedList) {
-                                await taskService.updateList(selectedList._id, taskListToSave);
+                                await taskService.updateList(getIdString(selectedList._id), taskListToSave);
                                 toast({
                                   title: "Task List Updated",
                                   description: (
@@ -705,7 +850,7 @@ const TaskManagement = () => {
                               setSelectedList(null);
                               setNewTaskList({
                                 name: '',
-                                department: '' as Department,
+                                department: departments[0],
                                 shift: '' as Shift,
                                 isRecurring: false,
                                 recurringType: undefined,
@@ -713,13 +858,17 @@ const TaskManagement = () => {
                                 monthlyDate: 1,
                                 tasks: []
                               });
-                            } catch (error) {
+                            } catch (error: unknown) {
+                              const errorMessage = error instanceof Error ? error.message : 
+                                typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+                                `Failed to ${selectedList ? 'update' : 'create'} task list`;
+                              
                               toast({
                                 title: selectedList ? "Error Updating Task List" : "Error Creating Task List",
                                 description: (
                                   <div className="mt-1 flex items-center gap-2 text-destructive">
                                     <XCircle className="h-4 w-4" />
-                                    <span>{error.response?.data?.message || `Failed to ${selectedList ? 'update' : 'create'} task list`}</span>
+                                    <span>{errorMessage}</span>
                                   </div>
                                 ),
                                 variant: "destructive",
@@ -770,7 +919,7 @@ const TaskManagement = () => {
                     <Label>Area</Label>
                     <Select
                       value={filters.area || "all"}
-                      onValueChange={(value) => setFilters(prev => ({ ...prev, area: value === "all" ? undefined : value }))}
+                      onValueChange={(value) => handleAreaChange(value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -788,7 +937,7 @@ const TaskManagement = () => {
                     <Label>Department</Label>
                     <Select
                       value={filters.department || "all"}
-                      onValueChange={(value) => setFilters(prev => ({ ...prev, department: value === "all" ? undefined : value }))}
+                      onValueChange={(value) => handleDepartmentChange(value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -807,7 +956,7 @@ const TaskManagement = () => {
                     <Label>Shift</Label>
                     <Select
                       value={filters.shift || "all"}
-                      onValueChange={(value) => setFilters(prev => ({ ...prev, shift: value === "all" ? undefined : value }))}
+                      onValueChange={(value) => handleShiftChange(value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -826,9 +975,10 @@ const TaskManagement = () => {
                   <Button
                     variant="outline"
                     onClick={() => setFilters({
-                      area: '',
-                      department: '',
-                      shift: '',
+                      area: undefined,
+                      department: undefined,
+                      shift: undefined,
+                      status: 'all',
                       view: filters.view
                     })}
                     className="text-sm"
@@ -893,7 +1043,7 @@ const TaskManagement = () => {
                 <div className="space-y-4">
                   {tasks.map(list => (
                     <Card 
-                      key={list._id}
+                      key={getIdString(list._id)}
                       className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full"
                     >
                       <CardContent className="p-8">
@@ -916,9 +1066,7 @@ const TaskManagement = () => {
                               Created by: {list.createdBy?.name || 'Unknown'}
                             </div>
                             <div className="mt-2 text-sm text-[#27251F]/60">
-                              {list.tasks.length} tasks • Estimated total time: {
-                                list.tasks.reduce((acc, task) => acc + (task.estimatedTime || 0), 0)
-                              } minutes
+                              {`${list.tasks.length} tasks • Estimated total time: ${list.tasks.reduce((acc, task) => acc + (task.estimatedTime || 0), 0)} minutes`}
                             </div>
                           </div>
                           <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -954,16 +1102,11 @@ const TaskManagement = () => {
                 
                 return (
                   <Card 
-                    key={instance._id}
+                    key={getIdString(instance._id)}
                     className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full bg-green-50 border-green-100"
                     onClick={() => {
-                      const taskList = taskLists.find(list => 
-                        list._id === (typeof instance.taskList === 'string' ? instance.taskList : instance.taskList._id)
-                      );
-                      if (taskList) {
-                        setSelectedList(taskList);
-                        setTaskDialogOpen(true);
-                      }
+                      setSelectedList(taskList || null);
+                      setTaskDialogOpen(true);
                     }}
                   >
                     <CardContent className="p-8">
@@ -987,9 +1130,7 @@ const TaskManagement = () => {
                           </div>
                           <div className="mt-2 text-sm text-[#27251F]/60">
                             Created: {new Date(instance.createdAt).toLocaleDateString()} by {
-                              instance.createdBy?.name || 
-                              (typeof instance.taskList !== 'string' && instance.taskList?.createdBy?.name) || 
-                              'Unknown'
+                              typeof instance.taskList === 'object' && 'createdBy' in instance.taskList ? instance.taskList.createdBy?.name : 'Unknown'
                             }
                           </div>
                           <div className="mt-4">
@@ -1004,7 +1145,7 @@ const TaskManagement = () => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
-                              onClick={(e) => handleDeleteInstance(instance._id, e)}
+                              onClick={(e) => handleDeleteInstance(getIdString(instance._id), e)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1035,7 +1176,7 @@ const TaskManagement = () => {
                         </div>
                         <div className="flex justify-between items-center mt-2">
                           <span className="text-sm text-[#27251F]/60">
-                            {instance.status === 'completed' ? 'Completed' : 'Progress'}
+                            {instance.status === 'completed' ? 'Completed' : metrics.completionRate === 100 ? 'All Tasks Done' : 'Progress'}
                           </span>
                           <span className="text-sm font-medium text-[#27251F]">
                             {Math.round(metrics.completionRate)}%
@@ -1066,169 +1207,117 @@ const TaskManagement = () => {
         ) : (
           <div className="space-y-4">
             {filteredTaskLists.map((list) => {
-              const instance = getActiveInstance(list._id);
-              const metrics = instance ? getInstanceMetrics(instance) : null;
-              
+              const { instance, metrics } = getListInstanceAndMetrics(getIdString(list._id));
               return (
-                <Card 
-                  key={list._id}
+                <div
+                  key={getIdString(list._id)}
                   className={cn(
-                    "bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full",
-                    instance?.status === 'completed' && "bg-green-50 border-green-100"
+                    "p-6 rounded-[12px] border border-[#27251F]/10 cursor-pointer transition-all duration-300",
+                    selectedList?._id === list._id && "border-blue-600/40 bg-blue-50/40",
+                    !selectedList && "hover:border-[#27251F]/20 hover:bg-gray-50/50"
                   )}
                   onClick={() => {
-                    setSelectedList(list);
+                    setSelectedList(list || null);
                     setTaskDialogOpen(true);
                   }}
                 >
-                  <CardContent className="p-8">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-bold text-[#27251F]">{list.name}</h3>
-                          {instance?.status === 'completed' && (
-                            <span className="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full font-medium">
-                              Completed
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[#27251F]/60">{list.department}</span>
-                          <span className="text-[#27251F]/60">•</span>
-                          <span className="text-[#27251F]/60 capitalize">{list.shift} Shift</span>
-                        </div>
-                        <div className="mt-2 text-sm text-[#27251F]/60">
-                          Created by: {list.createdBy?.name || 'Unknown'}
-                        </div>
-                        {list.isRecurring && (
-                          <div className="mt-2 text-sm text-[#27251F]/60">
-                            Recurring: {list.recurringType === 'daily' ? 'Daily' :
-                              list.recurringType === 'weekly' ? 
-                                `Weekly on ${list.recurringDays.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(', ')}` :
-                              list.recurringType === 'monthly' ? 
-                                `Monthly on the ${list.monthlyDate}${
-                                  list.monthlyDate === 1 ? 'st' : 
-                                  list.monthlyDate === 2 ? 'nd' : 
-                                  list.monthlyDate === 3 ? 'rd' : 'th'
-                                }` : ''}
-                          </div>
-                        )}
-                        {instance && (
-                          <div className="mt-2 text-sm text-[#27251F]/60">
-                            Created: {new Date(instance.createdAt).toLocaleDateString()} by {
-                              instance.createdBy?.name || 
-                              (typeof instance.taskList !== 'string' && instance.taskList?.createdBy?.name) || 
-                              'Unknown'
-                            }
-                          </div>
-                        )}
-                        {instance && metrics && (
-                          <div className="flex items-center gap-2 mt-4">
-                            <span className="text-[#27251F]/60 font-medium">
-                              {metrics.completedTasks}/{metrics.totalTasks} Tasks
-                            </span>
-                          </div>
-                        )}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h2 className="text-lg font-semibold text-[#27251F]">
+                        {list.name}
+                      </h2>
+                      <div className="mt-1 text-sm text-[#27251F]/60">
+                        {list.department} • {list.shift} shift
                       </div>
-                      <div className="flex items-center gap-2">
-                        {user?.position && ['Leader', 'Director'].includes(user.position) && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedList(list);
-                                setCreateDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (window.confirm(`Are you sure you want to delete "${list.name}"? This action cannot be undone.`)) {
-                                  taskService.deleteList(list._id).then(() => {
+                      {list.isRecurring && (
+                        <div className="mt-2 text-sm text-[#27251F]/60">
+                          Recurring: {list.recurringType === 'daily' ? 'Daily' :
+                            list.recurringType === 'weekly' ? 
+                              `Weekly on ${list.recurringDays?.map(day => day.charAt(0).toUpperCase() + day.slice(1)).join(', ')}` :
+                            list.recurringType === 'monthly' ? 
+                              `Monthly on the ${list.monthlyDate}${
+                                list.monthlyDate === 1 ? 'st' : 
+                                list.monthlyDate === 2 ? 'nd' : 
+                                list.monthlyDate === 3 ? 'rd' : 'th'
+                              }` : ''}
+                        </div>
+                      )}
+                      {instance && (
+                        <div className="mt-2 text-sm text-[#27251F]/60">
+                          Created: {new Date(instance.createdAt).toLocaleDateString()} by {
+                            typeof instance.taskList === 'object' && 'createdBy' in instance.taskList ? instance.taskList.createdBy?.name : 'Unknown'
+                          }
+                        </div>
+                      )}
+                      {instance && metrics && (
+                        <div className="flex items-center gap-2 mt-4">
+                          <span className="text-[#27251F]/60 font-medium">
+                            {metrics.completedTasks}/{metrics.totalTasks} Tasks
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {user?.position && ['Leader', 'Director'].includes(user.position) && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              try {
+                                setSelectedList(list || null);
+                                
+                                let currentInstance = instance;
+                                if (!currentInstance) {
+                                  console.log('Starting task list for assignment:', list);
+                                  currentInstance = await handleStartTaskList(getIdString(list._id));
+                                  if (!currentInstance) {
                                     toast({
-                                      title: "Task List Deleted",
-                                      description: (
-                                        <div className="mt-1 flex items-center gap-2 text-green-600">
-                                          <CheckCircle className="h-4 w-4" />
-                                          <span>Task list deleted successfully</span>
-                                        </div>
-                                      ),
-                                      variant: "default",
-                                      className: "bg-green-50 border-green-200",
-                                      duration: 4000,
-                                    });
-                                    fetchData();
-                                  }).catch((error) => {
-                                    toast({
-                                      title: "Error Deleting Task List",
-                                      description: (
-                                        <div className="mt-1 flex items-center gap-2 text-destructive">
-                                          <XCircle className="h-4 w-4" />
-                                          <span>{error.response?.data?.message || 'Failed to delete task list'}</span>
-                                        </div>
-                                      ),
+                                      title: "Error",
+                                      description: "Failed to create task instance",
                                       variant: "destructive",
                                       duration: 4000,
                                     });
-                                  });
+                                    return;
+                                  }
                                 }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        {list.isRecurring ? (
-                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <Clock className="h-4 w-4 text-green-600" />
-                          </div>
-                        ) : instance?.status === 'completed' ? (
-                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                    
-                    <div className="mt-6">
-                      {instance && metrics ? (
-                        <>
-                          <div className="h-2 bg-[#E51636]/10 rounded-full overflow-hidden">
-                            <div 
-                              className={cn(
-                                "h-full rounded-full transition-all duration-300",
-                                instance.status === 'completed' 
-                                  ? "bg-green-500" 
-                                  : metrics.completionRate === 100 
-                                    ? "bg-green-500"
-                                    : "bg-[#E51636]"
-                              )}
-                              style={{ width: `${metrics.completionRate}%` }} 
-                            />
-                          </div>
-                          <div className="flex justify-between items-center mt-2">
-                            <span className="text-sm text-[#27251F]/60">
-                              {instance.status === 'completed' ? 'Completed' : metrics.completionRate === 100 ? 'All Tasks Done' : 'Progress'}
-                            </span>
-                            <span className="text-sm font-medium text-[#27251F]">
-                              {Math.round(metrics.completionRate)}%
-                            </span>
-                          </div>
+
+                                setSelectedInstance(currentInstance);
+                                setAssignDialogOpen(true);
+                              } catch (error) {
+                                console.error('Error assigning task:', error);
+                                const errorMessage = error instanceof Error ? error.message : 
+                                  typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+                                  'Failed to assign task';
+                                
+                                toast({
+                                  title: "Error",
+                                  description: errorMessage,
+                                  variant: "destructive",
+                                  duration: 4000,
+                                });
+                              }
+                            }}
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            Assign Tasks
+                          </Button>
                         </>
-                      ) : (
-                        <div className="h-2 bg-[#E51636]/10 rounded-full overflow-hidden" />
                       )}
+                      {list.isRecurring ? (
+                        <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <Clock className="h-4 w-4 text-green-600" />
+                        </div>
+                      ) : instance?.status === 'completed' ? (
+                        <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        </div>
+                      ) : null}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               );
             })}
             {filteredTaskLists.length === 0 && (
@@ -1246,7 +1335,12 @@ const TaskManagement = () => {
         )}
 
         {/* Task Completion Dialog */}
-        <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+        <Dialog open={taskDialogOpen} onOpenChange={(open) => {
+          if (!open) {
+            setSelectedList(null);
+          }
+          setTaskDialogOpen(open);
+        }}>
           <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col rounded-[20px] border-0 shadow-xl">
             <DialogHeader className="bg-gradient-to-r from-[#E51636] to-[#DD0031] text-white p-6 rounded-t-[20px] relative">
               <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10 rounded-t-[20px]" />
@@ -1254,18 +1348,20 @@ const TaskManagement = () => {
                 <DialogTitle className="text-lg font-bold">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-3">
-                      <span>{selectedList?.name}</span>
+                      <span>{selectedList?.name || 'Task List'}</span>
                       {activeInstance?.status === 'completed' && (
                         <span className="bg-white/20 text-white text-sm px-2 py-0.5 rounded-full font-medium">
                           Completed
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-white/80 text-sm">
-                      <span>{selectedList?.department}</span>
-                      <span>•</span>
-                      <span className="capitalize">{selectedList?.shift} Shift</span>
-                    </div>
+                    {selectedList && (
+                      <div className="flex items-center gap-2 text-white/80 text-sm">
+                        <span>{selectedList.department}</span>
+                        <span>•</span>
+                        <span className="capitalize">{selectedList.shift} Shift</span>
+                      </div>
+                    )}
                   </div>
                 </DialogTitle>
               </div>
@@ -1279,7 +1375,7 @@ const TaskManagement = () => {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-[#27251F]">Overall Progress</span>
                       {(() => {
-                        const { metrics } = getListInstanceAndMetrics(selectedList._id);
+                        const { metrics } = getListInstanceAndMetrics(selectedList ? getIdString(selectedList._id) : undefined);
                         return metrics ? (
                           <span className="text-sm font-medium text-[#27251F]">
                             {metrics.completedTasks}/{metrics.totalTasks} Tasks ({Math.round(metrics.completionRate)}%)
@@ -1291,7 +1387,7 @@ const TaskManagement = () => {
                       <div 
                         className="h-full bg-[#E51636] rounded-full transition-all duration-700 ease-in-out" 
                         style={{ 
-                          width: `${getListInstanceAndMetrics(selectedList._id).metrics?.completionRate || 0}%` 
+                          width: `${getListInstanceAndMetrics(selectedList ? getIdString(selectedList._id) : undefined).metrics?.completionRate || 0}%` 
                         }} 
                       />
                     </div>
@@ -1302,112 +1398,191 @@ const TaskManagement = () => {
                 <div className="flex-1 overflow-y-auto px-8 py-6">
                   <div className="space-y-3">
                     {(() => {
-                      const { instance } = getListInstanceAndMetrics(selectedList._id);
+                      if (!selectedList) {
+                        return (
+                          <div className="text-center py-4 text-[#27251F]/60">
+                            No task list selected
+                          </div>
+                        );
+                      }
+
+                      const { instance } = getListInstanceAndMetrics(selectedList ? getIdString(selectedList._id) : undefined);
                       const tasks = instance ? instance.tasks : selectedList.tasks;
                       
-                      return tasks.map((task, index) => {
-                        const instanceTask = instance?.tasks[index];
-                        
+                      if (!tasks || tasks.length === 0) {
                         return (
-                          <div 
-                            key={index} 
+                          <div className="text-center py-4 text-[#27251F]/60">
+                            No tasks found in this list
+                          </div>
+                        );
+                      }
+
+                      return tasks.map((task, index) => {
+                        const currentTask = instance?.tasks?.[index];
+                        return (
+                          <div
+                            key={getIdString(task._id)}
                             className={cn(
-                              "flex items-start justify-between space-x-4 p-4 rounded-[12px] transition-colors",
-                              instance?.status === 'completed' 
-                                ? "bg-green-50 hover:bg-green-100/70" 
-                                : "hover:bg-gray-50"
+                              "border-b border-[#27251F]/10 py-4 flex items-start justify-between gap-4",
+                              currentTask?.status === 'completed' && "opacity-50"
                             )}
                           >
-                            <div className="flex-1 space-y-1">
+                            <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <p className={cn(
-                                  "font-medium text-[#27251F] transition-all duration-300",
-                                  instanceTask?.status === 'completed' && "line-through opacity-60"
+                                <h3 className={cn(
+                                  "text-base font-medium",
+                                  currentTask?.status === 'completed' && "line-through"
                                 )}>
                                   {task.title}
-                                </p>
-                                {task.scheduledTime && (
-                                  <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {new Date(`2000-01-01T${task.scheduledTime}`).toLocaleTimeString([], { 
-                                      hour: 'numeric',
-                                      minute: '2-digit',
-                                      hour12: true 
-                                    })}
-                                  </span>
+                                </h3>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                {task.estimatedTime && (
+                                  <p className={cn(
+                                    "text-sm text-[#27251F]/60 transition-all duration-300",
+                                    currentTask?.status === 'completed' && "opacity-40"
+                                  )}>
+                                    Estimated time: {task.estimatedTime} minutes
+                                  </p>
+                                )}
+                                {currentTask?.assignedTo && (
+                                  <p className={cn(
+                                    "text-sm text-blue-600 flex items-center gap-1",
+                                    currentTask?.status === 'completed' && "opacity-40"
+                                  )}>
+                                    <Users className="h-3 w-3" />
+                                    Assigned to: {currentTask.assignedTo.name}
+                                  </p>
                                 )}
                               </div>
-                              {task.description && (
-                                <p className={cn(
-                                  "text-sm text-[#27251F]/60 transition-all duration-300",
-                                  instanceTask?.status === 'completed' && "line-through opacity-40"
-                                )}>
-                                  {task.description}
-                                </p>
-                              )}
-                              {task.estimatedTime && (
-                                <p className={cn(
-                                  "text-sm text-[#27251F]/60 transition-all duration-300",
-                                  instanceTask?.status === 'completed' && "opacity-40"
-                                )}>
-                                  Estimated time: {task.estimatedTime} minutes
-                                </p>
-                              )}
-                              {instanceTask?.status === 'completed' && instanceTask.completedBy && instanceTask.completedAt && (
+                              {currentTask?.status === 'completed' && currentTask.completedBy && currentTask.completedAt && (
                                 <div className="mt-2 text-sm text-green-600">
-                                  <p>Completed by: {instanceTask.completedBy.name}</p>
-                                  <p>Completed at: {new Date(instanceTask.completedAt).toLocaleString()}</p>
+                                  <p>Completed by: {currentTask.completedBy.name}</p>
+                                  <p>Completed at: {new Date(currentTask.completedAt).toLocaleString()}</p>
                                 </div>
                               )}
                             </div>
-                            <Button
-                              variant={instanceTask?.status === 'completed' ? "outline" : "default"}
-                              size="sm"
-                              disabled={instance?.status === 'completed'}
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                try {
-                                  let currentInstance = instance;
-                                  if (!currentInstance) {
-                                    currentInstance = await handleStartTaskList(selectedList._id);
-                                    if (!currentInstance) return;
-                                  }
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    setSelectedList(selectedList || null);
+                                    
+                                    let currentInstance = instance;
+                                    if (!currentInstance) {
+                                      console.log('Starting task list for assignment:', selectedList);
+                                      currentInstance = await handleStartTaskList(getIdString(selectedList._id));
+                                      if (!currentInstance) {
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to create task instance",
+                                          variant: "destructive",
+                                          duration: 4000,
+                                        });
+                                        return;
+                                      }
+                                    }
 
-                                  if (currentInstance.status === 'completed') return;
+                                    // Set the task ID for the specific task being assigned
+                                    const taskToAssign = currentInstance.tasks[index];
+                                    if (!taskToAssign || !taskToAssign._id) {
+                                      console.error('Task not found in instance:', { index, tasks: currentInstance.tasks });
+                                      toast({
+                                        title: "Error",
+                                        description: "Could not find task to assign",
+                                        variant: "destructive",
+                                        duration: 4000,
+                                      });
+                                      return;
+                                    }
 
-                                  const taskToUpdate = currentInstance.tasks[index];
-                                  if (taskToUpdate) {
-                                    const newStatus = taskToUpdate.status === 'completed' ? 'pending' : 'completed';
-                                    await handleTaskComplete(
-                                      currentInstance._id,
-                                      taskToUpdate._id,
-                                      newStatus
-                                    );
+                                    setSelectedInstance(currentInstance);
+                                    setSelectedTaskId(getIdString(taskToAssign._id));
+                                    setAssignDialogOpen(true);
+                                  } catch (error) {
+                                    console.error('Error assigning task:', error);
+                                    const errorMessage = error instanceof Error ? error.message : 
+                                      typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+                                      'Failed to assign task';
+                                    
+                                    toast({
+                                      title: "Error",
+                                      description: errorMessage,
+                                      variant: "destructive",
+                                      duration: 4000,
+                                    });
                                   }
-                                } catch (error) {
-                                  console.error('Error updating task:', error);
-                                }
-                              }}
-                              className={cn(
-                                instanceTask?.status === 'completed' 
-                                  ? "hover:bg-green-50" 
-                                  : "bg-[#E51636] hover:bg-[#DD0031] text-white"
-                              )}
-                            >
-                              {instance?.status === 'completed' ? (
-                                <>
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                  Task List Completed
-                                </>
-                              ) : instanceTask?.status === 'completed' ? (
-                                <>
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                  Completed
-                                </>
-                              ) : (
-                                'Mark Complete'
-                              )}
-                            </Button>
+                                }}
+                              >
+                                <Users className="h-4 w-4 mr-1" />
+                                {currentTask?.assignedTo?.name ? `Reassign (${currentTask.assignedTo.name})` : 'Assign'}
+                              </Button>
+                              <Button
+                                variant={instance?.status === 'completed' ? "outline" : "default"}
+                                size="sm"
+                                disabled={instance?.status === 'completed'}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    if (!selectedList) {
+                                      toast({
+                                        title: "Error",
+                                        description: "No task list selected",
+                                        variant: "destructive",
+                                        duration: 4000,
+                                      });
+                                      return;
+                                    }
+
+                                    let currentInstance = instance;
+                                    if (!currentInstance) {
+                                      currentInstance = await handleStartTaskList(getIdString(selectedList._id));
+                                      if (!currentInstance) return;
+                                    }
+
+                                    if (currentInstance.status === 'completed') return;
+
+                                    const taskToUpdate = currentInstance.tasks[index];
+                                    if (taskToUpdate) {
+                                      const newStatus = taskToUpdate.status === 'completed' ? 'pending' : 'completed';
+                                      await handleTaskComplete(getIdString(currentInstance._id), getIdString(taskToUpdate._id), newStatus);
+                                    }
+                                  } catch (error: unknown) {
+                                    console.error('Error updating task:', error);
+                                    const errorMessage = error instanceof Error ? error.message : 
+                                      typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
+                                      'Failed to update task';
+                                    
+                                    toast({
+                                      title: "Error",
+                                      description: errorMessage,
+                                      variant: "destructive",
+                                      duration: 4000,
+                                    });
+                                  }
+                                }}
+                                className={cn(
+                                  instance?.status === 'completed' 
+                                    ? "hover:bg-green-50" 
+                                    : "bg-[#E51636] hover:bg-[#DD0031] text-white"
+                                )}
+                              >
+                                {instance?.status === 'completed' ? (
+                                  <>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Task List Completed
+                                  </>
+                                ) : currentTask?.status === 'completed' ? (
+                                  'Mark Incomplete'
+                                ) : (
+                                  'Mark Complete'
+                                )}
+                              </Button>
+                            </div>
                           </div>
                         );
                       });
@@ -1420,7 +1595,7 @@ const TaskManagement = () => {
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-[#27251F]/60">
                       {(() => {
-                        const { metrics } = getListInstanceAndMetrics(selectedList._id);
+                        const { metrics } = getListInstanceAndMetrics(selectedList ? getIdString(selectedList._id) : undefined);
                         return metrics?.remainingTime ? (
                           <span>Estimated time remaining: <span className="font-medium">{metrics.remainingTime} minutes</span></span>
                         ) : null;
@@ -1451,11 +1626,10 @@ const TaskManagement = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-[#27251F]/60 font-medium">Tasks Progress</p>
-                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{metrics.completedTasks}/{metrics.totalTasks}</h3>
-                      <div className="flex items-center gap-2 mt-1 text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                        <p className="text-sm font-medium">{Math.round(metrics.completionRate)}% complete</p>
-                      </div>
+                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">
+                        {metrics?.completedTasks || 0}/{metrics?.totalTasks || 0}
+                      </h3>
+                      <p className="text-sm font-medium">{Math.round(metrics?.completionRate || 0)}% complete</p>
                     </div>
                     <div className="h-14 w-14 bg-[#E51636]/10 rounded-2xl flex items-center justify-center">
                       <CheckCircle className="h-7 w-7 text-[#E51636]" />
@@ -1465,7 +1639,7 @@ const TaskManagement = () => {
                     <div className="h-2 bg-[#E51636]/10 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-[#E51636] rounded-full transition-all duration-300" 
-                        style={{ width: `${metrics.completionRate}%` }} 
+                        style={{ width: `${metrics?.completionRate || 0}%` }} 
                       />
                     </div>
                   </div>
@@ -1477,7 +1651,7 @@ const TaskManagement = () => {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-[#27251F]/60 font-medium">Time Remaining</p>
-                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{metrics.remainingTime}</h3>
+                      <h3 className="text-3xl font-bold mt-2 text-[#27251F]">{metrics?.remainingTime}</h3>
                       <p className="text-[#27251F]/60 mt-1">minutes</p>
                     </div>
                     <div className="h-14 w-14 bg-blue-100 rounded-2xl flex items-center justify-center">
@@ -1553,7 +1727,7 @@ const TaskManagement = () => {
                 <TaskList
                   instance={activeInstance}
                   onTaskComplete={(taskId, status) => 
-                    handleTaskComplete(activeInstance._id, taskId, status)
+                    handleTaskComplete(getIdString(activeInstance._id), taskId, status)
                   }
                   onAssignTask={(taskId) => {
                     setSelectedTaskId(taskId);

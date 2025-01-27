@@ -33,57 +33,70 @@ export const taskService = {
     return response.data;
   },
 
-  createInstance: async (data: { 
+  createInstance: async (data: {
     taskListId: string;
     date: string;
     assignedTasks?: { [taskId: string]: string };
   }) => {
-    // First check if there's an existing instance
-    const instances = await taskService.getInstances();
-    
-    // Get the task list to check if it's recurring
-    const taskList = await taskService.getLists().then(lists => 
-      lists.find(list => list._id === data.taskListId)
-    );
+    try {
+      console.log('Creating instance with data:', data);
+      
+      // First check if there's an existing instance
+      const instances = await taskService.getInstances();
+      console.log('Existing instances:', instances);
+      
+      // Get the task list to check if it's recurring
+      const lists = await taskService.getLists();
+      console.log('Available lists:', lists.map(list => ({
+        id: list._id,
+        name: list.name
+      })));
 
-    if (!taskList) {
-      throw new Error('Task list not found');
-    }
-
-    // For non-recurring tasks, check if there's any instance
-    if (!taskList.isRecurring) {
-      const existingInstance = instances.find(i => {
-        const taskListId = typeof i.taskList === 'string' ? i.taskList : i.taskList._id;
-        return taskListId === data.taskListId;
+      // Modified find operation to handle potential string/ObjectId mismatches
+      const taskList = lists.find(list => {
+        if (!list._id) return false;
+        const listId = typeof list._id === 'object' ? list._id.toString() : list._id;
+        const searchId = data.taskListId.toString();
+        console.log('Comparing IDs:', { listId, searchId });
+        return listId === searchId;
       });
 
-      if (existingInstance) {
-        return existingInstance; // Always return existing instance for non-recurring tasks
+      if (!taskList) {
+        console.error(`Task list not found with ID: ${data.taskListId}`);
+        throw new Error(`Task list not found with ID: ${data.taskListId}`);
       }
-    } else {
-      // For recurring tasks, check if there's already an instance for today
-      const today = new Date(data.date);
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-      const todayInstance = instances.find(i => {
-        const instanceDate = new Date(i.date);
-        const taskListId = typeof i.taskList === 'string' ? i.taskList : i.taskList._id;
-        return taskListId === data.taskListId &&
-               instanceDate >= startOfDay && 
-               instanceDate < endOfDay;
-      });
+      console.log('Found task list:', taskList);
 
-      if (todayInstance) {
-        return todayInstance;
+      if (!taskList.isRecurring) {
+        const existingInstance = instances.find(i => {
+          if (!i.taskList) return false;
+          
+          // Handle different taskList types
+          const taskListId = typeof i.taskList === 'string' 
+            ? i.taskList 
+            : typeof i.taskList === 'object' && '_id' in i.taskList && i.taskList._id
+              ? i.taskList._id.toString()
+              : i.taskList.toString();
+              
+          return taskListId === data.taskListId.toString();
+        });
+
+        if (existingInstance) {
+          console.log('Found existing instance:', existingInstance);
+          return existingInstance;
+        }
       }
+
+      console.log('Creating new instance for task list:', taskList.name);
+      const response = await api.post<TaskInstance>('/api/tasks/instances', data);
+      console.log('Created instance response:', response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error('Error in createInstance:', error);
+      throw error;
     }
-
-    // Only create a new instance if:
-    // 1. It's a recurring task and there's no instance for today
-    // 2. It's a non-recurring task and there's no instance at all
-    const response = await api.post<TaskInstance>('/api/tasks/instances', data);
-    return response.data;
   },
 
   updateTaskStatus: async (instanceId: string, taskId: string, status: 'pending' | 'completed') => {
@@ -91,8 +104,13 @@ export const taskService = {
     return response.data;
   },
 
+  assignTask: async (instanceId: string, taskId: string, userId: string) => {
+    const response = await api.patch<TaskInstance>(`/api/tasks/instances/${instanceId}/tasks/${taskId}/assign`, { userId });
+    return response.data;
+  },
+
   deleteInstance: async (instanceId: string) => {
-    const response = await api.delete<{ message: string }>(`/api/tasks/instances/${instanceId}`);
+    const response = await api.delete(`/api/tasks/instances/${instanceId}`);
     return response.data;
   },
 

@@ -5,7 +5,8 @@ export interface User {
   name: string;
   email: string;
   position: string;
-  department: string;
+  departments: string[];
+  shift: string;
   role: string;
   status: string;
   startDate?: string;

@@ -11,22 +11,36 @@ export interface Task {
   scheduledTime?: string; // ISO string format for time (HH:mm)
 }
 
+export interface MongoId {
+  $oid?: string;
+  _id?: string;
+  toString(): string;
+}
+
 export interface TaskList {
-  _id: string;
+  _id: string | MongoId;
   name: string;
-  department: Department;
-  shift: Shift;
+  department: string;
+  shift: 'day' | 'night';
+  isActive: boolean;
   isRecurring: boolean;
-  recurringDays?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday')[];
-  tasks: Task[];
+  recurringType?: 'daily' | 'weekly' | 'monthly';
+  recurringDays?: string[];
+  monthlyDate?: number;
+  tasks: Array<{
+    _id: string | MongoId;
+    title: string;
+    description?: string;
+    estimatedTime?: number;
+    scheduledTime?: string;
+  }>;
   createdBy: {
-    _id: string;
+    _id: string | MongoId;
     name: string;
   };
-  store: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  store: string | MongoId;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface TaskItem extends Task {
@@ -43,28 +57,39 @@ export interface TaskItem extends Task {
 }
 
 export interface TaskInstance {
-  _id: string;
-  taskList: TaskList;
+  _id: string | MongoId;
+  taskList: string | MongoId | TaskList;
+  date: string | Date;
+  status: 'pending' | 'completed';
   department: Department;
   shift: Shift;
-  date: string;
-  tasks: TaskItem[];
-  store: string;
-  status: TaskInstanceStatus;
-  completionRate: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  tasks: Array<{
+    _id: string | MongoId;
+    title: string;
+    description?: string;
+    estimatedTime?: number;
+    scheduledTime?: string;
+    status: 'pending' | 'completed';
+    assignedTo?: {
+      _id: string | MongoId;
+      name: string;
+    };
+    completedBy?: {
+      _id: string | MongoId;
+      name: string;
+    };
+    completedAt?: string | Date;
+  }>;
+  createdBy: {
+    _id: string | MongoId;
+    name: string;
+  };
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface TaskMetrics {
-  totalInstances: number;
-  completedInstances: number;
-  averageCompletionRate: number;
-  tasksByUser: {
-    [userId: string]: {
-      name: string;
-      completed: number;
-    };
-  };
+  totalTasks: number;
+  completedTasks: number;
+  completionRate: number;
 } 

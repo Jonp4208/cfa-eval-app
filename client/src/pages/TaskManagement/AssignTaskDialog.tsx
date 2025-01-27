@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button';
 import { ScrollArea } from '../../components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Search } from 'lucide-react';
-import { User } from '../../types/user';
+import userService, { User } from '../../services/userService';
 
 interface AssignTaskDialogProps {
   open: boolean;
@@ -29,10 +29,13 @@ const AssignTaskDialog: React.FC<AssignTaskDialogProps> = ({
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        // TODO: Replace with actual API call to get users by department and shift
-        const response = await fetch(`/api/users?department=${department}&shift=${shift}`);
-        const data = await response.json();
-        setUsers(data);
+        const allUsers = await userService.getAllUsers();
+        // Filter users by department and shift
+        const filteredUsers = allUsers.filter(user => 
+          user.departments.includes(department) && 
+          user.shift === shift
+        );
+        setUsers(filteredUsers);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching users:', error);
