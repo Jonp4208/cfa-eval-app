@@ -9,6 +9,10 @@ const taskSchema = new mongoose.Schema({
   estimatedTime: {
     type: Number, // in minutes
     required: false
+  },
+  scheduledTime: {
+    type: String, // HH:mm format
+    required: false
   }
 });
 

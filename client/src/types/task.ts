@@ -8,6 +8,7 @@ export interface Task {
   title: string;
   description?: string;
   estimatedTime?: number;
+  scheduledTime?: string; // ISO string format for time (HH:mm)
 }
 
 export interface TaskList {

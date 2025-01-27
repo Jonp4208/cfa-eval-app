@@ -21,6 +21,7 @@ import TeamMemberDashboard from './TeamMemberDashboard';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Progress } from '@/components/ui/progress';
 import api from '../lib/axios';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface DashboardStats {
   pendingEvaluations: number;
@@ -67,6 +68,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { showNotification } = useNotification();
   
   console.log('Dashboard - user details:', {
     name: user?.name,
@@ -105,7 +107,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      </div>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Welcome Header */}
         <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">

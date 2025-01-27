@@ -136,7 +136,13 @@ router.post('/instances', auth, isLeaderOrDirector, async (req, res) => {
       department: taskList.department,
       shift: taskList.shift,
       date,
-      tasks: taskList.tasks,
+      tasks: taskList.tasks.map(task => ({
+        title: task.title,
+        description: task.description,
+        estimatedTime: task.estimatedTime,
+        scheduledTime: task.scheduledTime,
+        status: 'pending'
+      })),
       store: req.user.store,
       createdBy: req.user._id
     });

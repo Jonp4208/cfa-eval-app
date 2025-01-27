@@ -14,7 +14,7 @@ router.get('/', auth, getNotifications);
 // Mark a notification as read
 router.post('/:notificationId/mark-read', auth, markNotificationAsRead);
 
-// Delete a notification permanently
+// Delete a specific notification permanently
 router.delete('/:notificationId', auth, deleteNotification);
 
 export default router; 

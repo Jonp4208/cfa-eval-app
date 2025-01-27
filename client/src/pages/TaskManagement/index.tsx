@@ -9,7 +9,7 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Checkbox } from '../../components/ui/checkbox';
 import { toast } from '../../components/ui/use-toast';
-import { Loader2, Plus, Users, Clock, CheckCircle, Trash2, XCircle, Filter, ChevronDown } from 'lucide-react';
+import { Loader2, Plus, Users, Clock, CheckCircle, Trash2, XCircle, Filter, ChevronDown, Pencil } from 'lucide-react';
 import TaskList from './TaskList';
 import AssignTaskDialog from './AssignTaskDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -41,10 +41,10 @@ const TaskManagement = () => {
     department: '' as Department,
     shift: '' as Shift,
     isRecurring: false,
-    recurringType: '' as 'daily' | 'weekly' | 'monthly',
+    recurringType: undefined as 'daily' | 'weekly' | 'monthly' | undefined,
     recurringDays: [] as string[],
     monthlyDate: 1,
-    tasks: [] as { title: string; description?: string; estimatedTime?: number }[]
+    tasks: [] as { title: string; description?: string; estimatedTime?: number; scheduledTime?: string }[]
   });
 
   const [filters, setFilters] = useState({
@@ -81,6 +81,27 @@ const TaskManagement = () => {
     fetchData();
   }, [filters.area]);
 
+  // Effect to populate form when editing
+  useEffect(() => {
+    if (selectedList && createDialogOpen) {
+      setNewTaskList({
+        name: selectedList.name,
+        department: selectedList.department,
+        shift: selectedList.shift,
+        isRecurring: selectedList.isRecurring,
+        recurringType: selectedList.recurringType,
+        recurringDays: selectedList.recurringDays || [],
+        monthlyDate: selectedList.monthlyDate || 1,
+        tasks: selectedList.tasks.map(task => ({
+          title: task.title,
+          description: task.description || '',
+          estimatedTime: task.estimatedTime,
+          scheduledTime: task.scheduledTime
+        }))
+      });
+    }
+  }, [selectedList, createDialogOpen]);
+
   // Handle creating a task list
   const handleCreateTaskList = async () => {
     try {
@@ -88,7 +109,15 @@ const TaskManagement = () => {
         return;
       }
 
-      await taskService.createList(newTaskList);
+      // Create a cleaned version of the task list without undefined values
+      const taskListToCreate = {
+        ...newTaskList,
+        recurringType: newTaskList.isRecurring ? newTaskList.recurringType : undefined,
+        recurringDays: newTaskList.isRecurring && newTaskList.recurringType === 'weekly' ? newTaskList.recurringDays : undefined,
+        monthlyDate: newTaskList.isRecurring && newTaskList.recurringType === 'monthly' ? newTaskList.monthlyDate : undefined
+      };
+
+      await taskService.createList(taskListToCreate);
       await fetchData(); // Refresh data after creating
       setCreateDialogOpen(false);
       setNewTaskList({
@@ -96,7 +125,7 @@ const TaskManagement = () => {
         department: '' as Department,
         shift: '' as Shift,
         isRecurring: false,
-        recurringType: '',
+        recurringType: undefined,
         recurringDays: [],
         monthlyDate: 1,
         tasks: []
@@ -108,7 +137,13 @@ const TaskManagement = () => {
 
   // Get active instance for a list
   const getActiveInstance = (listId: string) => {
-    return activeInstances.find(i => i.taskList === listId || i.taskList._id === listId);
+    if (!listId) return null;
+    return activeInstances.find(i => {
+      if (typeof i.taskList === 'string') {
+        return i.taskList === listId;
+      }
+      return i.taskList?._id === listId;
+    });
   };
 
   // Handle task completion
@@ -224,8 +259,9 @@ const TaskManagement = () => {
     });
 
   // Get instance and metrics for a specific list
-  const getListInstanceAndMetrics = (listId: string) => {
-    const instance = activeInstances.find(i => i.taskList === listId || i.taskList._id === listId);
+  const getListInstanceAndMetrics = (listId?: string) => {
+    if (!listId) return { instance: null, metrics: null };
+    const instance = getActiveInstance(listId);
     const metrics = instance ? getInstanceMetrics(instance) : null;
     return { instance, metrics };
   };
@@ -374,7 +410,7 @@ const TaskManagement = () => {
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
                       <DialogHeader>
-                        <DialogTitle>Create New Task List</DialogTitle>
+                        <DialogTitle>{selectedList ? 'Edit Task List' : 'Create New Task List'}</DialogTitle>
                       </DialogHeader>
                       <div className="space-y-4 mt-4 overflow-y-auto pr-2">
                         <div>
@@ -434,7 +470,7 @@ const TaskManagement = () => {
                               setNewTaskList(prev => ({ 
                                 ...prev, 
                                 isRecurring: checked as boolean,
-                                recurringType: checked ? 'daily' : '',
+                                recurringType: checked ? 'daily' : undefined,
                                 recurringDays: [],
                                 monthlyDate: 1
                               }))
@@ -529,7 +565,7 @@ const TaskManagement = () => {
                               type="button" 
                               onClick={() => setNewTaskList(prev => ({ 
                                 ...prev, 
-                                tasks: [...prev.tasks, { title: '', description: '', estimatedTime: undefined }] 
+                                tasks: [...prev.tasks, { title: '', description: '', estimatedTime: undefined, scheduledTime: undefined }] 
                               }))} 
                               variant="outline" 
                               size="sm"
@@ -539,7 +575,7 @@ const TaskManagement = () => {
                           </div>
                           
                           {newTaskList.tasks.map((task, index) => (
-                            <div key={index} className="space-y-2 p-4 border rounded-lg">
+                            <div key={index} className="space-y-2 border p-4 rounded-lg">
                               <Input
                                 placeholder="Task title"
                                 value={task.title}
@@ -552,7 +588,7 @@ const TaskManagement = () => {
                               />
                               <Input
                                 placeholder="Description (optional)"
-                                value={task.description}
+                                value={task.description || ''}
                                 onChange={(e) => setNewTaskList(prev => ({
                                   ...prev,
                                   tasks: prev.tasks.map((t, i) =>
@@ -560,27 +596,138 @@ const TaskManagement = () => {
                                   )
                                 }))}
                               />
-                              <Input
-                                type="number"
-                                placeholder="Estimated time (minutes)"
-                                value={task.estimatedTime || ''}
-                                onChange={(e) => setNewTaskList(prev => ({
+                              <div className="flex gap-4">
+                                <div className="flex-1">
+                                  <Label>Estimated time (minutes)</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Estimated time"
+                                    value={task.estimatedTime || ''}
+                                    onChange={(e) => setNewTaskList(prev => ({
+                                      ...prev,
+                                      tasks: prev.tasks.map((t, i) =>
+                                        i === index ? { ...t, estimatedTime: parseInt(e.target.value) || undefined } : t
+                                      )
+                                    }))}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <Label>Scheduled time</Label>
+                                  <Input
+                                    type="time"
+                                    value={task.scheduledTime || ''}
+                                    onChange={(e) => setNewTaskList(prev => ({
+                                      ...prev,
+                                      tasks: prev.tasks.map((t, i) =>
+                                        i === index ? { ...t, scheduledTime: e.target.value || undefined } : t
+                                      )
+                                    }))}
+                                  />
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700 mt-2"
+                                onClick={() => setNewTaskList(prev => ({
                                   ...prev,
-                                  tasks: prev.tasks.map((t, i) =>
-                                    i === index ? { ...t, estimatedTime: parseInt(e.target.value) } : t
-                                  )
+                                  tasks: prev.tasks.filter((_, i) => i !== index)
                                 }))}
-                              />
+                              >
+                                Remove Task
+                              </Button>
                             </div>
                           ))}
                         </div>
 
                         <div className="flex justify-end space-x-2 pt-4">
-                          <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                          <Button variant="outline" onClick={() => {
+                            setCreateDialogOpen(false);
+                            setSelectedList(null);
+                            setNewTaskList({
+                              name: '',
+                              department: '' as Department,
+                              shift: '' as Shift,
+                              isRecurring: false,
+                              recurringType: undefined,
+                              recurringDays: [],
+                              monthlyDate: 1,
+                              tasks: []
+                            });
+                          }}>
                             Cancel
                           </Button>
-                          <Button onClick={handleCreateTaskList}>
-                            Create Task List
+                          <Button onClick={async () => {
+                            try {
+                              if (!newTaskList.name || !newTaskList.department || !newTaskList.shift) {
+                                return;
+                              }
+
+                              const taskListToSave = {
+                                ...newTaskList,
+                                recurringType: newTaskList.isRecurring ? newTaskList.recurringType : undefined,
+                                recurringDays: newTaskList.isRecurring && newTaskList.recurringType === 'weekly' ? newTaskList.recurringDays : undefined,
+                                monthlyDate: newTaskList.isRecurring && newTaskList.recurringType === 'monthly' ? newTaskList.monthlyDate : undefined
+                              };
+
+                              if (selectedList) {
+                                await taskService.updateList(selectedList._id, taskListToSave);
+                                toast({
+                                  title: "Task List Updated",
+                                  description: (
+                                    <div className="mt-1 flex items-center gap-2 text-green-600">
+                                      <CheckCircle className="h-4 w-4" />
+                                      <span>Task list updated successfully</span>
+                                    </div>
+                                  ),
+                                  variant: "default",
+                                  className: "bg-green-50 border-green-200",
+                                  duration: 4000,
+                                });
+                              } else {
+                                await taskService.createList(taskListToSave);
+                                toast({
+                                  title: "Task List Created",
+                                  description: (
+                                    <div className="mt-1 flex items-center gap-2 text-green-600">
+                                      <CheckCircle className="h-4 w-4" />
+                                      <span>Task list created successfully</span>
+                                    </div>
+                                  ),
+                                  variant: "default",
+                                  className: "bg-green-50 border-green-200",
+                                  duration: 4000,
+                                });
+                              }
+                              
+                              await fetchData();
+                              setCreateDialogOpen(false);
+                              setSelectedList(null);
+                              setNewTaskList({
+                                name: '',
+                                department: '' as Department,
+                                shift: '' as Shift,
+                                isRecurring: false,
+                                recurringType: undefined,
+                                recurringDays: [],
+                                monthlyDate: 1,
+                                tasks: []
+                              });
+                            } catch (error) {
+                              toast({
+                                title: selectedList ? "Error Updating Task List" : "Error Creating Task List",
+                                description: (
+                                  <div className="mt-1 flex items-center gap-2 text-destructive">
+                                    <XCircle className="h-4 w-4" />
+                                    <span>{error.response?.data?.message || `Failed to ${selectedList ? 'update' : 'create'} task list`}</span>
+                                  </div>
+                                ),
+                                variant: "destructive",
+                                duration: 4000,
+                              });
+                            }
+                          }}>
+                            {selectedList ? 'Update Task List' : 'Create Task List'}
                           </Button>
                         </div>
                       </div>
@@ -983,15 +1130,72 @@ const TaskManagement = () => {
                           </div>
                         )}
                       </div>
-                      {list.isRecurring ? (
-                        <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <Clock className="h-4 w-4 text-green-600" />
-                        </div>
-                      ) : instance?.status === 'completed' ? (
-                        <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        </div>
-                      ) : null}
+                      <div className="flex items-center gap-2">
+                        {user?.position && ['Leader', 'Director'].includes(user.position) && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedList(list);
+                                setCreateDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`Are you sure you want to delete "${list.name}"? This action cannot be undone.`)) {
+                                  taskService.deleteList(list._id).then(() => {
+                                    toast({
+                                      title: "Task List Deleted",
+                                      description: (
+                                        <div className="mt-1 flex items-center gap-2 text-green-600">
+                                          <CheckCircle className="h-4 w-4" />
+                                          <span>Task list deleted successfully</span>
+                                        </div>
+                                      ),
+                                      variant: "default",
+                                      className: "bg-green-50 border-green-200",
+                                      duration: 4000,
+                                    });
+                                    fetchData();
+                                  }).catch((error) => {
+                                    toast({
+                                      title: "Error Deleting Task List",
+                                      description: (
+                                        <div className="mt-1 flex items-center gap-2 text-destructive">
+                                          <XCircle className="h-4 w-4" />
+                                          <span>{error.response?.data?.message || 'Failed to delete task list'}</span>
+                                        </div>
+                                      ),
+                                      variant: "destructive",
+                                      duration: 4000,
+                                    });
+                                  });
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                        {list.isRecurring ? (
+                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <Clock className="h-4 w-4 text-green-600" />
+                          </div>
+                        ) : instance?.status === 'completed' ? (
+                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                     
                     <div className="mt-6">
@@ -1097,101 +1301,117 @@ const TaskManagement = () => {
                 {/* Tasks List */}
                 <div className="flex-1 overflow-y-auto px-8 py-6">
                   <div className="space-y-3">
-                    {selectedList.tasks.map((task, index) => {
+                    {(() => {
                       const { instance } = getListInstanceAndMetrics(selectedList._id);
-                      const instanceTask = instance?.tasks[index];
+                      const tasks = instance ? instance.tasks : selectedList.tasks;
                       
-                      return (
-                        <div 
-                          key={index} 
-                          className={cn(
-                            "flex items-start justify-between space-x-4 p-4 rounded-[12px] transition-colors",
-                            instance?.status === 'completed' 
-                              ? "bg-green-50 hover:bg-green-100/70" 
-                              : "hover:bg-gray-50"
-                          )}
-                        >
-                          <div className="flex-1 space-y-1">
-                            <p className={cn(
-                              "font-medium text-[#27251F] transition-all duration-300",
-                              instanceTask?.status === 'completed' && "line-through opacity-60"
-                            )}>
-                              {task.title}
-                            </p>
-                            {task.description && (
-                              <p className={cn(
-                                "text-sm text-[#27251F]/60 transition-all duration-300",
-                                instanceTask?.status === 'completed' && "line-through opacity-40"
-                              )}>
-                                {task.description}
-                              </p>
-                            )}
-                            {task.estimatedTime && (
-                              <p className={cn(
-                                "text-sm text-[#27251F]/60 transition-all duration-300",
-                                instanceTask?.status === 'completed' && "opacity-40"
-                              )}>
-                                Estimated time: {task.estimatedTime} minutes
-                              </p>
-                            )}
-                            {instanceTask?.status === 'completed' && instanceTask.completedBy && instanceTask.completedAt && (
-                              <div className="mt-2 text-sm text-green-600">
-                                <p>Completed by: {instanceTask.completedBy.name}</p>
-                                <p>Completed at: {new Date(instanceTask.completedAt).toLocaleString()}</p>
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                            variant={instanceTask?.status === 'completed' ? "outline" : "default"}
-                            size="sm"
-                            disabled={instance?.status === 'completed'}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                let currentInstance = instance;
-                                if (!currentInstance) {
-                                  currentInstance = await handleStartTaskList(selectedList._id);
-                                  if (!currentInstance) return;
-                                }
-
-                                if (currentInstance.status === 'completed') return;
-
-                                const taskToUpdate = currentInstance.tasks[index];
-                                if (taskToUpdate) {
-                                  const newStatus = taskToUpdate.status === 'completed' ? 'pending' : 'completed';
-                                  await handleTaskComplete(
-                                    currentInstance._id,
-                                    taskToUpdate._id,
-                                    newStatus
-                                  );
-                                }
-                              } catch (error) {
-                                console.error('Error updating task:', error);
-                              }
-                            }}
+                      return tasks.map((task, index) => {
+                        const instanceTask = instance?.tasks[index];
+                        
+                        return (
+                          <div 
+                            key={index} 
                             className={cn(
-                              instanceTask?.status === 'completed' 
-                                ? "hover:bg-green-50" 
-                                : "bg-[#E51636] hover:bg-[#DD0031] text-white"
+                              "flex items-start justify-between space-x-4 p-4 rounded-[12px] transition-colors",
+                              instance?.status === 'completed' 
+                                ? "bg-green-50 hover:bg-green-100/70" 
+                                : "hover:bg-gray-50"
                             )}
                           >
-                            {instance?.status === 'completed' ? (
-                              <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Task List Completed
-                              </>
-                            ) : instanceTask?.status === 'completed' ? (
-                              <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Completed
-                              </>
-                            ) : (
-                              'Mark Complete'
-                            )}
-                          </Button>
-                        </div>
-                      );
-                    })}
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <p className={cn(
+                                  "font-medium text-[#27251F] transition-all duration-300",
+                                  instanceTask?.status === 'completed' && "line-through opacity-60"
+                                )}>
+                                  {task.title}
+                                </p>
+                                {task.scheduledTime && (
+                                  <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {new Date(`2000-01-01T${task.scheduledTime}`).toLocaleTimeString([], { 
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                      hour12: true 
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                              {task.description && (
+                                <p className={cn(
+                                  "text-sm text-[#27251F]/60 transition-all duration-300",
+                                  instanceTask?.status === 'completed' && "line-through opacity-40"
+                                )}>
+                                  {task.description}
+                                </p>
+                              )}
+                              {task.estimatedTime && (
+                                <p className={cn(
+                                  "text-sm text-[#27251F]/60 transition-all duration-300",
+                                  instanceTask?.status === 'completed' && "opacity-40"
+                                )}>
+                                  Estimated time: {task.estimatedTime} minutes
+                                </p>
+                              )}
+                              {instanceTask?.status === 'completed' && instanceTask.completedBy && instanceTask.completedAt && (
+                                <div className="mt-2 text-sm text-green-600">
+                                  <p>Completed by: {instanceTask.completedBy.name}</p>
+                                  <p>Completed at: {new Date(instanceTask.completedAt).toLocaleString()}</p>
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              variant={instanceTask?.status === 'completed' ? "outline" : "default"}
+                              size="sm"
+                              disabled={instance?.status === 'completed'}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  let currentInstance = instance;
+                                  if (!currentInstance) {
+                                    currentInstance = await handleStartTaskList(selectedList._id);
+                                    if (!currentInstance) return;
+                                  }
+
+                                  if (currentInstance.status === 'completed') return;
+
+                                  const taskToUpdate = currentInstance.tasks[index];
+                                  if (taskToUpdate) {
+                                    const newStatus = taskToUpdate.status === 'completed' ? 'pending' : 'completed';
+                                    await handleTaskComplete(
+                                      currentInstance._id,
+                                      taskToUpdate._id,
+                                      newStatus
+                                    );
+                                  }
+                                } catch (error) {
+                                  console.error('Error updating task:', error);
+                                }
+                              }}
+                              className={cn(
+                                instanceTask?.status === 'completed' 
+                                  ? "hover:bg-green-50" 
+                                  : "bg-[#E51636] hover:bg-[#DD0031] text-white"
+                              )}
+                            >
+                              {instance?.status === 'completed' ? (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Task List Completed
+                                </>
+                              ) : instanceTask?.status === 'completed' ? (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Completed
+                                </>
+                              ) : (
+                                'Mark Complete'
+                              )}
+                            </Button>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 

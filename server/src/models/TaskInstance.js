@@ -7,6 +7,7 @@ const taskItemSchema = new mongoose.Schema({
   },
   description: String,
   estimatedTime: Number, // in minutes
+  scheduledTime: String, // HH:mm format
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
