@@ -141,58 +141,27 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get single user by ID
+// Get single user
 router.get('/:id', auth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('store', 'storeNumber name')
-      .populate('manager', 'name');
+      .populate('store', '_id storeNumber name location')
+      .populate('manager', 'name _id');
+
+    // Users can only access their own data unless they are a leader/director
+    if (user._id.toString() !== req.user._id.toString() && 
+        !['director', 'leader'].some(pos => req.user.position?.toLowerCase().includes(pos))) {
+      return res.status(403).json({ message: 'Not authorized to view this user' });
+    }
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Transform the user object to match the expected format
-    const userProfile = {
-      _id: user._id,
-      name: user.name || 'Unknown',
-      email: user.email,
-      phone: user.phone,
-      departments: user.departments || [],
-      position: user.position,
-      isAdmin: user.isAdmin,
-      status: user.status || 'active',
-      store: {
-        _id: user.store._id,
-        name: user.store.name || 'Unknown Store',
-        storeNumber: user.store.storeNumber || 'N/A'
-      },
-      startDate: user.startDate || new Date(),
-      previousRoles: user.previousRoles || [],
-      evaluations: user.evaluations || [],
-      certifications: user.certifications || [],
-      development: user.development || [],
-      recognition: user.recognition || [],
-      documentation: user.documentation || [],
-      metrics: {
-        evaluationScores: user.metrics?.evaluationScores || [],
-        trainingCompletion: user.metrics?.trainingCompletion || 0,
-        goalAchievement: user.metrics?.goalAchievement || 0,
-        leadershipScore: user.metrics?.leadershipScore || 0,
-        heartsAndHands: user.metrics?.heartsAndHands || { x: 50, y: 50 }
-      },
-      schedulingPreferences: {
-        autoSchedule: user.schedulingPreferences?.autoSchedule || false,
-        frequency: user.schedulingPreferences?.frequency || 90,
-        nextEvaluationDate: user.schedulingPreferences?.nextEvaluationDate,
-        lastCalculatedAt: user.schedulingPreferences?.lastCalculatedAt
-      }
-    };
-
-    res.json(userProfile);
+    res.json(user);
   } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ message: 'Error getting user details' });
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Error fetching user' });
   }
 });
 
@@ -235,27 +204,23 @@ router.post('/', auth, async (req, res) => {
           
           <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
             <p>Hello ${user.name},</p>
-            <p>Your account has been created successfully. Here are your login credentials:</p>
+            
+            <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or would like to change or add something on here please reach out to me.</p>
             
             <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Login URL:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
+              <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
               <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
               <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
             </div>
             
-            <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
-            <p>For your security, please follow these steps:</p>
-            <ol style="margin: 10px 0; padding-left: 20px;">
-              <li>Log in using your email and temporary password</li>
-              <li>Change your password immediately upon first login</li>
-              <li>Keep your login credentials secure and do not share them</li>
-            </ol>
+            <p>You will get your first evaluation soon.</p>
             
-            <p>If you have any questions or need assistance, please contact your manager or administrator.</p>
+            <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
+            <p>For your security, please change your password immediately upon first login.</p>
           </div>
           
           <div style="text-align: center; padding: 20px; color: #666;">
-            <p>Best regards,<br>LD Growth Team</p>
+            <p>Thank you and enjoy!<br>LD Growth Team</p>
           </div>
         </div>
       `
@@ -400,27 +365,23 @@ router.post('/bulk-import', auth, upload.single('file'), async (req, res) => {
                     
                     <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
                       <p>Hello ${row.name},</p>
-                      <p>Your account has been created successfully. Here are your login credentials:</p>
+                      
+                      <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or would like to change or add something on here please reach out to me.</p>
                       
                       <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                        <p style="margin: 5px 0;"><strong>Login URL:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
+                        <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
                         <p style="margin: 5px 0;"><strong>Email:</strong> ${row.email}</p>
                         <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
                       </div>
                       
-                      <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
-                      <p>For your security, please follow these steps:</p>
-                      <ol style="margin: 10px 0; padding-left: 20px;">
-                        <li>Log in using your email and temporary password</li>
-                        <li>Change your password immediately upon first login</li>
-                        <li>Keep your login credentials secure and do not share them</li>
-                      </ol>
+                      <p>You will get your first evaluation soon.</p>
                       
-                      <p>If you have any questions or need assistance, please contact your manager or administrator.</p>
+                      <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
+                      <p>For your security, please change your password immediately upon first login.</p>
                     </div>
                     
                     <div style="text-align: center; padding: 20px; color: #666;">
-                      <p>Best regards,<br>LD Growth Team</p>
+                      <p>Thank you and enjoy!<br>LD Growth Team</p>
                     </div>
                   </div>
                 `
