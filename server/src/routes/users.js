@@ -217,7 +217,7 @@ router.post('/', auth, async (req, res) => {
           <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
             <p>Hello ${user.name},</p>
             
-            <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or would like to change or add something on here please reach out to me.</p>
+            <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or questions please reach out to me.</p>
             
             <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
               <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="https://www.ld-growth.com" style="color: #E4002B;">www.ld-growth.com</a></p>
@@ -379,7 +379,7 @@ router.post('/bulk-import', auth, upload.single('file'), async (req, res) => {
                     <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
                       <p>Hello ${row.name},</p>
                       
-                      <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or would like to change or add something on here please reach out to me.</p>
+                      <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or questions please reach out to me.</p>
                       
                       <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
                         <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="https://www.ld-growth.com" style="color: #E4002B;">www.ld-growth.com</a></p>
