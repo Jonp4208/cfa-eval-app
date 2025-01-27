@@ -220,7 +220,7 @@ router.post('/', auth, async (req, res) => {
             <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or would like to change or add something on here please reach out to me.</p>
             
             <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
+              <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="https://www.ld-growth.com" style="color: #E4002B;">www.ld-growth.com</a></p>
               <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
               <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
             </div>
@@ -382,7 +382,7 @@ router.post('/bulk-import', auth, upload.single('file'), async (req, res) => {
                       <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or would like to change or add something on here please reach out to me.</p>
                       
                       <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                        <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="${process.env.CLIENT_URL}" style="color: #E4002B;">${process.env.CLIENT_URL}</a></p>
+                        <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="https://www.ld-growth.com" style="color: #E4002B;">www.ld-growth.com</a></p>
                         <p style="margin: 5px 0;"><strong>Email:</strong> ${row.email}</p>
                         <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
                       </div>
