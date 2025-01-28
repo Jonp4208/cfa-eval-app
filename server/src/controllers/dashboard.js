@@ -143,22 +143,44 @@ export const getDashboardStats = async (req, res) => {
         // Create notifications for evaluations that don't have one
         const notificationsToCreate = [];
         const evaluationsWithNotifications = await Promise.all(upcomingEvaluations.map(async (evaluation) => {
+            // Only create notifications if the current user is the employee, evaluator, or manager
+            const shouldCreateNotification = 
+                evaluation.employee._id.toString() === req.user._id.toString() ||
+                evaluation.evaluator._id.toString() === req.user._id.toString() ||
+                (evaluation.manager && evaluation.manager._id.toString() === req.user._id.toString());
+
+            if (!shouldCreateNotification) {
+                return {
+                    ...evaluation,
+                    notificationId: null
+                };
+            }
+
             // Check if notification exists
             let notification = await Notification.findOne({
                 evaluationId: evaluation._id,
-                user: req.user._id,
+                user: req.user._id,  // Create notification for the current user if they're involved
                 read: false
             });
 
             // If no notification exists, create one
             if (!notification) {
+                let message = '';
+                if (evaluation.employee._id.toString() === req.user._id.toString()) {
+                    message = `You have an evaluation scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
+                } else if (evaluation.evaluator._id.toString() === req.user._id.toString()) {
+                    message = `You have an evaluation to conduct for ${evaluation.employee.name} scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
+                } else {
+                    message = `An evaluation is scheduled for ${evaluation.employee.name} on ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
+                }
+
                 notification = new Notification({
                     user: req.user._id,
                     store: req.user.store._id,
                     type: 'evaluation',
                     priority: 'high',
                     title: 'Upcoming Evaluation',
-                    message: `You have an evaluation scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`,
+                    message,
                     evaluationId: evaluation._id
                 });
                 notificationsToCreate.push(notification);
