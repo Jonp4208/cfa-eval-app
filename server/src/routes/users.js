@@ -74,6 +74,11 @@ const normalizeUserData = (data) => {
   return data;
 };
 
+// Helper function to check if user can manage users
+const canManageUsers = (user) => {
+  return user.role === 'admin' || user.position === 'Director' || user.position === 'Leader';
+};
+
 // Get all users
 router.get('/', auth, async (req, res) => {
   try {
@@ -93,27 +98,17 @@ router.get('/', auth, async (req, res) => {
 
     console.log('Initial query filter:', JSON.stringify(query, null, 2));
 
-    // If user is admin or Director, they can see all users in their store
-    if (req.user.role === 'admin' || req.user.position === 'Director') {
-      console.log('Admin/Director user - fetching all store users');
-      // No additional query needed - they can see all users in their store
-    }
-    // For users with leadership positions, they can view their team
-    else if (req.user.position === 'Team Leader' || req.user.position === 'Shift Leader' || req.user.position === 'Manager') {
-      console.log('Leadership position - fetching managed employees');
-      query.manager = req.user._id;
-    }
-    // For other roles, they shouldn't access this endpoint
-    else {
+    // Check if user can manage users
+    if (!canManageUsers(req.user)) {
       console.log('Unauthorized role/position attempted to fetch users:', 
                  { role: req.user.role, position: req.user.position });
       return res.status(403).json({ message: 'Not authorized to view users' });
     }
 
-    // If a specific manager's team is requested and user is admin/director
-    if (managerId && (req.user.role === 'admin' || req.user.position === 'Director')) {
+    // If a specific manager's team is requested
+    if (managerId && canManageUsers(req.user)) {
       query.manager = managerId;
-      console.log('Admin/Director filtering by specific manager:', managerId);
+      console.log('Filtering by specific manager:', managerId);
     }
 
     console.log('Final query:', JSON.stringify(query, null, 2));
@@ -174,85 +169,51 @@ router.get('/:id', auth, async (req, res) => {
 // Create a new user
 router.post('/', auth, async (req, res) => {
   try {
-    const { name, email, departments, position, role, shift } = req.body;
+    console.log('\n=== POST /users Request ===');
+    console.log('Request body:', req.body);
+    console.log('User from auth middleware:', {
+      _id: req.user._id,
+      name: req.user.name,
+      position: req.user.position,
+      role: req.user.role
+    });
 
-    // Check if user with email already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User with this email already exists' });
+    // Check if user has permission to create users
+    if (!canManageUsers(req.user)) {
+      console.log('Unauthorized attempt to create user by:', {
+        role: req.user.role,
+        position: req.user.position
+      });
+      return res.status(403).json({ message: 'Not authorized to create users' });
     }
 
-    // Generate a random password
-    const password = User.generateRandomPassword();
-
-    // Normalize the data
-    const normalizedData = normalizeUserData({ 
-      name, 
-      email, 
-      departments, 
-      position,
-      shift: shift || 'day' // Default to 'day' if not provided
+    const userData = normalizeUserData({
+      ...req.body,
+      store: req.user.store._id // Assign user to same store as creator
     });
 
-    // Create new user
-    const user = new User({
-      ...normalizedData,
-      password,
-      status: 'active',
-      store: req.user.store._id // Associate with current user's store
-    });
-
+    const user = new User(userData);
     await user.save();
 
-    // Send welcome email
-    await sendEmail({
-      to: user.email,
-      subject: 'Welcome to LD Growth',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-          <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-            <h1 style="color: white; margin: 0;">Welcome to LD Growth!</h1>
-          </div>
-          
-          <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-            <p>Hello ${user.name},</p>
-            
-            <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or questions please reach out to me.</p>
-            
-            <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="https://www.ld-growth.com" style="color: #E4002B;">www.ld-growth.com</a></p>
-              <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
-              <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${password}</p>
-            </div>
-            
-            <p>You will get your first evaluation soon.</p>
-            
-            <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
-            <p>For your security, please change your password immediately upon first login.</p>
-          </div>
-          
-          <div style="text-align: center; padding: 20px; color: #666;">
-            <p>Thank you and enjoy!<br>LD Growth Team</p>
-          </div>
-        </div>
-      `
-    });
+    // Send welcome email with temporary password
+    const tempPassword = Math.random().toString(36).slice(-8);
+    user.password = tempPassword;
+    await user.save();
 
-    res.status(201).json({ 
-      message: 'User created successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        departments: user.departments,
-        position: user.position,
-        role: user.role,
-        shift: user.shift,
-        status: user.status
-      }
-    });
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Welcome to CFA Evaluation App',
+        text: `Welcome to the CFA Evaluation App!\n\nYour temporary password is: ${tempPassword}\n\nPlease change your password after logging in.`
+      });
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError);
+      // Continue with user creation even if email fails
+    }
+
+    res.status(201).json({ user });
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error('Error in POST /users:', error);
     res.status(500).json({ message: 'Failed to create user', error: error.message });
   }
 });

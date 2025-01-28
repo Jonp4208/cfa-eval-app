@@ -56,6 +56,11 @@ interface UserType {
   shift?: 'day' | 'night';
 }
 
+// Helper function to check if user can manage users
+const canManageUsers = (user: any) => {
+  return user?.role === 'admin' || user?.position === 'Director' || user?.position === 'Leader';
+};
+
 export default function Users() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
