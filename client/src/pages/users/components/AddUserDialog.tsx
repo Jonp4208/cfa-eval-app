@@ -43,7 +43,7 @@ interface FormData {
   position: string;
   role: string;
   shift: string;
-  managerId?: string;
+  managerId: string;
 }
 
 interface AddUserDialogProps {
@@ -84,11 +84,13 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     queryFn: async () => {
       const response = await api.get('/api/users', {
         params: { 
-          role: ['manager', 'admin'],
           excludeId: user?._id 
         }
       });
-      return response.data.users;
+      // Filter for users with Director or Leader positions on the client side
+      return response.data.users.filter((user: User) => 
+        ['Director', 'Leader'].includes(user.position)
+      );
     }
   });
 
@@ -323,7 +325,10 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
               <label htmlFor="manager" className="text-sm font-medium text-[#27251F]">Manager</label>
               <Select
                 value={formData.managerId || "none"}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, managerId: value === "none" ? null : value }))}
+                onValueChange={(value) => setFormData(prev => ({ 
+                  ...prev, 
+                  managerId: value === "none" ? "" : value 
+                }))}
               >
                 <SelectTrigger id="manager" className="bg-white border-gray-200 text-[#27251F] focus:ring-[#E51636]">
                   <SelectValue placeholder="Select manager" />
