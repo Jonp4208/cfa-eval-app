@@ -215,47 +215,47 @@ export default function DisciplinaryPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <Card className="bg-white rounded-[20px] shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-[#E51636]" />
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-[#E51636]" />
                 <div>
-                  <p className="text-[#27251F]/60 text-sm">Open Incidents</p>
-                  <p className="text-2xl font-bold text-[#27251F]">{stats.open}</p>
+                  <p className="text-[#27251F]/60 text-xs sm:text-sm">Open Incidents</p>
+                  <p className="text-lg sm:text-2xl font-bold text-[#27251F]">{stats.open}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-white rounded-[20px] shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-[#E51636]" />
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#E51636]" />
                 <div>
-                  <p className="text-[#27251F]/60 text-sm">Follow-ups Due</p>
-                  <p className="text-2xl font-bold text-[#27251F]">{stats.followUps}</p>
+                  <p className="text-[#27251F]/60 text-xs sm:text-sm">Follow-ups Due</p>
+                  <p className="text-lg sm:text-2xl font-bold text-[#27251F]">{stats.followUps}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-white rounded-[20px] shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-[#E51636]" />
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#E51636]" />
                 <div>
-                  <p className="text-[#27251F]/60 text-sm">Resolved This Month</p>
-                  <p className="text-2xl font-bold text-[#27251F]">{stats.resolved}</p>
+                  <p className="text-[#27251F]/60 text-xs sm:text-sm">Resolved This Month</p>
+                  <p className="text-lg sm:text-2xl font-bold text-[#27251F]">{stats.resolved}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="bg-white rounded-[20px] shadow-md">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <UserX className="w-5 h-5 text-[#E51636]" />
+            <CardContent className="p-3 sm:p-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <UserX className="w-4 h-4 sm:w-5 sm:h-5 text-[#E51636]" />
                 <div>
-                  <p className="text-[#27251F]/60 text-sm">Repeat Incidents</p>
-                  <p className="text-2xl font-bold text-[#27251F]">{stats.repeat}</p>
+                  <p className="text-[#27251F]/60 text-xs sm:text-sm">Repeat Incidents</p>
+                  <p className="text-lg sm:text-2xl font-bold text-[#27251F]">{stats.repeat}</p>
                 </div>
               </div>
             </CardContent>
@@ -264,10 +264,11 @@ export default function DisciplinaryPage() {
 
         {/* Search and Filters Card */}
         {(user?.position === 'Position Leader' || user?.position === 'Director') && (
-          <Card className="bg-white">
+          <Card className="bg-white rounded-[20px] shadow-md">
             <CardContent className="p-4">
-              <div className="flex flex-col lg:flex-row gap-4 items-center">
-                <div className="flex-1 relative w-full">
+              <div className="flex flex-col gap-4">
+                {/* Search Input */}
+                <div className="relative w-full">
                   <Input
                     type="text"
                     placeholder="Search by employee, position, department..."
@@ -278,12 +279,13 @@ export default function DisciplinaryPage() {
                   <Search className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex gap-2">
+                {/* Filters and New Incident Button */}
+                <div className="flex flex-col sm:flex-row gap-4 w-full justify-between">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant={filter === 'open' ? 'default' : 'outline'}
                       onClick={() => setFilter('open')}
-                      className={`h-12 px-6 ${
+                      className={`h-12 px-6 flex-1 sm:flex-none ${
                         filter === 'open' 
                           ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
                           : 'hover:bg-gray-100'
@@ -294,7 +296,7 @@ export default function DisciplinaryPage() {
                     <Button
                       variant={filter === 'in-progress' ? 'default' : 'outline'}
                       onClick={() => setFilter('in-progress')}
-                      className={`h-12 px-6 ${
+                      className={`h-12 px-6 flex-1 sm:flex-none ${
                         filter === 'in-progress' 
                           ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
                           : 'hover:bg-gray-100'
@@ -305,7 +307,7 @@ export default function DisciplinaryPage() {
                     <Button
                       variant={filter === 'resolved' ? 'default' : 'outline'}
                       onClick={() => setFilter('resolved')}
-                      className={`h-12 px-6 ${
+                      className={`h-12 px-6 flex-1 sm:flex-none ${
                         filter === 'resolved' 
                           ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
                           : 'hover:bg-gray-100'
@@ -316,7 +318,7 @@ export default function DisciplinaryPage() {
                   </div>
 
                   <Button 
-                    className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6"
+                    className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6 w-full sm:w-auto"
                     onClick={handleNewIncident}
                   >
                     New Incident
