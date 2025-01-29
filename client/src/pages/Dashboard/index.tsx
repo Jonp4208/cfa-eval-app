@@ -9,6 +9,7 @@ import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/scrollbar.css';
+import { useState } from 'react';
 
 interface Evaluation {
   _id: string;
@@ -46,12 +47,18 @@ interface DashboardData {
 export default function Dashboard() {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard', currentUser?._id],
     queryFn: async () => {
-      const response = await api.get('/api/dashboard');
-      return response.data;
+      try {
+        const response = await api.get('/api/dashboard');
+        return response.data;
+      } catch (err) {
+        setError('Failed to load dashboard data. Please try again later.');
+        throw err;
+      }
     },
     enabled: !!currentUser
   });
@@ -60,6 +67,14 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-red-600">{error}</p>
       </div>
     );
   }
