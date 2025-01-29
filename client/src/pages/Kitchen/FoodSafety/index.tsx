@@ -394,6 +394,7 @@ const FoodSafety: React.FC = () => {
               <Card 
                 key={completion._id}
                 className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full bg-green-50 border-green-100"
+                onClick={() => navigate(`/kitchen/food-safety/checklist/${checklist._id}/completion/${completion._id}`)}
               >
                 <CardContent className="p-8">
                   <div className="flex items-start justify-between">

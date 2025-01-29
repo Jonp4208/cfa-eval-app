@@ -34,6 +34,7 @@ import CompleteChecklist from '@/pages/Kitchen/FoodSafety/CompleteChecklist';
 import History from '@/pages/Kitchen/FoodSafety/History';
 import FuturePage from '@/pages/FuturePage';
 import AssignManagers from '../pages/users/AssignManagers';
+import ViewCompletion from '@/pages/Kitchen/FoodSafety/ViewCompletion';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -97,6 +98,7 @@ export default function AppRoutes() {
         <Route path="food-safety" element={<FoodSafety />} />
         <Route path="food-safety/complete/:id" element={<CompleteChecklist />} />
         <Route path="food-safety/history/:id" element={<History />} />
+        <Route path="food-safety/checklist/:id/completion/:completionId" element={<ViewCompletion />} />
       </Route>
       
       <Route path="/templates" element={<PrivateRoute><Templates /></PrivateRoute>} />
