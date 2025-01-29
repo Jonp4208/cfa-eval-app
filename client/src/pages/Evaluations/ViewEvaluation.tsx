@@ -657,10 +657,10 @@ export default function ViewEvaluation() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold">
-                  Evaluation for {evaluation?.employee?.email?.split('@')[0] || 'Loading...'}
+                  Evaluation for {evaluation?.employee?.name || 'Loading...'}
                 </h1>
                 <p className="text-white/80 mt-2 text-lg">
-                  Evaluator: {evaluation?.evaluator?.email?.split('@')[0] || 'Loading...'}
+                  Evaluator: {evaluation?.evaluator?.name || 'Loading...'}
                 </p>
               </div>
               <Button
@@ -686,7 +686,7 @@ export default function ViewEvaluation() {
                 <div>
                   <h3 className="text-sm font-medium text-[#27251F]/60 mb-2">Employee</h3>
                   <p className="text-[#27251F] text-lg font-medium">
-                    {evaluation?.employee?.email?.split('@')[0] || 'Loading...'}
+                    {evaluation?.employee?.name || 'Loading...'}
                   </p>
                 </div>
                 <div>
