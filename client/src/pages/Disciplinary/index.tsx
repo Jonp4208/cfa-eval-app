@@ -118,9 +118,9 @@ export default function DisciplinaryPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(i => 
-        i.employee.name.toLowerCase().includes(query) ||
-        i.employee.position.toLowerCase().includes(query) ||
-        i.employee.department.toLowerCase().includes(query) ||
+        i.employee?.name.toLowerCase().includes(query) ||
+        i.employee?.position.toLowerCase().includes(query) ||
+        i.employee?.department.toLowerCase().includes(query) ||
         i.type.toLowerCase().includes(query) ||
         i.description.toLowerCase().includes(query)
       );
@@ -326,10 +326,10 @@ export default function DisciplinaryPage() {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-semibold text-lg text-[#27251F]">
-                      {incident.employee.name}
+                      {incident.employee?.name || 'Unknown Employee'}
                     </h3>
                     <p className="text-sm text-[#27251F]/60">
-                      {incident.employee.position} • {incident.employee.department}
+                      {incident.employee?.position || 'Unknown Position'} • {incident.employee?.department || 'Unknown Department'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -370,7 +370,7 @@ export default function DisciplinaryPage() {
                     <span>Date: {new Date(incident.date).toLocaleDateString()}</span>
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
-                    {user?._id === incident.employee._id && 
+                    {incident.employee?._id && user?._id === incident.employee._id && 
                      incident.status === 'Pending Acknowledgment' && (
                       <Button 
                         variant="default"
