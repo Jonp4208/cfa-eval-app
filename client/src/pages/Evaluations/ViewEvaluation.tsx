@@ -259,10 +259,14 @@ export default function ViewEvaluation() {
   };
 
   // Validate answers
-  const validateAnswers = () => {
+  const validateAnswers = (validateAll: boolean = false) => {
     const errors: string[] = [];
     evaluation?.template.sections.forEach((section: Section, sectionIndex: number) => {
       section.questions.forEach((question: Question, questionIndex: number) => {
+        // If validateAll is false, only check the current question
+        if (!validateAll && (sectionIndex !== currentQuestionIndex.section || questionIndex !== currentQuestionIndex.question)) {
+          return;
+        }
         const answer = answers[`${sectionIndex}-${questionIndex}`];
         if (question.required && (!answer || answer.trim() === '')) {
           errors.push(`${section.title} - ${question.text}`);
@@ -276,7 +280,7 @@ export default function ViewEvaluation() {
   const submitSelfEvaluation = useMutation({
     mutationFn: async () => {
       await api.post(`/api/evaluations/${id}/self-evaluation`, {
-        selfEvaluation: answers
+        evaluation: answers
       });
     },
     onSuccess: () => {
@@ -774,104 +778,105 @@ export default function ViewEvaluation() {
                   />
                 </div>
 
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const errors = validateAnswers();
-                  if (errors.length === 0) {
-                    submitSelfEvaluation.mutate();
-                  } else {
-                    setValidationErrors(errors);
-                  }
-                }}>
-                  {validationErrors.length > 0 && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                      <h4 className="text-red-800 font-medium mb-2">Please complete all required questions before submitting</h4>
-                      <ul className="list-disc list-inside text-sm text-red-600">
-                        {validationErrors.map((error, index) => (
-                          <li key={index}>{error}</li>
+                {validationErrors.length > 0 && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <h4 className="text-red-800 font-medium mb-2">Please complete all required questions before submitting</h4>
+                    <ul className="list-disc list-inside text-sm text-red-600">
+                      {validationErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Current Question Display */}
+                <div className="space-y-6 mb-8">
+                  <div className="bg-white rounded-xl p-6 border border-gray-200">
+                    {/* Question */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium text-[#27251F] mb-4">
+                        {evaluation.template.sections[currentQuestionIndex.section]
+                          .questions[currentQuestionIndex.question].text}
+                      </h3>
+                    </div>
+
+                    {/* Rating Input */}
+                    <div>
+                      <select
+                        value={answers[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`] || ''}
+                        onChange={(e) => handleAnswerChange(currentQuestionIndex.section, currentQuestionIndex.question, e.target.value)}
+                        className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent bg-white"
+                      >
+                        <option value="">Select a rating</option>
+                        {evaluation.template.sections[currentQuestionIndex.section]
+                          .questions[currentQuestionIndex.question].gradingScale?.grades.map((grade: Grade) => (
+                          <option key={grade.value} value={grade.value}>
+                            {grade.value} - {grade.label}
+                          </option>
                         ))}
-                      </ul>
+                      </select>
                     </div>
-                  )}
+                  </div>
 
-                  {/* Current Question Display */}
-                  <div className="space-y-6 mb-8">
-                    <div className="bg-white rounded-xl p-6 border border-gray-200">
-                      {/* Question */}
-                      <div className="mb-6">
-                        <h3 className="text-lg font-medium text-[#27251F] mb-4">
-                          {evaluation.template.sections[currentQuestionIndex.section]
-                            .questions[currentQuestionIndex.question].text}
-                        </h3>
-                      </div>
-
-                      {/* Rating Input */}
-                      <div>
-                        <select
-                          value={answers[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`] || ''}
-                          onChange={(e) => handleAnswerChange(currentQuestionIndex.section, currentQuestionIndex.question, e.target.value)}
-                          className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent bg-white"
-                        >
-                          <option value="">Select a rating</option>
-                          {evaluation.template.sections[currentQuestionIndex.section]
-                            .questions[currentQuestionIndex.question].gradingScale?.grades.map((grade: Grade) => (
-                            <option key={grade.value} value={grade.value}>
-                              {grade.value} - {grade.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Navigation Buttons */}
-                    <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 w-full">
+                  {/* Navigation Buttons */}
+                  <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 w-full">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const prev = getPreviousQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
+                        if (prev) setCurrentQuestionIndex(prev);
+                      }}
+                      disabled={currentQuestionIndex.section === 0 && currentQuestionIndex.question === 0}
+                      className="w-full md:w-auto h-12 px-6 rounded-2xl"
+                    >
+                      Previous Question
+                    </Button>
+                    
+                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => {
-                          const prev = getPreviousQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
-                          if (prev) setCurrentQuestionIndex(prev);
-                        }}
-                        disabled={currentQuestionIndex.section === 0 && currentQuestionIndex.question === 0}
+                        onClick={() => saveDraft.mutate()}
+                        disabled={saveDraft.isPending}
                         className="w-full md:w-auto h-12 px-6 rounded-2xl"
                       >
-                        Previous Question
+                        {saveDraft.isPending ? 'Saving...' : 'Save Draft'}
                       </Button>
                       
-                      <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                      {getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question) ? (
                         <Button
                           type="button"
-                          variant="outline"
-                          onClick={() => saveDraft.mutate()}
-                          disabled={saveDraft.isPending}
-                          className="w-full md:w-auto h-12 px-6 rounded-2xl"
+                          onClick={() => {
+                            const next = getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
+                            if (next) {
+                              setValidationErrors([]);
+                              setCurrentQuestionIndex(next);
+                            }
+                          }}
+                          className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                         >
-                          {saveDraft.isPending ? 'Saving...' : 'Save Draft'}
+                          Next Question
                         </Button>
-                        
-                        {getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question) ? (
-                          <Button
-                            type="button"
-                            onClick={() => {
-                              const next = getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
-                              if (next) setCurrentQuestionIndex(next);
-                            }}
-                            className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
-                          >
-                            Next Question
-                          </Button>
-                        ) : (
-                          <Button
-                            type="submit"
-                            className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
-                          >
-                            Submit Evaluation
-                          </Button>
-                        )}
-                      </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const errors = validateAnswers(true);
+                            if (errors.length === 0) {
+                              submitSelfEvaluation.mutate();
+                            } else {
+                              setValidationErrors(errors);
+                            }
+                          }}
+                          className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                        >
+                          Submit Evaluation
+                        </Button>
+                      )}
                     </div>
                   </div>
-                </form>
+                </div>
               </>
             )}
 
@@ -927,306 +932,276 @@ export default function ViewEvaluation() {
                   />
                 </div>
 
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (validateAnswers().length === 0) {
-                    setShowSummary(true);
-                  }
-                }}>
-                  {validationErrors.length > 0 && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                      <h4 className="text-red-800 font-medium mb-2">Please complete all required questions before submitting</h4>
-                      <ul className="list-disc list-inside text-sm text-red-600">
-                        {validationErrors.map((error, index) => (
-                          <li key={index}>{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                {validationErrors.length > 0 && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <h4 className="text-red-800 font-medium mb-2">Please complete all required questions before submitting</h4>
+                    <ul className="list-disc list-inside text-sm text-red-600">
+                      {validationErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                  {/* Current Question Display - Hide when showing summary */}
-                  {!showSummary && (
-                    <div className="space-y-6 mb-8">
-                      <div className="bg-white rounded-xl p-6 border border-gray-200">
-                        {/* Question */}
-                        <div className="mb-6">
-                          <h3 className="text-lg font-medium text-[#27251F] mb-4">
-                            {evaluation.template.sections[currentQuestionIndex.section]
-                              .questions[currentQuestionIndex.question].text}
-                          </h3>
-                        </div>
+                {/* Current Question Display - Hide when showing summary */}
+                {!showSummary && (
+                  <div className="space-y-6 mb-8">
+                    <div className="bg-white rounded-xl p-6 border border-gray-200">
+                      {/* Question */}
+                      <div className="mb-6">
+                        <h3 className="text-lg font-medium text-[#27251F] mb-4">
+                          {evaluation.template.sections[currentQuestionIndex.section]
+                            .questions[currentQuestionIndex.question].text}
+                        </h3>
+                      </div>
 
-                        {/* Employee's Rating */}
-                        <div className="mb-6">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ 
-                                backgroundColor: getRatingColor(
-                                  evaluation.selfEvaluation?.[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`],
-                                  evaluation.template.sections[currentQuestionIndex.section]
-                                    .questions[currentQuestionIndex.question].gradingScale
-                                )
-                              }}
-                            />
-                            <span className="text-[#27251F] font-medium">
-                              {getRatingText(
+                      {/* Employee's Rating */}
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ 
+                              backgroundColor: getRatingColor(
                                 evaluation.selfEvaluation?.[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`],
                                 evaluation.template.sections[currentQuestionIndex.section]
                                   .questions[currentQuestionIndex.question].gradingScale
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Manager's Input */}
-                        <div>
-                          <select
-                            value={answers[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`] || ''}
-                            onChange={(e) => handleAnswerChange(currentQuestionIndex.section, currentQuestionIndex.question, e.target.value)}
-                            className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent bg-white"
-                          >
-                            <option value="">Select a rating</option>
-                            {evaluation.template.sections[currentQuestionIndex.section]
-                              .questions[currentQuestionIndex.question].gradingScale?.grades.map((grade: Grade) => (
-                              <option key={grade.value} value={grade.value}>
-                                {grade.value} - {grade.label}
-                              </option>
-                            ))}
-                          </select>
+                              )
+                            }}
+                          />
+                          <span className="text-[#27251F] font-medium">
+                            {getRatingText(
+                              evaluation.selfEvaluation?.[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`],
+                              evaluation.template.sections[currentQuestionIndex.section]
+                                .questions[currentQuestionIndex.question].gradingScale
+                            )}
+                          </span>
                         </div>
                       </div>
+                      
+                      {/* Manager's Input */}
+                      <div>
+                        <select
+                          value={answers[`${currentQuestionIndex.section}-${currentQuestionIndex.question}`] || ''}
+                          onChange={(e) => handleAnswerChange(currentQuestionIndex.section, currentQuestionIndex.question, e.target.value)}
+                          className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent bg-white"
+                        >
+                          <option value="">Select a rating</option>
+                          {evaluation.template.sections[currentQuestionIndex.section]
+                            .questions[currentQuestionIndex.question].gradingScale?.grades.map((grade: Grade) => (
+                            <option key={grade.value} value={grade.value}>
+                              {grade.value} - {grade.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
 
-                      {/* Navigation and Finalize Buttons */}
-                      <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 w-full">
+                    {/* Navigation and Finalize Buttons */}
+                    <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 w-full">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const prev = getPreviousQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
+                          if (prev) setCurrentQuestionIndex(prev);
+                        }}
+                        disabled={currentQuestionIndex.section === 0 && currentQuestionIndex.question === 0}
+                        className="w-full md:w-auto h-12 px-6 rounded-2xl"
+                      >
+                        Previous Question
+                      </Button>
+                      
+                      <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => {
-                            const prev = getPreviousQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
-                            if (prev) setCurrentQuestionIndex(prev);
-                          }}
-                          disabled={currentQuestionIndex.section === 0 && currentQuestionIndex.question === 0}
+                          onClick={() => saveDraft.mutate()}
+                          disabled={saveDraft.isPending}
                           className="w-full md:w-auto h-12 px-6 rounded-2xl"
                         >
-                          Previous Question
+                          {saveDraft.isPending ? 'Saving...' : 'Save Draft'}
                         </Button>
                         
-                        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => saveDraft.mutate()}
-                            disabled={saveDraft.isPending}
-                            className="w-full md:w-auto h-12 px-6 rounded-2xl"
-                          >
-                            {saveDraft.isPending ? 'Saving...' : 'Save Draft'}
-                          </Button>
-                          
-                          {getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question) ? (
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                const next = getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
-                                if (next) setCurrentQuestionIndex(next);
-                              }}
-                              className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
-                            >
-                              Next Question
-                            </Button>
-                          ) : (
-                            <Button
-                              type="button"
-                              onClick={() => setShowSummary(true)}
-                              className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
-                            >
-                              Finalize Review
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Summary View */}
-                  {showSummary && (
-                    <>
-                      <div className="mt-8 space-y-6">
-                        {/* Overall Scores Card */}
-                        <Card className="bg-white rounded-xl border border-gray-200">
-                          <CardHeader>
-                            <CardTitle className="text-xl text-[#27251F]">Overall Ratings</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                              {/* Employee's Overall Score */}
-                              <div>
-                                <h4 className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Overall Rating</h4>
-                                {(() => {
-                                  const { score, total } = calculateTotalScore(evaluation.selfEvaluation);
-                                  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
-                                  return (
-                                    <div className="space-y-2">
-                                      <div className="text-2xl font-bold text-[#27251F]">
-                                        {score}/{total} <span className="text-lg font-normal text-[#27251F]/60">points</span>
-                                      </div>
-                                      <div className="w-full bg-[#27251F]/10 rounded-full h-2">
-                                        <div
-                                          className="bg-[#E51636] h-2 rounded-full"
-                                          style={{ width: `${percentage}%` }}
-                                        />
-                                      </div>
-                                      <div className="text-sm text-[#27251F]/60">{percentage}% Overall Rating</div>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-
-                              {/* Manager's Overall Score */}
-                              <div>
-                                <h4 className="text-sm font-medium text-[#27251F]/60 mb-2">Manager's Overall Rating</h4>
-                                {(() => {
-                                  const { score, total } = calculateTotalScore(answers);
-                                  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
-                                  return (
-                                    <div className="space-y-2">
-                                      <div className="text-2xl font-bold text-[#27251F]">
-                                        {score}/{total} <span className="text-lg font-normal text-[#27251F]/60">points</span>
-                                      </div>
-                                      <div className="w-full bg-[#27251F]/10 rounded-full h-2">
-                                        <div
-                                          className="bg-[#E51636] h-2 rounded-full"
-                                          style={{ width: `${percentage}%` }}
-                                        />
-                                      </div>
-                                      <div className="text-sm text-[#27251F]/60">{percentage}% Overall Rating</div>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-
-                        <Card className="bg-white rounded-xl border border-gray-200">
-                          <CardHeader>
-                            <CardTitle className="text-xl text-[#27251F]">Review Summary</CardTitle>
-                          </CardHeader>
-                          <CardContent className="space-y-8">
-                            {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
-                              <div key={sectionIndex} className="space-y-4">
-                                <h3 className="font-medium text-lg text-[#27251F]">{section.title}</h3>
-                                {section.questions.map((question: Question, questionIndex: number) => {
-                                  const employeeRating = evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`];
-                                  const managerRating = answers[`${sectionIndex}-${questionIndex}`];
-                                  const employeeColor = getRatingColor(employeeRating, question.gradingScale);
-                                  const managerColor = getRatingColor(managerRating, question.gradingScale);
-                                  const employeeValue = getRatingValue(employeeRating, question.gradingScale);
-                                  const managerValue = getRatingValue(managerRating, question.gradingScale);
-                                  
-                                  let comparisonStyle = '';
-                                  if (managerValue > employeeValue) {
-                                    comparisonStyle = 'bg-green-50 border-green-200';
-                                  } else if (managerValue < employeeValue) {
-                                    comparisonStyle = 'bg-red-50 border-red-200';
-                                  } else {
-                                    comparisonStyle = 'bg-[#27251F]/5';
-                                  }
-
-                                  return (
-                                    <div key={questionIndex} className={`p-4 rounded-xl border ${comparisonStyle}`}>
-                                      <p className="font-medium text-[#27251F] mb-3">{question.text}</p>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Employee's Rating */}
-                                        <div>
-                                          <p className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Rating:</p>
-                                          <div className="flex items-center gap-2">
-                                            <div
-                                              className="w-3 h-3 rounded-full"
-                                              style={{ backgroundColor: employeeColor }}
-                                            />
-                                            <span style={{ color: employeeColor }}>
-                                              {getRatingText(employeeRating, question.gradingScale)}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        {/* Manager's Rating */}
-                                        <div>
-                                          <p className="text-sm font-medium text-[#27251F]/60 mb-2">Manager's Rating:</p>
-                                          <div className="flex items-center gap-2">
-                                            <div
-                                              className="w-3 h-3 rounded-full"
-                                              style={{ backgroundColor: managerColor }}
-                                            />
-                                            <span style={{ color: managerColor }}>
-                                              {getRatingText(managerRating, question.gradingScale)}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ))}
-                          </CardContent>
-                        </Card>
-
-                        {/* Overall Comments */}
-                        <div>
-                          <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
-                            Overall Comments
-                          </label>
-                          <textarea
-                            value={overallComments}
-                            onChange={(e) => setOverallComments(e.target.value)}
-                            className="w-full p-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
-                            rows={3}
-                            placeholder="Enter any overall comments about the evaluation..."
-                          />
-                        </div>
-
-                        {/* Complete Review Button */}
-                        <div className="flex justify-end">
+                        {getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question) ? (
                           <Button
                             type="button"
                             onClick={() => {
-                              if (validateAnswers().length === 0) {
-                                setShowConfirmSubmit(true);
-                              }
+                              const next = getNextQuestionIndices(currentQuestionIndex.section, currentQuestionIndex.question);
+                              if (next) setCurrentQuestionIndex(next);
                             }}
-                            className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                            className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                           >
-                            Complete Review
+                            Next Question
                           </Button>
-                        </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={() => setShowSummary(true)}
+                            className="w-full md:w-auto bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                          >
+                            Finalize Review
+                          </Button>
+                        )}
                       </div>
-                    </>
-                  )}
-                </form>
+                    </div>
+                  </div>
+                )}
 
-                <AlertDialog open={showConfirmSubmit} onOpenChange={setShowConfirmSubmit}>
-                  <AlertDialogContent className="bg-white rounded-[20px] p-6">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="text-lg font-medium text-[#27251F]">Confirm Submission</AlertDialogTitle>
-                      <AlertDialogDescription className="text-[#27251F]/60">
-                        Are you sure you want to submit this evaluation? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel className="h-12 px-6 rounded-2xl">Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          completeManagerEvaluation.mutate();
-                          setShowConfirmSubmit(false);
-                        }}
-                        className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
-                      >
-                        Submit
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                {/* Summary View */}
+                {showSummary && (
+                  <>
+                    <div className="mt-8 space-y-6">
+                      {/* Overall Scores Card */}
+                      <Card className="bg-white rounded-xl border border-gray-200">
+                        <CardHeader>
+                          <CardTitle className="text-xl text-[#27251F]">Overall Ratings</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Employee's Overall Score */}
+                            <div>
+                              <h4 className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Overall Rating</h4>
+                              {(() => {
+                                const { score, total } = calculateTotalScore(evaluation.selfEvaluation);
+                                const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+                                return (
+                                  <div className="space-y-2">
+                                    <div className="text-2xl font-bold text-[#27251F]">
+                                      {score}/{total} <span className="text-lg font-normal text-[#27251F]/60">points</span>
+                                    </div>
+                                    <div className="w-full bg-[#27251F]/10 rounded-full h-2">
+                                      <div
+                                        className="bg-[#E51636] h-2 rounded-full"
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                    <div className="text-sm text-[#27251F]/60">{percentage}% Overall Rating</div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            {/* Manager's Overall Score */}
+                            <div>
+                              <h4 className="text-sm font-medium text-[#27251F]/60 mb-2">Manager's Overall Rating</h4>
+                              {(() => {
+                                const { score, total } = calculateTotalScore(answers);
+                                const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+                                return (
+                                  <div className="space-y-2">
+                                    <div className="text-2xl font-bold text-[#27251F]">
+                                      {score}/{total} <span className="text-lg font-normal text-[#27251F]/60">points</span>
+                                    </div>
+                                    <div className="w-full bg-[#27251F]/10 rounded-full h-2">
+                                      <div
+                                        className="bg-[#E51636] h-2 rounded-full"
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                    <div className="text-sm text-[#27251F]/60">{percentage}% Overall Rating</div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-white rounded-xl border border-gray-200">
+                        <CardHeader>
+                          <CardTitle className="text-xl text-[#27251F]">Review Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-8">
+                          {evaluation.template.sections.map((section: Section, sectionIndex: number) => (
+                            <div key={sectionIndex} className="space-y-4">
+                              <h3 className="font-medium text-lg text-[#27251F]">{section.title}</h3>
+                              {section.questions.map((question: Question, questionIndex: number) => {
+                                const employeeRating = evaluation.selfEvaluation?.[`${sectionIndex}-${questionIndex}`];
+                                const managerRating = answers[`${sectionIndex}-${questionIndex}`];
+                                const employeeColor = getRatingColor(employeeRating, question.gradingScale);
+                                const managerColor = getRatingColor(managerRating, question.gradingScale);
+                                const employeeValue = getRatingValue(employeeRating, question.gradingScale);
+                                const managerValue = getRatingValue(managerRating, question.gradingScale);
+                                
+                                let comparisonStyle = '';
+                                if (managerValue > employeeValue) {
+                                  comparisonStyle = 'bg-green-50 border-green-200';
+                                } else if (managerValue < employeeValue) {
+                                  comparisonStyle = 'bg-red-50 border-red-200';
+                                } else {
+                                  comparisonStyle = 'bg-[#27251F]/5';
+                                }
+
+                                return (
+                                  <div key={questionIndex} className={`p-4 rounded-xl border ${comparisonStyle}`}>
+                                    <p className="font-medium text-[#27251F] mb-3">{question.text}</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {/* Employee's Rating */}
+                                      <div>
+                                        <p className="text-sm font-medium text-[#27251F]/60 mb-2">Employee's Rating:</p>
+                                        <div className="flex items-center gap-2">
+                                          <div
+                                            className="w-3 h-3 rounded-full"
+                                            style={{ backgroundColor: employeeColor }}
+                                          />
+                                          <span style={{ color: employeeColor }}>
+                                            {getRatingText(employeeRating, question.gradingScale)}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {/* Manager's Rating */}
+                                      <div>
+                                        <p className="text-sm font-medium text-[#27251F]/60 mb-2">Manager's Rating:</p>
+                                        <div className="flex items-center gap-2">
+                                          <div
+                                            className="w-3 h-3 rounded-full"
+                                            style={{ backgroundColor: managerColor }}
+                                          />
+                                          <span style={{ color: managerColor }}>
+                                            {getRatingText(managerRating, question.gradingScale)}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+
+                      {/* Overall Comments */}
+                      <div>
+                        <label className="block text-sm font-medium text-[#27251F]/60 mb-2">
+                          Overall Comments
+                        </label>
+                        <textarea
+                          value={overallComments}
+                          onChange={(e) => setOverallComments(e.target.value)}
+                          className="w-full p-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                          rows={3}
+                          placeholder="Enter any overall comments about the evaluation..."
+                        />
+                      </div>
+
+                      {/* Complete Review Button */}
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if (validateAnswers().length === 0) {
+                              setShowConfirmSubmit(true);
+                            }
+                          }}
+                          className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
+                        >
+                          Complete Review
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
 
