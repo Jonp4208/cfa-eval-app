@@ -563,11 +563,21 @@ export default function Evaluations() {
                           <div>
                             <h3 className="font-medium text-[#27251F]">{evaluation.employee?.name || 'Unknown Employee'}</h3>
                             <p className="text-sm text-[#27251F]/60 mt-1">{evaluation.template?.name || 'No Template'}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Calendar className="w-4 h-4 text-[#27251F]/40" />
-                              <span className={`text-sm ${dueStatus.class}`}>
-                                {dueStatus.text}
-                              </span>
+                            <div className="flex flex-col gap-2 mt-2">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-[#27251F]/40" />
+                                <span className={`text-sm ${dueStatus.class}`}>
+                                  Scheduled: {new Date(evaluation.scheduledDate).toLocaleDateString()}
+                                </span>
+                              </div>
+                              {evaluation.reviewSessionDate && (
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-purple-500" />
+                                  <span className="text-sm text-purple-700">
+                                    Review Session: {new Date(evaluation.reviewSessionDate).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
