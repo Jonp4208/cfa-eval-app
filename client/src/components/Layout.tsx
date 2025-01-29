@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,7 +22,8 @@ import {
   BarChart,
   User2,
   CheckSquare,
-  ChefHat
+  ChefHat,
+  LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
@@ -36,10 +38,26 @@ import { MobileNav } from './MobileNav';
 import { useNotification } from '@/contexts/NotificationContext';
 import { NotificationList } from './NotificationList';
 
+interface MenuItem {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+  show: boolean;
+  badge: string | null;
+  color?: string;
+  submenu?: {
+    icon: LucideIcon;
+    label: string;
+    href: string;
+    badge: string | null;
+    color?: string;
+  }[];
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth() as { user: UserType | null, logout: () => void };
   const { showNotification } = useNotification();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(false);
@@ -147,7 +165,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setIsMobileMenuOpen(prev => !prev);
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       icon: Home,
       label: 'Dashboard',
