@@ -1,30 +1,71 @@
 import { User, Evaluation, Template, Notification, GradingScale } from '../models/index.js';
 import { sendEmail } from '../utils/email.js';
 
+// Create notification for the employee
+const createNotificationIfNeeded = async (evaluation, type) => {
+  let shouldCreate = false;
+  let user, title, message;
+
+  switch (type) {
+    case 'scheduled':
+      if (!evaluation.notificationStatus.employee.scheduled) {
+        shouldCreate = true;
+        user = evaluation.employee._id;
+        title = 'New Evaluation Scheduled';
+        message = `${evaluation.employee.name}'s evaluation has been scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
+      }
+      break;
+    case 'completed':
+      if (!evaluation.notificationStatus.employee.completed) {
+        shouldCreate = true;
+        user = evaluation.employee._id;
+        title = 'Evaluation Completed';
+        message = `${evaluation.employee.name}'s evaluation has been completed by ${evaluation.evaluator.name}`;
+      }
+      break;
+    case 'self_evaluation_completed':
+      if (!evaluation.notificationStatus.evaluator.selfEvaluationCompleted) {
+        shouldCreate = true;
+        user = evaluation.evaluator._id;
+        title = 'Self-Evaluation Completed';
+        message = `${evaluation.employee.name} has completed their self-evaluation`;
+      }
+      break;
+  }
+
+  if (shouldCreate) {
+    const notification = new Notification({
+      user,
+      store: evaluation.store._id,
+      type: 'evaluation',
+      priority: 'high',
+      title,
+      message,
+      evaluationId: evaluation._id,
+      employee: {
+        name: evaluation.employee.name,
+        position: evaluation.employee.position || 'Employee',
+        department: evaluation.employee.department || 'Uncategorized'
+      }
+    });
+
+    await notification.save();
+    return notification;
+  }
+
+  return null;
+};
+
 // Create new evaluation
 export const createEvaluation = async (req, res) => {
     try {
-        const {
-            employeeIds,
-            templateId,
-            scheduledDate,
-            overallComments,
-            developmentPlan,
-            sectionResults
-        } = req.body;
+        const { employeeIds, templateId, scheduledDate, overallComments, developmentPlan, sectionResults } = req.body;
 
-        // Check if user is a manager or director
-        if (!['Director', 'Leader'].includes(req.user.position)) {
-            return res.status(403).json({ message: 'Access denied. Only managers and directors can create evaluations.' });
+        if (!employeeIds || !templateId || !scheduledDate) {
+            return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        console.log('Create evaluation request:', {
-            body: req.body,
-            user: req.user,
-            storeId: req.user.store._id
-        });
-
-        // Verify template belongs to store
+        // Validate template exists and belongs to store
         const template = await Template.findOne({
             _id: templateId,
             store: req.user.store._id,
@@ -32,25 +73,37 @@ export const createEvaluation = async (req, res) => {
         });
 
         if (!template) {
-            return res.status(404).json({ message: 'Template not found' });
+            return res.status(404).json({ message: 'Template not found or inactive' });
         }
 
-        // Verify all employees belong to same store
+        // Get all employees with their managers
         const employees = await User.find({
             _id: { $in: employeeIds },
             store: req.user.store._id
-        });
+        }).populate('manager', '_id');
 
-        console.log('Employees lookup:', {
-            query: {
-                _id: { $in: employeeIds },
-                store: req.user.store._id
-            },
-            result: employees
-        });
+        if (employees.length === 0) {
+            return res.status(404).json({ message: 'No employees found' });
+        }
 
         if (employees.length !== employeeIds.length) {
             return res.status(400).json({ message: 'One or more employees not found in your store' });
+        }
+
+        // Check if user has permission to evaluate these employees
+        const isDirector = req.user.position === 'Director';
+        if (!isDirector) {
+            // For non-directors, check if they are the manager of each employee
+            const unauthorizedEmployees = employees.filter(employee => 
+                employee.manager?._id.toString() !== req.user._id.toString()
+            );
+
+            if (unauthorizedEmployees.length > 0) {
+                return res.status(403).json({ 
+                    message: 'You can only create evaluations for your direct reports',
+                    unauthorizedEmployees: unauthorizedEmployees.map(e => e.name)
+                });
+            }
         }
 
         // Create evaluations and notifications for each employee
@@ -65,13 +118,23 @@ export const createEvaluation = async (req, res) => {
                 overallComments,
                 developmentPlan,
                 sectionResults,
-                status: 'pending_self_evaluation'
+                status: 'pending_self_evaluation',
+                notificationStatus: {
+                    employee: {
+                        scheduled: false,
+                        completed: false,
+                        acknowledged: false
+                    },
+                    evaluator: {
+                        selfEvaluationCompleted: false,
+                        reviewSessionScheduled: false
+                    }
+                }
             });
 
             await evaluation.save();
-            createdEvaluations.push(evaluation);
-
-            // Create notification for the employee
+            
+            // Create initial notification
             const notification = new Notification({
                 user: employee._id,
                 store: req.user.store._id,
@@ -88,38 +151,46 @@ export const createEvaluation = async (req, res) => {
             });
 
             await notification.save();
+            
+            // Update notification status
+            evaluation.notificationStatus.employee.scheduled = true;
+            await evaluation.save();
+            
+            createdEvaluations.push(evaluation);
 
             // Send email to employee
-            try {
-                await sendEmail({
-                    to: employee.email,
-                    subject: 'New Evaluation Scheduled - LD Growth',
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h1 style="color: white; margin: 0;">New Evaluation Scheduled</h1>
-                            </div>
-                            
-                            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                <h2 style="color: #333; margin-top: 0;">Evaluation Details</h2>
-                                <p><strong>Scheduled Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
-                                <p><strong>Evaluator:</strong> ${req.user.name}</p>
-                            </div>
+            if (employee.email) {
+                try {
+                    await sendEmail({
+                        to: employee.email,
+                        subject: 'New Evaluation Scheduled - LD Growth',
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                                <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                    <h1 style="color: white; margin: 0;">New Evaluation Scheduled</h1>
+                                </div>
+                                
+                                <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                    <h2 style="color: #333; margin-top: 0;">Evaluation Details</h2>
+                                    <p><strong>Scheduled Date:</strong> ${new Date(scheduledDate).toLocaleDateString()}</p>
+                                    <p><strong>Evaluator:</strong> ${req.user.name}</p>
+                                </div>
 
-                            <div style="margin-bottom: 30px;">
-                                <p>Please log in to LD Growth to complete your self-evaluation before the scheduled date.</p>
-                                <p>Your input is valuable for your professional development.</p>
-                            </div>
+                                <div style="margin-bottom: 30px;">
+                                    <p>Please log in to LD Growth to complete your self-evaluation before the scheduled date.</p>
+                                    <p>Your input is valuable for your professional development.</p>
+                                </div>
 
-                            <p style="margin-top: 30px;">
-                                Best regards,<br>LD Growth Team
-                            </p>
-                        </div>
-                    `
-                });
-                console.log(`[Email] ✓ Sent evaluation notification to ${employee.email}`);
-            } catch (emailError) {
-                console.error(`[Email] ✕ Failed to send evaluation notification to ${employee.email}:`, emailError.message);
+                                <p style="margin-top: 30px;">
+                                    Best regards,<br>LD Growth Team
+                                </p>
+                            </div>
+                        `
+                    });
+                    console.log(`[Email] ✓ Sent evaluation notification to ${employee.email}`);
+                } catch (emailError) {
+                    console.error(`[Email] ✕ Failed to send evaluation notification to ${employee.email}:`, emailError.message);
+                }
             }
         }
 
@@ -139,21 +210,23 @@ export const createEvaluation = async (req, res) => {
 // Get all evaluations for store
 export const getEvaluations = async (req, res) => {
     try {
-        const showAll = req.user.role === 'admin' || req.user.position === 'Director';
+        const isDirector = req.user.position === 'Director';
         
-        console.log('Getting evaluations for store:', {
-            storeId: req.user.store._id,
-            userId: req.user._id,
-            userRole: req.user.role,
-            userPosition: req.user.position,
-            showAll
+        // Add detailed debug logging
+        console.log('User details:', {
+            id: req.user._id,
+            name: req.user.name,
+            role: req.user.role,
+            position: req.user.position,
+            store: req.user.store._id,
+            isDirector
         });
         
         // Base query - always filter by store
         let query = { store: req.user.store._id };
         
-        // If not showing all, only show evaluations where user is employee or evaluator
-        if (!showAll) {
+        // If not a director, only show evaluations where user is employee or evaluator
+        if (!isDirector) {
             query.$or = [
                 { employee: req.user._id },
                 { evaluator: req.user._id }
@@ -199,7 +272,7 @@ export const getEvaluations = async (req, res) => {
 export const getEvaluation = async (req, res) => {
     try {
         const evaluationId = req.params.evaluationId;
-        const showAll = req.user.role === 'admin' || req.user.position === 'Director';
+        const isDirector = req.user.position === 'Director';
         
         if (!evaluationId) {
             console.error('Missing evaluation ID in request params:', req.params);
@@ -210,7 +283,7 @@ export const getEvaluation = async (req, res) => {
             evaluationId,
             userId: req.user._id,
             userStore: req.user.store._id,
-            showAll
+            isDirector
         });
         
         // Build query based on user role
@@ -219,8 +292,8 @@ export const getEvaluation = async (req, res) => {
             store: req.user.store._id
         };
 
-        // If not admin/director, only show evaluations where user is employee or evaluator
-        if (!showAll) {
+        // If not a director, only show evaluations where user is employee or evaluator
+        if (!isDirector) {
             query.$or = [
                 { employee: req.user._id },
                 { evaluator: req.user._id }
@@ -505,131 +578,69 @@ export const submitEvaluation = async (req, res) => {
 // Submit self-evaluation
 export const submitSelfEvaluation = async (req, res) => {
     try {
-        const { evaluationId } = req.params;
-        const { selfEvaluation, preventStatusChange } = req.body;
-
-        console.log('Starting submitSelfEvaluation for evaluation:', evaluationId);
-
-        const evaluation = await Evaluation.findById(evaluationId)
-            .populate('employee', 'name email position')
-            .populate('evaluator', 'name email')
-            .populate({
-                path: 'store',
-                select: 'name storeEmail'
-            });
-
-        console.log('Found evaluation:', {
-            id: evaluation?._id,
-            employeeName: evaluation?.employee?.name,
-            evaluatorName: evaluation?.evaluator?.name,
-            storeName: evaluation?.store?.name,
-            storeEmail: evaluation?.store?.storeEmail
-        });
+        const evaluation = await Evaluation.findOne({
+            _id: req.params.evaluationId,
+            employee: req.user._id,
+            store: req.user.store._id
+        })
+        .populate('employee', 'name email position')
+        .populate('evaluator', 'name email position')
+        .populate('store', 'storeEmail');
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Evaluation not found' });
         }
 
-        // Update self-evaluation data
-        evaluation.selfEvaluation = new Map(Object.entries(selfEvaluation));
+        // Update evaluation
+        evaluation.selfEvaluation = new Map(Object.entries(req.body.evaluation));
+        evaluation.status = 'pending_manager_review';
+        await evaluation.save();
 
-        // Only update status if not preventing status change
-        if (!preventStatusChange) {
-            evaluation.status = 'pending_manager_review';
-            
-            // Send email to manager only when actually submitting
-            if (evaluation.evaluator.email) {
-                console.log('Attempting to send email to evaluator:', evaluation.evaluator.email);
-                try {
-                    await sendEmail({
-                        to: evaluation.evaluator.email,
-                        subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
-                        html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                                <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                    <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
-                                </div>
-                                
-                                <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                    <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
-                                    <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
-                                    <p><strong>Position:</strong> ${evaluation.employee.position}</p>
-                                    <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
-                                </div>
+        // Create notification for evaluator
+        await createNotificationIfNeeded(evaluation, 'self_evaluation_completed');
 
-                                <div style="margin-bottom: 30px;">
-                                    <p>The employee has completed their self-evaluation. Please log in to LD Growth to schedule the review session.</p>
-                                    <div style="margin-top: 20px; text-align: center;">
-                                        <a href="${process.env.CLIENT_URL}/evaluations/${evaluation._id}" 
-                                            style="background-color: #E4002B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                                            Schedule Review Session
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <p style="margin-top: 30px;">
-                                    Best regards,<br>LD Growth Team
-                                </p>
+        // Send email notifications
+        if (evaluation.evaluator.email) {
+            try {
+                await sendEmail({
+                    to: evaluation.evaluator.email,
+                    subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
                             </div>
-                        `
-                    });
-                    console.log('Successfully sent email to evaluator');
-                } catch (emailError) {
-                    console.error('Failed to send evaluator email:', emailError);
-                }
-            } else {
-                console.warn('No evaluator email found for evaluation:', evaluationId);
-            }
-
-            // Also send to store email if configured
-            if (evaluation.store?.storeEmail) {
-                console.log('Attempting to send email to store:', evaluation.store.storeEmail);
-                try {
-                    await sendEmail({
-                        to: evaluation.store.storeEmail,
-                        subject: `Self-Evaluation Completed - ${evaluation.employee.name}`,
-                        html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-                                <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                    <h1 style="color: white; margin: 0;">Self-Evaluation Completed</h1>
-                                </div>
-                                
-                                <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-                                    <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
-                                    <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
-                                    <p><strong>Position:</strong> ${evaluation.employee.position}</p>
-                                    <p><strong>Evaluator:</strong> ${evaluation.evaluator.name}</p>
-                                    <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
-                                </div>
-
-                                <div style="margin-bottom: 30px;">
-                                    <p>The employee has completed their self-evaluation. The evaluator will schedule a review session soon.</p>
-                                </div>
-
-                                <p style="margin-top: 30px;">
-                                    Best regards,<br>LD Growth Team
-                                </p>
+                            
+                            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                                <h2 style="color: #333; margin-top: 0;">Employee Details</h2>
+                                <p><strong>Employee:</strong> ${evaluation.employee.name}</p>
+                                <p><strong>Position:</strong> ${evaluation.employee.position}</p>
+                                <p><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</p>
                             </div>
-                        `
-                    });
-                    console.log('Successfully sent email to store');
-                } catch (emailError) {
-                    console.error('Failed to send store email:', emailError);
-                }
-            } else {
-                console.warn('No store email configured for store:', evaluation.store?._id);
+
+                            <div style="margin-bottom: 30px;">
+                                <p>The employee has completed their self-evaluation. Please log in to LD Growth to schedule the review session.</p>
+                            </div>
+
+                            <p style="margin-top: 30px;">
+                                Best regards,<br>LD Growth Team
+                            </p>
+                        </div>
+                    `
+                });
+                console.log('Successfully sent email to evaluator');
+            } catch (emailError) {
+                console.error('Failed to send evaluator email:', emailError);
             }
         }
 
-        await evaluation.save();
-
         res.json({ 
-            message: preventStatusChange ? 'Draft saved successfully' : 'Self-evaluation submitted successfully', 
-            evaluation 
+            message: 'Self evaluation submitted successfully',
+            evaluation
         });
     } catch (error) {
-        console.error('Error submitting self-evaluation:', error);
-        res.status(500).json({ message: 'Error submitting self-evaluation', error: error.message });
+        console.error('Submit self evaluation error:', error);
+        res.status(500).json({ message: 'Error submitting self evaluation' });
     }
 };
 
@@ -729,73 +740,42 @@ export const scheduleReviewSession = async (req, res) => {
 // Complete manager evaluation
 export const completeManagerEvaluation = async (req, res) => {
     try {
-        const { evaluationId } = req.params;
-        const { managerEvaluation, overallComments } = req.body;
-
         const evaluation = await Evaluation.findOne({
-            _id: evaluationId,
+            _id: req.params.evaluationId,
             evaluator: req.user._id,
-            store: req.user.store._id,
-            status: { $in: ['pending_manager_review', 'in_review_session'] }
+            store: req.user.store._id
         })
-        .populate('employee')
-        .populate('evaluator')
-        .populate('store')
-        .populate({
-            path: 'template',
-            populate: {
-                path: 'sections.criteria.gradingScale',
-                model: 'GradingScale'
-            }
-        });
+        .populate('employee', 'name email position metrics')
+        .populate('evaluator', 'name position')
+        .populate('store', 'storeEmail');
 
         if (!evaluation) {
-            return res.status(404).json({ message: 'Evaluation not found or not in valid state for completion' });
+            return res.status(404).json({ message: 'Evaluation not found' });
         }
 
-        // Update evaluation
-        evaluation.managerEvaluation = new Map(Object.entries(managerEvaluation));
-        evaluation.overallComments = overallComments;
+        // Update evaluation data
+        evaluation.managerEvaluation = new Map(Object.entries(req.body.evaluation));
+        evaluation.overallComments = req.body.overallComments;
+        evaluation.developmentPlan = req.body.developmentPlan;
         evaluation.status = 'completed';
         evaluation.completedDate = new Date();
-        evaluation.reviewSessionDate = evaluation.reviewSessionDate || new Date(); // Set review date to now if not already set
-
-        // Calculate overall score
-        let totalScore = 0;
-        let totalPossible = 0;
-
-        // Get default grading scale
-        const defaultScale = await GradingScale.findOne({ 
-            store: req.user.store._id,
-            isDefault: true,
-            isActive: true
-        });
-
-        // Calculate total score from manager evaluation
-        evaluation.template.sections.forEach((section, sectionIndex) => {
-            section.criteria.forEach((criterion, criterionIndex) => {
-                const key = `${sectionIndex}-${criterionIndex}`;
-                const score = managerEvaluation[key];
-                const scale = criterion.gradingScale || defaultScale;
-                
-                if (score !== undefined && scale && scale.grades) {
-                    const numericScore = Number(score);
-                    totalScore += numericScore;
-                    totalPossible += Math.max(...scale.grades.map(g => g.value));
-                }
-            });
-        });
 
         // Calculate percentage score
-        const percentageScore = Math.round((totalScore / totalPossible) * 100);
+        const scores = Object.values(req.body.evaluation).map(Number);
+        const totalScore = scores.reduce((sum, score) => sum + score, 0);
+        const percentageScore = (totalScore / (scores.length * 5)) * 100;
 
-        // Update user's metrics
+        // Get the user to update their metrics
         const user = await User.findById(evaluation.employee._id);
-        if (!user.metrics) {
-            user.metrics = {};
+        if (!user) {
+            return res.status(404).json({ message: 'Employee not found' });
         }
-        if (!user.metrics.evaluationScores) {
-            user.metrics.evaluationScores = [];
+
+        // Initialize metrics if they don't exist
+        if (!user.metrics) {
+            user.metrics = {
+                evaluationScores: []
+            };
         }
 
         // Add new evaluation score
@@ -810,24 +790,8 @@ export const completeManagerEvaluation = async (req, res) => {
             user.save()
         ]);
 
-        // Create notification for the employee
-        const notification = new Notification({
-            user: evaluation.employee._id,
-            store: evaluation.store._id,
-            type: 'evaluation',
-            priority: 'high',
-            title: 'Evaluation Completed',
-            message: `${evaluation.employee.name}'s evaluation has been completed by ${evaluation.evaluator.name}`,
-            relatedId: evaluation._id,
-            relatedModel: 'Evaluation',
-            employee: {
-                name: evaluation.employee.name,
-                position: evaluation.employee.position || 'Employee',
-                department: evaluation.employee.department || 'Uncategorized'
-            }
-        });
-
-        await notification.save();
+        // Create notification for employee
+        await createNotificationIfNeeded(evaluation, 'completed');
 
         // Send email to employee
         if (evaluation.employee.email) {

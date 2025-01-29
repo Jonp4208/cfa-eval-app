@@ -28,8 +28,10 @@ import DisciplinaryPage from '@/pages/Disciplinary';
 import NewIncident from '@/pages/Disciplinary/NewIncident';
 import IncidentDetail from '@/pages/Disciplinary/[id]';
 import TeamScores from '@/pages/Analytics/TeamScores';
-//import Goals from '@/pages/Goals';
-//import NewGoal from '@/pages/Goals/NewGoal';
+import Kitchen from '@/pages/Kitchen';
+import FoodSafety from '@/pages/Kitchen/FoodSafety';
+import CompleteChecklist from '@/pages/Kitchen/FoodSafety/CompleteChecklist';
+import History from '@/pages/Kitchen/FoodSafety/History';
 import FuturePage from '@/pages/FuturePage';
 import AssignManagers from '../pages/users/AssignManagers';
 
@@ -89,7 +91,13 @@ export default function AppRoutes() {
       <Route path="/evaluations/:id" element={<PrivateRoute><ViewEvaluation /></PrivateRoute>} />
       
       <Route path="/goals" element={<PrivateRoute><FuturePage /></PrivateRoute>} />
-      <Route path="/goals/new" element={<PrivateRoute><FuturePage /></PrivateRoute>} />
+      
+      <Route path="/kitchen" element={<PrivateRoute><Kitchen /></PrivateRoute>}>
+        <Route index element={<Navigate to="/kitchen/food-safety" replace />} />
+        <Route path="food-safety" element={<FoodSafety />} />
+        <Route path="food-safety/complete/:id" element={<CompleteChecklist />} />
+        <Route path="food-safety/history/:id" element={<History />} />
+      </Route>
       
       <Route path="/templates" element={<PrivateRoute><Templates /></PrivateRoute>} />
       <Route path="/templates/new" element={<PrivateRoute><TemplateBuilder /></PrivateRoute>} />

@@ -20,7 +20,10 @@ export const auth = async (req, res, next) => {
       .populate({
         path: 'store',
         select: '_id storeNumber name location'
-      });
+      })
+      .populate('manager', '_id name position')
+      .populate('evaluator', '_id name position')
+      .select('+position +role +isAdmin +departments +name +email +status');
       
     if (!user) {
       console.log('Auth middleware - user not found for id:', decoded.userId);
@@ -34,6 +37,8 @@ export const auth = async (req, res, next) => {
       role: user.role,
       position: user.position,
       departments: user.departments,
+      manager: user.manager,
+      evaluator: user.evaluator,
       positionType: typeof user.position,
       positionExists: 'position' in user
     });

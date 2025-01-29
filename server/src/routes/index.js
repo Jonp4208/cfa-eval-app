@@ -11,6 +11,7 @@ import goalsRoutes from './goals.js';
 import analyticsRoutes from './analytics.js';
 import gradingScalesRouter from './gradingScales.js';
 import notificationsRouter from './notifications.js';
+import kitchenRoutes from './kitchen.js';
 
 const router = express.Router();
 
@@ -27,5 +28,6 @@ router.use('/goals', goalsRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/grading-scales', gradingScalesRouter);
 router.use('/notifications', notificationsRouter);
+router.use('/kitchen', kitchenRoutes);
 
 export default router; 

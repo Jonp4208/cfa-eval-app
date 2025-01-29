@@ -1,17 +1,19 @@
 import Notification from '../models/Notification.js';
+import Evaluation from '../models/Evaluation.js';
 
 // Get all notifications for the authenticated user
 export const getNotifications = async (req, res) => {
   try {
     console.log('Fetching notifications for user:', req.user._id);
     
+    // Get all notifications for the user
     const notifications = await Notification.find({
       user: req.user._id,
     })
     .sort({ createdAt: -1 })
     .populate({
       path: 'evaluationId',
-      select: 'status scheduledDate employee evaluator',
+      select: 'status scheduledDate employee evaluator notificationStatus acknowledgement',
       populate: [
         { path: 'employee', select: 'name position department' },
         { path: 'evaluator', select: 'name' }
@@ -19,10 +21,45 @@ export const getNotifications = async (req, res) => {
     })
     .lean();
 
+    // Filter out notifications based on evaluation status
+    const filteredNotifications = notifications.filter(notification => {
+      // If it's not an evaluation notification or has no evaluation, keep it
+      if (!notification.type === 'evaluation' || !notification.evaluationId) {
+        return true;
+      }
+
+      const evaluation = notification.evaluationId;
+      const isEmployee = notification.user.toString() === evaluation.employee._id.toString();
+      const isEvaluator = notification.user.toString() === evaluation.evaluator._id.toString();
+
+      // Check notification status based on user role and evaluation state
+      if (isEmployee) {
+        if (evaluation.status === 'pending_self_evaluation' && evaluation.notificationStatus.employee.scheduled) {
+          return false;
+        }
+        if (evaluation.status === 'completed' && evaluation.notificationStatus.employee.completed) {
+          return false;
+        }
+        if (evaluation.acknowledgement?.acknowledged && evaluation.notificationStatus.employee.acknowledged) {
+          return false;
+        }
+      } else if (isEvaluator) {
+        if (evaluation.status === 'pending_manager_review' && evaluation.notificationStatus.evaluator.selfEvaluationCompleted) {
+          return false;
+        }
+        if (evaluation.status === 'in_review_session' && evaluation.notificationStatus.evaluator.reviewSessionScheduled) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+    
     console.log('Found notifications:', notifications.length);
+    console.log('Filtered notifications:', filteredNotifications.length);
     
     // Transform notifications to include employee details
-    const transformedNotifications = notifications.map(notification => {
+    const transformedNotifications = filteredNotifications.map(notification => {
       if (notification.evaluationId) {
         const evaluation = notification.evaluationId;
         return {
@@ -103,11 +140,11 @@ export const deleteNotification = async (req, res) => {
       userId: req.user._id
     });
 
-    // First find and mark as read
+    // First find the notification
     const notification = await Notification.findOne({
       _id: req.params.notificationId,
       user: req.user._id
-    });
+    }).populate('evaluationId');
 
     if (!notification) {
       console.log('Notification not found:', {
@@ -117,15 +154,31 @@ export const deleteNotification = async (req, res) => {
       return res.status(404).json({ message: 'Notification not found' });
     }
 
-    // Mark as read first
-    notification.read = true;
-    notification.readAt = new Date();
-    await notification.save();
+    // If this is an evaluation notification, update the evaluation's notification status
+    if (notification.type === 'evaluation' && notification.evaluationId) {
+      const evaluation = notification.evaluationId;
+      
+      if (evaluation) {
+        // Update notification status based on who is dismissing it and evaluation state
+        if (notification.user.toString() === evaluation.employee.toString()) {
+          // Employee dismissing notification
+          evaluation.notificationStatus.employee.scheduled = true;
+          evaluation.notificationStatus.employee.completed = evaluation.status === 'completed';
+          evaluation.notificationStatus.employee.acknowledged = evaluation.acknowledgement?.acknowledged || false;
+        } else if (notification.user.toString() === evaluation.evaluator.toString()) {
+          // Evaluator dismissing notification
+          evaluation.notificationStatus.evaluator.selfEvaluationCompleted = evaluation.status === 'pending_manager_review';
+          evaluation.notificationStatus.evaluator.reviewSessionScheduled = evaluation.status === 'in_review_session';
+        }
+        
+        await evaluation.save();
+      }
+    }
 
-    // Then delete
+    // Delete the notification
     await Notification.findByIdAndDelete(notification._id);
 
-    console.log('Notification marked as read and deleted successfully:', {
+    console.log('Notification deleted successfully:', {
       notificationId: notification._id,
       userId: notification.user
     });

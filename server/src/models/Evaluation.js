@@ -56,6 +56,17 @@ const evaluationSchema = new mongoose.Schema({
     },
     date: Date
   },
+  notificationStatus: {
+    employee: {
+      scheduled: { type: Boolean, default: false },
+      completed: { type: Boolean, default: false },
+      acknowledged: { type: Boolean, default: false }
+    },
+    evaluator: {
+      selfEvaluationCompleted: { type: Boolean, default: false },
+      reviewSessionScheduled: { type: Boolean, default: false }
+    }
+  },
   notificationViewed: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,

@@ -19,6 +19,7 @@ import analyticsRoutes from './routes/analytics.js';
 import gradingScalesRouter from './routes/gradingScales.js';
 import notificationsRouter from './routes/notifications.js';
 import tasksRouter from './routes/tasks.js';
+import kitchenRouter from './routes/kitchen.js';
 
 // Services
 import { initCronJobs } from './services/cronService.js';
@@ -74,6 +75,7 @@ apiRouter.use('/analytics', analyticsRoutes);
 apiRouter.use('/grading-scales', gradingScalesRouter);
 apiRouter.use('/notifications', notificationsRouter);
 apiRouter.use('/tasks', tasksRouter);
+apiRouter.use('/kitchen', kitchenRouter);
 
 // Test Email Configuration
 apiRouter.post('/test-email', async (req, res) => {

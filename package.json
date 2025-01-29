@@ -11,6 +11,17 @@
     "build": "cd client && npm run build"
   },
   "dependencies": {
-    "mongodb": "^6.3.0"
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.4.1",
+    "@mui/lab": "^6.0.0-beta.24",
+    "@mui/material": "^6.4.1",
+    "@radix-ui/react-radio-group": "^1.2.2",
+    "date-fns": "^4.1.0",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "mongodb": "^6.3.0",
+    "notistack": "^3.0.2",
+    "recharts": "^2.15.0"
   }
-} 
+}

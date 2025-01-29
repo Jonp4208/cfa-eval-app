@@ -20,7 +20,8 @@ import {
   Target,
   BarChart,
   User2,
-  CheckSquare
+  CheckSquare,
+  ChefHat
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
@@ -145,6 +146,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       label: 'Tasks',
       href: '/tasks',
       show: true,
+      badge: null
+    },
+    {
+      icon: ChefHat,
+      label: 'Kitchen',
+      href: '/kitchen',
+      show: user?.departments?.includes('Kitchen') || ['Director', 'Leader'].includes(user?.position || ''),
       badge: null
     },
     {
