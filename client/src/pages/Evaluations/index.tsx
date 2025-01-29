@@ -277,8 +277,8 @@ export default function Evaluations() {
 
   const getStatusDisplay = (evaluation: Evaluation) => {
     const status = evaluation.status.replace(/_/g, ' ');
-    const isEmployee = user?._id === evaluation.employee._id;
-    const isManager = user?._id === evaluation.evaluator._id;
+    const isEmployee = user?._id === evaluation.employee?._id;
+    const isManager = user?._id === evaluation.evaluator?._id;
 
     switch (evaluation.status) {
       case 'pending_self_evaluation':
@@ -561,8 +561,8 @@ export default function Evaluations() {
                             }` })}
                           </div>
                           <div>
-                            <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
-                            <p className="text-sm text-[#27251F]/60 mt-1">{evaluation.template.name}</p>
+                            <h3 className="font-medium text-[#27251F]">{evaluation.employee?.name || 'Unknown Employee'}</h3>
+                            <p className="text-sm text-[#27251F]/60 mt-1">{evaluation.template?.name || 'No Template'}</p>
                             <div className="flex items-center gap-2 mt-2">
                               <Calendar className="w-4 h-4 text-[#27251F]/40" />
                               <span className={`text-sm ${dueStatus.class}`}>

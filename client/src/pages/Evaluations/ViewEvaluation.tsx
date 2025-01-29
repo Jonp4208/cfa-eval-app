@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Evaluation {
   _id: string;
@@ -327,8 +328,9 @@ export default function ViewEvaluation() {
   const completeManagerEvaluation = useMutation({
     mutationFn: async () => {
       const response = await api.post(`/api/evaluations/${id}/complete`, {
-        managerEvaluation: answers,
-        overallComments
+        evaluation: answers,
+        overallComments,
+        developmentPlan: ''  // Adding this as it's expected by the server
       });
       return response.data;
     },
@@ -510,6 +512,32 @@ export default function ViewEvaluation() {
         notification.style.transform = 'translateY(-20px)';
         setTimeout(() => notification.remove(), 300);
       }, 3000);
+    }
+  });
+
+  // Complete review mutation
+  const completeReview = useMutation({
+    mutationFn: async () => {
+      await api.post(`/api/evaluations/${id}/complete`, {
+        evaluation: answers,
+        overallComments,
+        developmentPlan: ''  // Adding this as it's expected by the server
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Review has been completed successfully.",
+      });
+      navigate('/evaluations');
+    },
+    onError: (error) => {
+      console.error('Complete review error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete review. Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -1190,8 +1218,14 @@ export default function ViewEvaluation() {
                         <Button
                           type="button"
                           onClick={() => {
-                            if (validateAnswers().length === 0) {
+                            if (validateAnswers(true).length === 0) {
                               setShowConfirmSubmit(true);
+                            } else {
+                              toast({
+                                title: "Validation Error",
+                                description: "Please complete all required questions before submitting.",
+                                variant: "destructive",
+                              });
                             }
                           }}
                           className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
@@ -1199,6 +1233,37 @@ export default function ViewEvaluation() {
                           Complete Review
                         </Button>
                       </div>
+
+                      {/* Confirmation Dialog */}
+                      {showConfirmSubmit && (
+                        <Dialog open={showConfirmSubmit} onOpenChange={setShowConfirmSubmit}>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Complete Review</DialogTitle>
+                              <DialogDescription>
+                                Are you sure you want to complete this review? This action cannot be undone.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button
+                                variant="outline"
+                                onClick={() => setShowConfirmSubmit(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  completeReview.mutate();
+                                  setShowConfirmSubmit(false);
+                                }}
+                                className="bg-[#E51636] text-white hover:bg-[#E51636]/90"
+                              >
+                                Complete
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      )}
                     </div>
                   </>
                 )}
