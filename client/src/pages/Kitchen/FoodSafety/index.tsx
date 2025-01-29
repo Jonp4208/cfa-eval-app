@@ -300,37 +300,37 @@ const FoodSafety: React.FC = () => {
       </div>
 
       {/* View Selection Tabs */}
-      <div className="flex justify-center">
-        <div className="bg-white rounded-full p-1 flex gap-1">
+      <div className="flex justify-center px-4">
+        <div className="bg-white rounded-full p-1 flex flex-nowrap overflow-x-auto w-full max-w-md gap-1 no-scrollbar">
           <Button 
             variant="ghost"
             className={cn(
-              "rounded-full px-4 py-2 text-sm",
+              "rounded-full px-3 py-2 text-sm whitespace-nowrap flex-1 min-w-0",
               view === 'active' && "bg-[#E51636] text-white hover:bg-[#E51636]/90"
             )}
             onClick={() => setView('active')}
           >
-            Active Checklists
+            Active
           </Button>
           <Button 
             variant="ghost"
             className={cn(
-              "rounded-full px-4 py-2 text-sm",
+              "rounded-full px-3 py-2 text-sm whitespace-nowrap flex-1 min-w-0",
               view === 'upcoming' && "bg-[#E51636] text-white hover:bg-[#E51636]/90"
             )}
             onClick={() => setView('upcoming')}
           >
-            Upcoming Checklists
+            Upcoming
           </Button>
           <Button 
             variant="ghost"
             className={cn(
-              "rounded-full px-4 py-2 text-sm",
+              "rounded-full px-3 py-2 text-sm whitespace-nowrap flex-1 min-w-0",
               view === 'completed' && "bg-[#E51636] text-white hover:bg-[#E51636]/90"
             )}
             onClick={() => setView('completed')}
           >
-            Completed Checklists
+            Completed
           </Button>
         </div>
       </div>
@@ -455,80 +455,85 @@ const FoodSafety: React.FC = () => {
             checklists.map((checklist) => (
               <Card 
                 key={checklist._id}
-                className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full"
+                className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 w-full"
                 onClick={() => handleStartChecklist(checklist._id!)}
               >
-                <CardContent className="p-8">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold text-[#27251F]">{checklist.name}</h3>
-                        <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium">
-                          {checklist.frequency.charAt(0).toUpperCase() + checklist.frequency.slice(1)}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-sm text-[#27251F]/60">
-                        {checklist.department}
-                        {checklist.frequency === 'weekly' && checklist.weeklyDay && (
-                          <> • Every {checklist.weeklyDay.charAt(0).toUpperCase() + checklist.weeklyDay.slice(1)}</>
-                        )}
-                        {checklist.frequency === 'monthly' && checklist.monthlyWeek && checklist.monthlyDay && (
-                          <> • {checklist.monthlyWeek}th {checklist.monthlyDay.charAt(0).toUpperCase() + checklist.monthlyDay.slice(1)} of each month</>
-                        )}
-                      </div>
-                      <div className="mt-2 text-sm text-[#27251F]/60">
-                        {checklist.items.length} items • Passing Score: {checklist.passingScore}%
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                        <Button 
-                          className="bg-[#E51636] text-white hover:bg-[#DD0031]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartChecklist(checklist._id!);
-                          }}
-                        >
-                          <PlayCircle className="mr-2 h-4 w-4" /> Complete
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/kitchen/food-safety/history/${checklist._id}`);
-                          }}
-                        >
-                          <History className="mr-2 h-4 w-4" /> History
-                        </Button>
-                      </div>
+                <CardContent className="p-6">
+                  {/* Title and Actions Row */}
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-xl font-bold text-[#27251F]">{checklist.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDialog(checklist);
+                        }}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(checklist._id!);
+                        }}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="flex flex-col items-end gap-4">
-                      <div className="flex items-center gap-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDialog(checklist);
-                          }}
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(checklist._id!);
-                          }}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Clock className="h-4 w-4 text-blue-600" />
-                      </div>
+                  </div>
+
+                  {/* Badges and Info */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium">
+                        {checklist.frequency.charAt(0).toUpperCase() + checklist.frequency.slice(1)}
+                      </span>
+                      <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">
+                        {checklist.items.length} items
+                      </span>
+                      <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">
+                        Passing: {checklist.passingScore}%
+                      </span>
                     </div>
+                    {(checklist.frequency === 'weekly' && checklist.weeklyDay) && (
+                      <p className="text-sm text-[#27251F]/60">
+                        Every {checklist.weeklyDay.charAt(0).toUpperCase() + checklist.weeklyDay.slice(1)}
+                      </p>
+                    )}
+                    {(checklist.frequency === 'monthly' && checklist.monthlyWeek && checklist.monthlyDay) && (
+                      <p className="text-sm text-[#27251F]/60">
+                        {checklist.monthlyWeek}th {checklist.monthlyDay.charAt(0).toUpperCase() + checklist.monthlyDay.slice(1)} of each month
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-100">
+                    <Button 
+                      className="bg-[#E51636] text-white hover:bg-[#DD0031] w-full h-11"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartChecklist(checklist._id!);
+                      }}
+                    >
+                      <PlayCircle className="mr-2 h-5 w-5" /> Complete Checklist
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="w-full h-11 border-gray-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/kitchen/food-safety/history/${checklist._id}`);
+                      }}
+                    >
+                      <History className="mr-2 h-5 w-5" /> View History
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
