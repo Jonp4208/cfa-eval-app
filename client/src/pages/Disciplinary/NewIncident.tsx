@@ -29,6 +29,7 @@ export default function NewIncidentForm() {
     actionTaken: '',
     followUpDate: '',
     followUpActions: '',
+    fallOffDate: '',
     previousIncidents: false,
     documentationAttached: false
   });
@@ -289,6 +290,18 @@ export default function NewIncidentForm() {
                       value={formData.followUpActions || ''}
                       onChange={(e) => setFormData({...formData, followUpActions: e.target.value})}
                       placeholder="Describe any follow-up actions needed..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-[#27251F]/60">
+                      Fall-off Date <span className="text-[#27251F]/40">(When this incident should be removed from record)</span>
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                      value={formData.fallOffDate || ''}
+                      onChange={(e) => setFormData({...formData, fallOffDate: e.target.value})}
                     />
                   </div>
 

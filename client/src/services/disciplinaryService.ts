@@ -18,6 +18,7 @@ export interface DisciplinaryIncident {
   requiresFollowUp: boolean;
   followUpDate?: string;
   followUpActions?: string;
+  fallOffDate?: string;
   acknowledgment?: {
     acknowledged: boolean;
     date: string;
@@ -68,6 +69,7 @@ export interface CreateIncidentData {
   actionTaken: string;
   followUpDate?: string;
   followUpActions?: string;
+  fallOffDate?: string;
   previousIncidents: boolean;
   documentationAttached: boolean;
 }

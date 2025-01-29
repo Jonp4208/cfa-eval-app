@@ -82,6 +82,15 @@ export default function DisciplinaryPage() {
 
   const getFilteredIncidents = () => {
     let filtered = incidents;
+    
+    // Filter out incidents that have passed their fall-off date
+    filtered = filtered.filter(incident => {
+      if (!incident.fallOffDate) return true; // Keep incidents with no fall-off date
+      const fallOffDate = new Date(incident.fallOffDate);
+      const today = new Date();
+      return fallOffDate >= today;
+    });
+
     console.log('Initial incidents for filtering:', filtered.map(i => ({ 
       id: i._id, 
       status: i.status,
@@ -368,6 +377,12 @@ export default function DisciplinaryPage() {
                     <span>Manager: {incident.supervisor.name}</span>
                     <span className="hidden sm:inline">•</span>
                     <span>Date: {new Date(incident.date).toLocaleDateString()}</span>
+                    {incident.fallOffDate && (
+                      <>
+                        <span className="hidden sm:inline">•</span>
+                        <span>Falls off: {new Date(incident.fallOffDate).toLocaleDateString()}</span>
+                      </>
+                    )}
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
                     {incident.employee?._id && user?._id === incident.employee._id && 
