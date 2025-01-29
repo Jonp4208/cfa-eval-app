@@ -116,22 +116,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Add useEffect for click outside handler
+  // Enhanced click outside handler with proper event propagation
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      // Only handle clicks if the menu is open
+      if (!isMobileMenuOpen) return;
+
+      // Check if click is outside both the menu and the toggle button
+      const menuButton = document.querySelector('[data-mobile-menu-toggle]');
+      const isClickOnButton = menuButton?.contains(event.target as Node);
+      const isClickInMenu = menuRef.current?.contains(event.target as Node);
+
+      if (!isClickInMenu && !isClickOnButton) {
         setIsMobileMenuOpen(false);
       }
     }
 
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
+    // Add capture phase listener to handle events before they reach other handlers
+    document.addEventListener('mousedown', handleClickOutside, true);
+    
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [isMobileMenuOpen]);
+
+  // Toggle menu with proper event handling
+  const handleMenuToggle = (event: React.MouseEvent) => {
+    // Prevent event from bubbling to document
+    event.stopPropagation();
+    setIsMobileMenuOpen(prev => !prev);
+  };
 
   const menuItems = [
     {
@@ -325,16 +339,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Menu Button */}
           <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent the click from triggering the outside click handler
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-            }}
-            className="relative p-2 hover:bg-gray-50 rounded-xl touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+            data-mobile-menu-toggle
+            onClick={handleMenuToggle}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 min-h-[44px] min-w-[44px] touch-manipulation"
           >
-            <MenuIcon className="w-6 h-6 text-gray-600" />
-            {notificationCount > 0 && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#E51636] rounded-full"></span>
-            )}
+            <MenuIcon className="w-6 h-6" />
           </button>
         </div>
       </div>
@@ -517,10 +526,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 bg-gray-800 bg-opacity-50 z-40">
-          <div ref={menuRef} className="fixed top-0 right-0 bottom-0 w-64 bg-white shadow-lg">
+        <>
+          {/* Backdrop */}
+          <div 
+            className="md:hidden fixed inset-0 bg-gray-800 bg-opacity-50 z-40 transition-opacity"
+            aria-hidden="true"
+          />
+          {/* Menu Panel */}
+          <div 
+            ref={menuRef}
+            className="md:hidden fixed top-0 right-0 bottom-0 w-64 bg-white shadow-lg z-50 transform transition-transform duration-200 ease-in-out"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile menu"
+          >
             <div className="p-4 border-b flex justify-between items-center">
               <span className="font-bold">Menu</span>
               <button 
@@ -686,7 +707,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Main Content */}
