@@ -51,6 +51,33 @@ const CompleteChecklist: React.FC = () => {
   };
 
   const handleValueChange = (itemId: string, value: string | number) => {
+    // For temperature inputs, allow empty string or valid numbers only
+    if (checklist?.items.find(item => item._id === itemId)?.type === 'temperature') {
+      if (value === '') {
+        setCompletions(prev => ({
+          ...prev,
+          [itemId]: {
+            ...prev[itemId],
+            value: ''
+          }
+        }));
+        return;
+      }
+      
+      const numValue = parseFloat(value.toString());
+      if (!isNaN(numValue)) {
+        setCompletions(prev => ({
+          ...prev,
+          [itemId]: {
+            ...prev[itemId],
+            value: numValue
+          }
+        }));
+      }
+      return;
+    }
+
+    // For other types, handle normally
     setCompletions(prev => ({
       ...prev,
       [itemId]: {
@@ -209,92 +236,94 @@ const CompleteChecklist: React.FC = () => {
   if (!checklist) return null;
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate('/kitchen/food-safety')}
           className="hover:bg-gray-100"
         >
-          <ArrowLeft className="h-5 w-5 text-gray-600" />
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
         </Button>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#27251F]">{checklist.name}</h1>
-          <p className="text-[#27251F]/60 mt-1">{checklist.description}</p>
+          <h1 className="text-xl sm:text-3xl font-bold text-[#27251F]">{checklist.name}</h1>
+          <p className="text-sm sm:text-base text-[#27251F]/60 mt-1">{checklist.description}</p>
         </div>
       </div>
 
       <Card className="bg-white rounded-[20px]">
-        <CardContent className="p-6 sm:p-8">
+        <CardContent className="p-4 sm:p-8">
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs sm:text-sm">
               {checklist.frequency.charAt(0).toUpperCase() + checklist.frequency.slice(1)}
             </Badge>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs sm:text-sm">
               Passing Score: {checklist.passingScore}%
             </Badge>
           </div>
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {checklist.items.map((item) => (
           <Card key={item._id} className="bg-white rounded-[20px] hover:shadow-sm transition-shadow">
-            <CardContent className="p-6 sm:p-8">
-              <div className="flex items-start justify-between mb-6">
+            <CardContent className="p-4 sm:p-8">
+              <div className="flex items-start justify-between mb-4 sm:mb-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold text-[#27251F]">{item.name}</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-[#27251F]">{item.name}</h3>
                     {item.isCritical && (
-                      <Badge variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-200">
+                      <Badge variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-200 text-xs sm:text-sm">
                         Critical
                       </Badge>
                     )}
                   </div>
                   {item.description && (
-                    <p className="text-[#27251F]/60 text-sm">{item.description}</p>
+                    <p className="text-xs sm:text-sm text-[#27251F]/60">{item.description}</p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {item.type === 'yes_no' && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-[#27251F]">Response Required</Label>
+                  <div className="space-y-2 sm:space-y-3">
+                    <Label className="text-xs sm:text-sm font-medium text-[#27251F]">Response Required</Label>
                     <RadioGroup
                       value={completions[item._id!]?.value}
                       onValueChange={(value: string) => handleValueChange(item._id!, value)}
-                      className="flex gap-6"
+                      className="flex gap-4 sm:gap-6"
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="yes" id={`${item._id}-yes`} className="border-[#27251F]/20" />
-                        <Label htmlFor={`${item._id}-yes`} className="text-[#27251F]">Yes</Label>
+                        <Label htmlFor={`${item._id}-yes`} className="text-sm text-[#27251F]">Yes</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="no" id={`${item._id}-no`} className="border-[#27251F]/20" />
-                        <Label htmlFor={`${item._id}-no`} className="text-[#27251F]">No</Label>
+                        <Label htmlFor={`${item._id}-no`} className="text-sm text-[#27251F]">No</Label>
                       </div>
                     </RadioGroup>
                   </div>
                 )}
 
                 {item.type === 'temperature' && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-[#27251F]">Temperature Reading</Label>
-                    <div className="flex items-center gap-3">
+                  <div className="space-y-2 sm:space-y-3">
+                    <Label className="text-xs sm:text-sm font-medium text-[#27251F]">Temperature Reading</Label>
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <Input
                         type="number"
                         value={completions[item._id!]?.value}
                         onChange={(e) => handleValueChange(item._id!, e.target.value)}
-                        className="w-32 border-[#27251F]/20"
+                        className="w-24 sm:w-32 border-[#27251F]/20 text-sm"
                         placeholder="Enter temp"
+                        min={item.validation?.minTemp}
+                        max={item.validation?.maxTemp}
                       />
-                      <span className="text-[#27251F]">°F</span>
+                      <span className="text-sm text-[#27251F]">°F</span>
                     </div>
                     {item.validation?.minTemp !== undefined && item.validation?.maxTemp !== undefined && (
-                      <div className="flex items-center gap-2 text-sm text-[#27251F]/60">
-                        <AlertCircle className="h-4 w-4" />
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-[#27251F]/60">
+                        <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
                         <span>Required range: {item.validation.minTemp}°F - {item.validation.maxTemp}°F</span>
                       </div>
                     )}
@@ -302,24 +331,24 @@ const CompleteChecklist: React.FC = () => {
                 )}
 
                 {item.type === 'text' && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-[#27251F]">Response Required</Label>
+                  <div className="space-y-2 sm:space-y-3">
+                    <Label className="text-xs sm:text-sm font-medium text-[#27251F]">Response Required</Label>
                     <Textarea
                       value={completions[item._id!]?.value}
                       onChange={(e) => handleValueChange(item._id!, e.target.value)}
-                      className="border-[#27251F]/20"
+                      className="border-[#27251F]/20 text-sm"
                       placeholder="Enter your response"
                       rows={2}
                     />
                   </div>
                 )}
 
-                <div className="space-y-3 pt-4 border-t border-[#27251F]/10">
-                  <Label className="text-sm font-medium text-[#27251F]">Notes (Optional)</Label>
+                <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t border-[#27251F]/10">
+                  <Label className="text-xs sm:text-sm font-medium text-[#27251F]">Notes (Optional)</Label>
                   <Textarea
                     value={completions[item._id!]?.notes}
                     onChange={(e) => handleNotesChange(item._id!, e.target.value)}
-                    className="border-[#27251F]/20"
+                    className="border-[#27251F]/20 text-sm"
                     placeholder="Add any additional notes"
                     rows={2}
                   />
@@ -331,32 +360,32 @@ const CompleteChecklist: React.FC = () => {
       </div>
 
       <Card className="bg-white rounded-[20px]">
-        <CardContent className="p-6 sm:p-8 space-y-3">
-          <Label className="text-sm font-medium text-[#27251F]">Overall Notes (Optional)</Label>
+        <CardContent className="p-4 sm:p-8 space-y-2 sm:space-y-3">
+          <Label className="text-xs sm:text-sm font-medium text-[#27251F]">Overall Notes (Optional)</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="border-[#27251F]/20"
+            className="border-[#27251F]/20 text-sm"
             placeholder="Add any overall notes about the checklist completion"
-            rows={4}
+            rows={3}
           />
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-4 pt-4">
+      <div className="flex justify-end gap-3 sm:gap-4 pt-4">
         <Button
           variant="outline"
           onClick={() => navigate('/kitchen/food-safety')}
-          className="border-[#27251F]/20 hover:bg-gray-50"
+          className="border-[#27251F]/20 hover:bg-gray-50 text-sm h-10 px-4 sm:h-11 sm:px-6"
         >
           Cancel
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={saving}
-          className="bg-[#E51636] text-white hover:bg-[#DD0031] min-w-[100px]"
+          className="bg-[#E51636] text-white hover:bg-[#DD0031] min-w-[90px] sm:min-w-[100px] text-sm h-10 px-4 sm:h-11 sm:px-6"
         >
-          <Save className="mr-2 h-4 w-4" />
+          <Save className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
           {saving ? 'Saving...' : 'Submit'}
         </Button>
       </div>
