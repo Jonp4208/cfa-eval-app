@@ -22,38 +22,35 @@ export const getAllIncidents = handleAsync(async (req, res) => {
     }
   );
 
-  // Build query based on user role and store
-  const { store, role, isAdmin } = req.user;
+  // Build query based on user position and store
+  const { store, position, _id } = req.user;
   let query = { store };
   
-  // If user is not an admin/manager/evaluator, only show their own incidents
-  const isLeader = isAdmin || ['manager', 'evaluator'].includes(role);
-  if (!isLeader) {
-    query.employee = req.user._id;
+  // Check if user has restricted access (Team Member or Trainer)
+  const hasRestrictedAccess = ['Team Member', 'Trainer'].includes(position);
+
+  // If user has restricted access, only show their own incidents
+  if (hasRestrictedAccess) {
+    query.employee = _id;
   }
   
   console.log('Disciplinary getAllIncidents - User details:', {
-    id: req.user._id,
+    id: _id,
     name: req.user.name,
-    role: role,
-    isAdmin: isAdmin,
-    isLeader: isLeader,
-    store: store
+    position,
+    hasRestrictedAccess,
+    store
   });
   
   console.log('Disciplinary getAllIncidents - Query conditions:', JSON.stringify(query, null, 2));
 
-  // First get total count of all incidents in store
-  const totalCount = await Disciplinary.countDocuments({ store });
-  console.log('Total incidents in store:', totalCount);
-
-  // Then get incidents based on the query
+  // Get incidents based on the query
   const incidents = await Disciplinary.find(query)
     .populate('employee', 'name position department')
     .populate('supervisor', 'name')
     .populate('createdBy', 'name')
     .sort('-createdAt');
-  
+
   console.log('Disciplinary getAllIncidents - Found incidents:', {
     count: incidents.length,
     incidents: incidents.map(i => ({
@@ -70,6 +67,8 @@ export const getAllIncidents = handleAsync(async (req, res) => {
 
 // Get a single incident by ID
 export const getIncidentById = handleAsync(async (req, res) => {
+  const { position, _id } = req.user;
+  
   const incident = await Disciplinary.findById(req.params.id)
     .populate('employee', 'name position department startDate')
     .populate('supervisor', 'name')
@@ -78,6 +77,14 @@ export const getIncidentById = handleAsync(async (req, res) => {
   
   if (!incident) {
     return res.status(404).json({ message: 'Incident not found' });
+  }
+
+  // Check if user has restricted access (Team Member or Trainer)
+  const hasRestrictedAccess = ['Team Member', 'Trainer'].includes(position);
+
+  // If user has restricted access, verify they own the incident
+  if (hasRestrictedAccess && incident.employee._id.toString() !== _id.toString()) {
+    return res.status(403).json({ message: 'Not authorized to view this incident' });
   }
   
   res.json(incident);
@@ -476,8 +483,19 @@ export const deleteIncident = handleAsync(async (req, res) => {
 
 // Get all disciplinary incidents for a specific employee
 export const getEmployeeIncidents = handleAsync(async (req, res) => {
-  console.log('Getting incidents for employee:', req.params.employeeId);
-  const incidents = await Disciplinary.find({ employee: req.params.employeeId })
+  const { position, _id } = req.user;
+  const employeeId = req.params.employeeId;
+
+  // Check if user has restricted access (Team Member or Trainer)
+  const hasRestrictedAccess = ['Team Member', 'Trainer'].includes(position);
+
+  // If user has restricted access, they can only view their own incidents
+  if (hasRestrictedAccess && employeeId !== _id.toString()) {
+    return res.status(403).json({ message: 'Not authorized to view these incidents' });
+  }
+
+  console.log('Getting incidents for employee:', employeeId);
+  const incidents = await Disciplinary.find({ employee: employeeId })
     .populate('employee', 'name position department')
     .populate('supervisor', 'name')
     .populate('createdBy', 'name')
