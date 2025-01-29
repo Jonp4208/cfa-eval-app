@@ -24,6 +24,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { handleError, handleValidationError } from '@/lib/utils/error-handler';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface Employee {
   _id: string;
@@ -73,6 +75,7 @@ export default function NewEvaluation() {
   const [selectedTag, setSelectedTag] = useState('All');
   const [selectedCountByDepartment, setSelectedCountByDepartment] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
+  const [showAllEmployees, setShowAllEmployees] = useState(true);
 
   // Predefined departments that match the server's enum values
   const DEPARTMENTS = ['all', 'FOH', 'BOH', 'Leadership'];
@@ -138,7 +141,8 @@ export default function NewEvaluation() {
       currentUserId: user?._id,
       totalEmployees: employees.length,
       searchQuery,
-      selectedDepartment
+      selectedDepartment,
+      showAllEmployees
     });
 
     const filtered = employees.filter((emp: Employee) => {
@@ -148,16 +152,25 @@ export default function NewEvaluation() {
         return false;
       }
       
-      // Check if current user is the employee's manager
+      // Check if current user is the employee's manager or is a director
+      const isDirector = user?.position === 'Director';
       const reportsToCurrentUser = typeof emp.manager === 'string'
         ? emp.manager === user?._id
         : emp.manager?._id === user?._id;
+
+      // For directors, check the toggle setting
+      const shouldInclude = isDirector 
+        ? (showAllEmployees || reportsToCurrentUser)
+        : reportsToCurrentUser;
 
       console.log(`Employee ${emp.name}:`, {
         id: emp._id,
         managerId: typeof emp.manager === 'string' ? emp.manager : emp.manager?._id,
         currentUserId: user?._id,
+        isDirector,
         reportsToCurrentUser,
+        showAllEmployees,
+        shouldInclude,
         department: emp.department,
         selectedDepartment,
         matchesDepartment: selectedDepartment === 'all' || emp.department === selectedDepartment,
@@ -172,7 +185,7 @@ export default function NewEvaluation() {
                           emp.position.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDepartment = selectedDepartment === 'all' || emp.department === selectedDepartment;
 
-      return reportsToCurrentUser && matchesSearch && matchesDepartment;
+      return shouldInclude && matchesSearch && matchesDepartment;
     });
 
     console.log('Filtered results:', {
@@ -185,7 +198,7 @@ export default function NewEvaluation() {
     });
 
     return filtered;
-  }, [employees, searchQuery, selectedDepartment, user?._id]);
+  }, [employees, searchQuery, selectedDepartment, user?._id, showAllEmployees]);
 
   // Group employees by department
   const groupedEmployees = React.useMemo(() => {
@@ -230,11 +243,12 @@ export default function NewEvaluation() {
 
   const handleEmployeeToggle = (employee: Employee, event: React.MouseEvent) => {
     event.stopPropagation();
+    const isDirector = user?.position === 'Director';
     const reportsToCurrentUser = typeof employee.manager === 'string'
       ? employee.manager === user?._id
       : employee.manager?._id === user?._id;
     
-    if (!employee.pendingEvaluation && reportsToCurrentUser) {
+    if (!employee.pendingEvaluation && (isDirector || reportsToCurrentUser)) {
       setSelectedEmployees(prev => {
         const isSelected = prev.find(emp => emp._id === employee._id);
         if (isSelected) {
@@ -377,6 +391,18 @@ export default function NewEvaluation() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {user?.position === 'Director' && (
+                      <div className="flex items-center space-x-2 mt-4 pt-4 border-t">
+                        <Switch
+                          id="show-all"
+                          checked={showAllEmployees}
+                          onCheckedChange={setShowAllEmployees}
+                        />
+                        <Label htmlFor="show-all" className="text-sm text-gray-600">
+                          {showAllEmployees ? 'Showing All Employees' : 'Showing My Team Only'}
+                        </Label>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
