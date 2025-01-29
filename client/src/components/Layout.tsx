@@ -163,11 +163,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       badge: null,
       submenu: user?.position === 'Team Member' ? [
         {
-          icon: ClipboardList,
-          label: 'My Evaluations',
-          href: '/evaluations',
-          badge: pendingEvaluations > 0 ? pendingEvaluations.toString() : null,
-          color: pendingEvaluations > 0 ? 'text-red-600' : undefined
+          icon: User2,
+          label: 'My Profile',
+          href: `/users/${user?._id}`,
+          badge: null
+        },
+        {
+          icon: Target,
+          label: 'My Goals',
+          href: '/goals',
+          badge: null
         },
         {
           icon: AlertTriangle,
@@ -175,12 +180,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           href: '/disciplinary',
           badge: newDisciplinaryItems > 0 ? newDisciplinaryItems.toString() : null,
           color: newDisciplinaryItems > 0 ? 'text-red-600' : undefined
-        },
-        {
-          icon: ClipboardList,
-          label: 'My Training',
-          href: '/future',
-          badge: null
         }
       ] : [
         {
@@ -190,11 +189,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           badge: null
         },
         {
-          icon: ClipboardList,
-          label: 'Evaluations',
-          href: '/evaluations',
-          badge: pendingEvaluations > 0 ? pendingEvaluations.toString() : null,
-          color: pendingEvaluations > 0 ? 'text-red-600' : undefined
+          icon: Target,
+          label: 'Team Goals',
+          href: '/goals',
+          badge: null
         },
         {
           icon: AlertTriangle,
@@ -202,35 +200,50 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           href: '/disciplinary',
           badge: newDisciplinaryItems > 0 ? newDisciplinaryItems.toString() : null,
           color: newDisciplinaryItems > 0 ? 'text-red-600' : undefined
+        }
+      ]
+    },
+    {
+      icon: ClipboardList,
+      label: 'Development',
+      href: '/development',
+      show: true,
+      badge: null,
+      submenu: user?.position === 'Team Member' ? [
+        {
+          icon: ClipboardList,
+          label: 'My Evaluations',
+          href: '/evaluations',
+          badge: pendingEvaluations > 0 ? pendingEvaluations.toString() : null,
+          color: pendingEvaluations > 0 ? 'text-red-600' : undefined
+        },
+        {
+          icon: ClipboardList,
+          label: 'My Training',
+          href: '/future',
+          badge: null
+        }
+      ] : [
+        {
+          icon: ClipboardList,
+          label: 'Evaluations',
+          href: '/evaluations',
+          badge: pendingEvaluations > 0 ? pendingEvaluations.toString() : null,
+          color: pendingEvaluations > 0 ? 'text-red-600' : undefined
         },
         {
           icon: ClipboardList,
           label: 'Training',
           href: '/future',
           badge: null
+        },
+        {
+          icon: BarChart,
+          label: 'Analytics',
+          href: '/analytics',
+          badge: null
         }
       ]
-    },
-    {
-      icon: Target,
-      label: 'Goals',
-      href: '/goals',
-      show: true,
-      badge: null
-    },
-    {
-      icon: BarChart,
-      label: 'Analytics',
-      href: '/analytics',
-      show: user?.position !== 'Team Member',
-      badge: null
-    },
-    {
-      icon: TrendingUp,
-      label: 'Developmental',
-      href: '/future',
-      show: true,
-      badge: null
     },
     {
       icon: Settings,

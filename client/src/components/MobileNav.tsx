@@ -1,8 +1,13 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, TrendingUp, ClipboardList, Settings, BarChart, CheckSquare } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
+import {
+  Home,
+  ChefHat,
+  CheckSquare,
+  ClipboardList
+} from 'lucide-react';
 
 export function MobileNav() {
   const location = useLocation();
@@ -14,53 +19,54 @@ export function MobileNav() {
       icon: Home,
       label: 'Home',
       href: '/',
+      show: true
+    },
+    {
+      icon: ChefHat,
+      label: 'Kitchen',
+      href: '/kitchen',
+      show: user?.departments?.includes('Kitchen') || ['Director', 'Leader'].includes(user?.position || '')
     },
     {
       icon: CheckSquare,
       label: 'Tasks',
       href: '/tasks',
-    },
-    {
-      icon: Users,
-      label: user?.position === 'Team Member' ? 'ME' : 'Team',
-      href: user?.position === 'Team Member' ? `/users/${user?._id}` : '/users',
+      show: true
     },
     {
       icon: ClipboardList,
-      label: user?.position === 'Team Member' ? 'My Evaluations' : 'Evaluations',
+      label: user?.position === 'Team Member' ? 'My Evals' : 'Evals',
       href: '/evaluations',
-    },
-    ...(user?.position !== 'Team Member' ? [{
-      icon: BarChart,
-      label: 'Analytics',
-      href: '/analytics',
-    }] : [])
+      show: true
+    }
   ];
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50 safe-area-bottom">
       <div className="flex items-center justify-around">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.href === '/' 
-            ? location.pathname === '/'
-            : location.pathname.startsWith(item.href);
+        {navItems
+          .filter(item => item.show)
+          .map((item) => {
+            const Icon = item.icon;
+            const isActive = item.href === '/' 
+              ? location.pathname === '/'
+              : location.pathname.startsWith(item.href);
 
-          return (
-            <button
-              key={item.href}
-              onClick={() => navigate(item.href)}
-              className={cn(
-                "flex flex-col items-center gap-1 p-2 min-w-[64px] min-h-[64px] touch-manipulation",
-                "transition-colors duration-200",
-                isActive ? "text-red-600" : "text-gray-500 hover:text-gray-900"
-              )}
-            >
-              <Icon className="w-6 h-6" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={item.href}
+                onClick={() => navigate(item.href)}
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 min-w-[64px] min-h-[64px] touch-manipulation",
+                  "transition-colors duration-200",
+                  isActive ? "text-red-600" : "text-gray-500 hover:text-gray-900"
+                )}
+              >
+                <Icon className="w-6 h-6" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </button>
+            );
+          })}
       </div>
     </nav>
   );
