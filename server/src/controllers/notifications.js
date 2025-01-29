@@ -23,31 +23,37 @@ export const getNotifications = async (req, res) => {
 
     // Filter out notifications based on evaluation status
     const filteredNotifications = notifications.filter(notification => {
-      // If it's not an evaluation notification or has no evaluation, keep it
-      if (!notification.type === 'evaluation' || !notification.evaluationId) {
+      // If it's not an evaluation notification, keep it
+      if (notification.type !== 'evaluation') {
         return true;
       }
 
+      // If it's an evaluation notification but has no evaluationId, skip it
+      if (!notification.evaluationId) {
+        return false;
+      }
+
       const evaluation = notification.evaluationId;
-      const isEmployee = notification.user.toString() === evaluation.employee._id.toString();
-      const isEvaluator = notification.user.toString() === evaluation.evaluator._id.toString();
+      // Add null checks for employee and evaluator
+      const isEmployee = evaluation.employee && notification.user.toString() === evaluation.employee._id.toString();
+      const isEvaluator = evaluation.evaluator && notification.user.toString() === evaluation.evaluator._id.toString();
 
       // Check notification status based on user role and evaluation state
       if (isEmployee) {
-        if (evaluation.status === 'pending_self_evaluation' && evaluation.notificationStatus.employee.scheduled) {
+        if (evaluation.status === 'pending_self_evaluation' && evaluation.notificationStatus?.employee?.scheduled) {
           return false;
         }
-        if (evaluation.status === 'completed' && evaluation.notificationStatus.employee.completed) {
+        if (evaluation.status === 'completed' && evaluation.notificationStatus?.employee?.completed) {
           return false;
         }
-        if (evaluation.acknowledgement?.acknowledged && evaluation.notificationStatus.employee.acknowledged) {
+        if (evaluation.acknowledgement?.acknowledged && evaluation.notificationStatus?.employee?.acknowledged) {
           return false;
         }
       } else if (isEvaluator) {
-        if (evaluation.status === 'pending_manager_review' && evaluation.notificationStatus.evaluator.selfEvaluationCompleted) {
+        if (evaluation.status === 'pending_manager_review' && evaluation.notificationStatus?.evaluator?.selfEvaluationCompleted) {
           return false;
         }
-        if (evaluation.status === 'in_review_session' && evaluation.notificationStatus.evaluator.reviewSessionScheduled) {
+        if (evaluation.status === 'in_review_session' && evaluation.notificationStatus?.evaluator?.reviewSessionScheduled) {
           return false;
         }
       }
@@ -60,7 +66,7 @@ export const getNotifications = async (req, res) => {
     
     // Transform notifications to include employee details
     const transformedNotifications = filteredNotifications.map(notification => {
-      if (notification.evaluationId) {
+      if (notification.type === 'evaluation' && notification.evaluationId) {
         const evaluation = notification.evaluationId;
         return {
           ...notification,

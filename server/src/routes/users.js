@@ -189,22 +189,46 @@ router.post('/', auth, async (req, res) => {
 
     const userData = normalizeUserData({
       ...req.body,
-      store: req.user.store._id // Assign user to same store as creator
+      store: req.user.store._id, // Assign user to same store as creator
+      password: Math.random().toString(36).slice(-8) // Set temporary password before creation
     });
 
     const user = new User(userData);
     await user.save();
 
-    // Send welcome email with temporary password
-    const tempPassword = Math.random().toString(36).slice(-8);
-    user.password = tempPassword;
-    await user.save();
-
+    // Send welcome email with the temporary password DO NOT CHANGE THIS
     try {
       await sendEmail({
         to: user.email,
         subject: 'Welcome to CFA Evaluation App',
-        text: `Welcome to the CFA Evaluation App!\n\nYour temporary password is: ${tempPassword}\n\nPlease change your password after logging in.`
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #E4002B; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+              <h1 style="color: white; margin: 0;">Welcome to LD Growth!</h1>
+            </div>
+            
+            <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+              <p>Hello ${user.name},</p>
+              
+              <p>Welcome to LD-Growth. Your new home for Chick-fil-A ${req.user.store.name} development training and tasks. This is a beta web app created by Jonathon. If you have any issues or questions please reach out to me.</p>
+              
+              <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Access the site here:</strong> <a href="https://www.ld-growth.com" style="color: #E4002B;">www.ld-growth.com</a></p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> ${user.email}</p>
+                <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${userData.password}</p>
+              </div>
+              
+              <p>You will get your first evaluation soon.</p>
+              
+              <p style="color: #E4002B; font-weight: bold;">Important Security Notice:</p>
+              <p>For your security, please change your password immediately upon first login.</p>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; color: #666;">
+              <p>Thank you and enjoy!<br>LD Growth Team</p>
+            </div>
+          </div>
+        `
       });
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
