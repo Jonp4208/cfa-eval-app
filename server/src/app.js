@@ -20,6 +20,7 @@ import gradingScalesRouter from './routes/gradingScales.js';
 import notificationsRouter from './routes/notifications.js';
 import tasksRouter from './routes/tasks.js';
 import kitchenRouter from './routes/kitchen.js';
+import trainingRouter from './routes/training.js';
 
 // Services
 import { initCronJobs } from './services/cronService.js';
@@ -76,6 +77,7 @@ apiRouter.use('/grading-scales', gradingScalesRouter);
 apiRouter.use('/notifications', notificationsRouter);
 apiRouter.use('/tasks', tasksRouter);
 apiRouter.use('/kitchen', kitchenRouter);
+apiRouter.use('/training', trainingRouter);
 
 // Test Email Configuration
 apiRouter.post('/test-email', async (req, res) => {

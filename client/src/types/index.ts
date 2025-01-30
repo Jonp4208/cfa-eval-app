@@ -67,4 +67,6 @@ export interface UserType {
       y: number;
     };
   };
-} 
+}
+
+export * from './training'; 

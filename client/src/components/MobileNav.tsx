@@ -6,7 +6,8 @@ import {
   Home,
   ChefHat,
   CheckSquare,
-  ClipboardList
+  ClipboardList,
+  GraduationCap
 } from 'lucide-react';
 
 export function MobileNav() {
@@ -37,6 +38,12 @@ export function MobileNav() {
       icon: ClipboardList,
       label: user?.position === 'Team Member' ? 'My Evals' : 'Evals',
       href: '/evaluations',
+      show: true
+    },
+    {
+      icon: GraduationCap,
+      label: 'Training',
+      href: '/training',
       show: true
     }
   ];

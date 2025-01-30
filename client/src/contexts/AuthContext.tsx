@@ -1,19 +1,7 @@
 import React from 'react';
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/axios';
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  position: string;
-  role: 'user' | 'admin';
-  store?: {
-    _id: string;
-    name: string;
-    storeNumber: string;
-  };
-}
+import { User } from '@/types/user';
 
 interface AuthContextType {
   user: User | null;

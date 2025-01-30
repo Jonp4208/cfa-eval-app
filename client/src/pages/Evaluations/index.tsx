@@ -391,7 +391,7 @@ export default function Evaluations() {
                 <p className="text-white/80 mt-2 text-lg">Manage and track team performance</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {user?.role === 'admin' && (
+                {user?.isAdmin && (
                   <Button 
                     variant="secondary"
                     className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"

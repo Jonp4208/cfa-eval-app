@@ -252,7 +252,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {
           icon: ClipboardList,
           label: 'My Training',
-          href: '/future',
+          href: '/training',
           badge: null
         }
       ] : [
@@ -266,7 +266,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {
           icon: ClipboardList,
           label: 'Training',
-          href: '/future',
+          href: '/training',
           badge: null
         },
         {

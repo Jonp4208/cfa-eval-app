@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home, CheckSquare, Users, ClipboardCheck, BarChart3 } from 'lucide-react';
+import { Home, CheckSquare, Users, ClipboardCheck, BarChart3, GraduationCap } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const SideNav = () => {
@@ -60,6 +60,16 @@ const SideNav = () => {
           >
             <BarChart3 className="h-5 w-5" />
             <span className="text-xs mt-1">Analytics</span>
+          </Link>
+          <Link 
+            to="/training" 
+            className={cn(
+              "flex flex-col items-center text-[#27251F]/60 hover:text-[#E51636]",
+              pathname === '/training' && "text-[#E51636]"
+            )}
+          >
+            <GraduationCap className="h-5 w-5" />
+            <span className="text-xs mt-1">Training</span>
           </Link>
         </div>
       </div>
