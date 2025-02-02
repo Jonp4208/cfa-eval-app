@@ -66,6 +66,14 @@ export default function Evaluations() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showNotification } = useNotification();
+  
+  // Add debug logging
+  console.log('User data:', {
+    user,
+    isAdmin: user?.isAdmin,
+    position: user?.position
+  });
+  
   const [view, setView] = useState<'all' | 'pending' | 'completed'>(user?.position === 'Team Member' ? 'all' : 'pending');
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -391,7 +399,7 @@ export default function Evaluations() {
                 <p className="text-white/80 mt-2 text-lg">Manage and track team performance</p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {user?.isAdmin && (
+                {(user?.isAdmin || user?.position === 'Director') && (
                   <Button 
                     variant="secondary"
                     className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"
