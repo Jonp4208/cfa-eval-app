@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
-const NotificationService = require('../services/notificationService');
+import { NotificationService } from '../services/notificationService.js';
 const { Employee, TrainingPlan, TrainingProgress } = require('../models');
+const User = require('../models/user');
 
 // Get all training plans
 router.get('/plans', auth, async (req, res) => {
@@ -149,15 +150,39 @@ router.post('/progress/update', auth, async (req, res) => {
   }
 });
 
-// Get training progress for all employees
-router.get('/progress', auth, async (req, res) => {
+// Get employee training progress
+router.get('/employees/training-progress', auth, async (req, res) => {
   try {
-    const employees = await Employee.find()
-      .populate('trainingPlan')
-      .select('name email position department trainingPlan moduleProgress');
+    console.log('Fetching employees for store:', req.user.store._id);
+    const employees = await User.find({
+      store: req.user.store._id,
+      status: 'active'
+    })
+      .populate({
+        path: 'trainingProgress',
+        populate: {
+          path: 'trainingPlan',
+          populate: {
+            path: 'modules',
+            select: 'name position completed'
+          }
+        }
+      })
+      .select('name position departments role trainingProgress')
+      .sort({ name: 1 });
+
+    console.log('Found employees:', employees.length);
+    console.log('Employee details:', employees.map(e => ({ 
+      name: e.name, 
+      position: e.position,
+      departments: e.departments,
+      hasTrainingProgress: e.trainingProgress && e.trainingProgress.length > 0
+    })));
+    
     res.json(employees);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching training progress' });
+  } catch (error) {
+    console.error('Error fetching employee training progress:', error);
+    res.status(500).json({ message: 'Error fetching employee training progress' });
   }
 });
 

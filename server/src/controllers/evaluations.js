@@ -4,13 +4,13 @@ import { sendEmail } from '../utils/email.js';
 // Create notification for the employee
 const createNotificationIfNeeded = async (evaluation, type) => {
   let shouldCreate = false;
-  let user, title, message;
+  let userId, title, message;
 
   switch (type) {
     case 'scheduled':
       if (!evaluation.notificationStatus.employee.scheduled) {
         shouldCreate = true;
-        user = evaluation.employee._id;
+        userId = evaluation.employee._id;
         title = 'New Evaluation Scheduled';
         message = `${evaluation.employee.name}'s evaluation has been scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
       }
@@ -18,7 +18,7 @@ const createNotificationIfNeeded = async (evaluation, type) => {
     case 'completed':
       if (!evaluation.notificationStatus.employee.completed) {
         shouldCreate = true;
-        user = evaluation.employee._id;
+        userId = evaluation.employee._id;
         title = 'Evaluation Completed';
         message = `${evaluation.employee.name}'s evaluation has been completed by ${evaluation.evaluator.name}`;
       }
@@ -26,7 +26,7 @@ const createNotificationIfNeeded = async (evaluation, type) => {
     case 'self_evaluation_completed':
       if (!evaluation.notificationStatus.evaluator.selfEvaluationCompleted) {
         shouldCreate = true;
-        user = evaluation.evaluator._id;
+        userId = evaluation.evaluator._id;
         title = 'Self-Evaluation Completed';
         message = `${evaluation.employee.name} has completed their self-evaluation`;
       }
@@ -35,13 +35,17 @@ const createNotificationIfNeeded = async (evaluation, type) => {
 
   if (shouldCreate) {
     const notification = new Notification({
-      user,
-      store: evaluation.store._id,
-      type: 'evaluation',
-      priority: 'high',
+      userId,
+      storeId: evaluation.store._id,
+      type: 'EVALUATION',
+      status: 'UNREAD',
       title,
       message,
-      evaluationId: evaluation._id,
+      metadata: {
+        evaluationId: evaluation._id,
+        evaluationType: type,
+        scheduledDate: evaluation.scheduledDate
+      },
       employee: {
         name: evaluation.employee.name,
         position: evaluation.employee.position || 'Employee',
@@ -1259,13 +1263,17 @@ export const sendUnacknowledgedNotification = async (req, res) => {
 
         // Create notification for the employee
         const notification = new Notification({
-            user: evaluation.employee._id,
-            store: evaluation.store,
-            type: 'evaluation',
-            priority: 'high',
+            userId: evaluation.employee._id,
+            storeId: evaluation.store,
+            type: 'EVALUATION',
+            status: 'UNREAD',
             title: 'Evaluation Acknowledgement Required',
             message: `${evaluation.employee.name}'s evaluation from ${evaluation.evaluator.name} requires acknowledgement.`,
-            evaluationId: evaluation._id,
+            metadata: {
+                evaluationId: evaluation._id,
+                evaluationType: 'acknowledgement_required',
+                scheduledDate: evaluation.scheduledDate
+            },
             employee: {
                 name: evaluation.employee.name,
                 position: evaluation.employee.position || 'Employee',

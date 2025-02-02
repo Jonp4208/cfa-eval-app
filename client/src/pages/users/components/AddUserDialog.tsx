@@ -34,6 +34,7 @@ interface User {
     name: string;
   };
   shift?: 'day' | 'night';
+  startDate?: Date;
 }
 
 interface FormData {
@@ -44,6 +45,7 @@ interface FormData {
   role: string;
   shift: string;
   managerId: string;
+  startDate: string;
 }
 
 interface AddUserDialogProps {
@@ -62,7 +64,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     position: '',
     role: 'user',
     shift: 'day',
-    managerId: ''
+    managerId: '',
+    startDate: new Date().toISOString().split('T')[0]
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -104,7 +107,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         position: user.position || '',
         role: user.role || 'user',
         shift: user.shift || 'day',
-        managerId: user.manager?._id || ''
+        managerId: user.manager?._id || '',
+        startDate: user.startDate ? new Date(user.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
       });
     } else if (open) {
       setFormData({
@@ -114,7 +118,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
         position: '',
         role: 'user',
         shift: 'day',
-        managerId: ''
+        managerId: '',
+        startDate: new Date().toISOString().split('T')[0]
       });
     }
     setErrors({});
@@ -129,6 +134,7 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
     if (!formData.position) newErrors.position = 'Position is required';
     if (formData.departments.length === 0) newErrors.departments = 'At least one department is required';
     if (!formData.shift) newErrors.shift = 'Shift is required';
+    if (!formData.startDate) newErrors.startDate = 'Start date is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -148,7 +154,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
           departments: formData.departments,
           position: formData.position,
           role: formData.role,
-          shift: formData.shift
+          shift: formData.shift,
+          startDate: formData.startDate
         });
 
         // Update manager if changed
@@ -167,7 +174,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
           departments: formData.departments,
           position: formData.position,
           role: formData.role,
-          shift: formData.shift
+          shift: formData.shift,
+          startDate: formData.startDate
         });
 
         // Set manager for new user if selected
@@ -191,7 +199,8 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
           position: '',
           role: 'user',
           shift: 'day',
-          managerId: ''
+          managerId: '',
+          startDate: new Date().toISOString().split('T')[0]
         });
         onOpenChange(false);
       }, 1500);
@@ -342,6 +351,18 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <label htmlFor="startDate" className="text-sm font-medium text-[#27251F]">Start Date</label>
+              <input
+                id="startDate"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E51636] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              {errors.startDate && <p className="text-sm text-[#E51636]">{errors.startDate}</p>}
             </div>
           </div>
 

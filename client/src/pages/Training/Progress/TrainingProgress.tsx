@@ -23,6 +23,7 @@ import {
   Divider,
   Card,
   CardContent,
+  ButtonGroup,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -33,7 +34,9 @@ import {
   Description as DescriptionIcon,
   CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
-import { TrainingPlan, Employee, NewTrainingPlan, TraineeProgress } from '../../../types/training';
+import { Employee } from '../../../types';
+import { TrainingPlan, NewTrainingPlan, TraineeProgress } from '../../../types/training';
+import { SimplifiedTrainingPlan, EmployeeWithProgress } from './types';
 import TrainingPlanList from './components/TrainingPlanList';
 import EmployeeProgress from './components/EmployeeProgress';
 import AssignPlanDialog from './components/AssignPlanDialog';
@@ -64,10 +67,11 @@ const MobileNav: React.FC<{
   onClose: () => void;
   onOpen: () => void;
 }> = ({ activeTab, onTabChange, open, onClose, onOpen }) => {
+  const { user } = useAuth();
   const navItems = [
     { label: 'Dashboard', icon: <DashboardIcon />, value: 'dashboard' },
     { label: 'Employee Progress', icon: <PeopleIcon />, value: 'progress' },
-    { label: 'Training Plans', icon: <DescriptionIcon />, value: 'plans' },
+    ...(user?.position !== 'Team Member' ? [{ label: 'Training Plans', icon: <DescriptionIcon />, value: 'plans' }] : []),
     { label: 'Calendar', icon: <CalendarIcon />, value: 'calendar' },
   ];
 
@@ -111,90 +115,255 @@ const MobileNav: React.FC<{
   );
 };
 
-interface EmployeeWithProgress extends Employee {
-  moduleProgress: TraineeProgress['moduleProgress'];
-  trainingPlan?: {
-    name: string;
-  };
-}
-
 const TrainingProgress: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('progress');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [trainingPlans, setTrainingPlans] = useState<TrainingPlan[]>([]);
+  const [trainingPlans, setTrainingPlans] = useState<SimplifiedTrainingPlan[]>([]);
   const [employees, setEmployees] = useState<EmployeeWithProgress[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const { user } = useAuth();
+  const [filter, setFilter] = useState<'active' | 'completed'>('active');
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [activePlansResponse, templatesResponse, employeesResponse] = await Promise.all([
-        api.get('/api/training/plans/active'),
-        api.get('/api/training/templates'),
+      const [plansResponse, employeesResponse] = await Promise.all([
+        api.get('/api/training/plans'),
         api.get('/api/training/employees/training-progress')
       ]);
       
-      // Combine active plans and templates
-      const allPlans = [...activePlansResponse.data, ...templatesResponse.data];
-      setTrainingPlans(allPlans);
-      setEmployees(employeesResponse.data);
+      const plansWithId = plansResponse.data.map((plan: any) => ({
+        id: plan._id,
+        _id: plan._id,
+        name: plan.name,
+        startDate: plan.createdAt || new Date().toISOString(),
+        severity: plan.severity || 1,
+        type: plan.type || 'REGULAR',
+        department: plan.department || 'FOH',
+        numberOfDays: plan.numberOfDays || 1,
+        modules: plan.modules || [],
+        includesCoreValues: Boolean(plan.includesCoreValues),
+        includesBrandStandards: Boolean(plan.includesBrandStandards),
+        isTemplate: Boolean(plan.isTemplate),
+        createdBy: {
+          _id: plan.createdBy?._id || 'system',
+          firstName: plan.createdBy?.firstName || 'System',
+          lastName: plan.createdBy?.lastName || 'User'
+        },
+        store: plan.store || 'default',
+        createdAt: new Date(plan.createdAt || new Date()),
+        updatedAt: new Date(plan.updatedAt || new Date()),
+        description: plan.description
+      })) as SimplifiedTrainingPlan[];
+      
+      // Always update plans to ensure UI is in sync
+      setTrainingPlans(plansWithId);
+      
+      const employeesWithId = employeesResponse.data.map((emp: any) => {
+        const mappedTrainingProgress = Array.isArray(emp.trainingProgress) 
+          ? emp.trainingProgress.map((progress: any) => ({
+              ...progress,
+              trainingPlan: progress.trainingPlan ? {
+                id: progress.trainingPlan._id,
+                _id: progress.trainingPlan._id,
+                name: progress.trainingPlan.name,
+                startDate: progress.trainingPlan.createdAt || new Date().toISOString(),
+                severity: progress.trainingPlan.severity || 1,
+                type: progress.trainingPlan.type || 'REGULAR',
+                department: progress.trainingPlan.department || 'FOH',
+                numberOfDays: progress.trainingPlan.numberOfDays || 1,
+                modules: progress.trainingPlan.modules || [],
+                includesCoreValues: Boolean(progress.trainingPlan.includesCoreValues),
+                includesBrandStandards: Boolean(progress.trainingPlan.includesBrandStandards),
+                isTemplate: Boolean(progress.trainingPlan.isTemplate),
+                createdBy: {
+                  _id: progress.trainingPlan.createdBy?._id || 'system',
+                  firstName: progress.trainingPlan.createdBy?.firstName || 'System',
+                  lastName: progress.trainingPlan.createdBy?.lastName || 'User'
+                },
+                store: progress.trainingPlan.store || 'default',
+                createdAt: new Date(progress.trainingPlan.createdAt || new Date()),
+                updatedAt: new Date(progress.trainingPlan.updatedAt || new Date()),
+                description: progress.trainingPlan.description
+              } : undefined,
+              moduleProgress: Array.isArray(progress.moduleProgress) ? progress.moduleProgress : []
+            }))
+          : [];
+        
+        return {
+          _id: emp._id,
+          id: emp._id,
+          name: emp.name,
+          position: emp.position,
+          department: emp.department || (Array.isArray(emp.departments) && emp.departments.length > 0 ? emp.departments[0] : 'FOH'),
+          startDate: emp.startDate,
+          trainingProgress: mappedTrainingProgress,
+          moduleProgress: Array.isArray(emp.moduleProgress) ? emp.moduleProgress : []
+        } as EmployeeWithProgress;
+      });
+      
+      // Always update employees to ensure UI is in sync
+      setEmployees(employeesWithId);
     } catch (err) {
-      setError('Failed to load training progress data');
       console.error('Error fetching training progress:', err);
+      setError('Failed to load training progress data');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    console.log('Current Employees State:', employees);
+    console.log('Current Training Plans State:', trainingPlans);
+  }, [employees, trainingPlans]);
 
   const handleAssignPlan = async (employeeId: string, planId: string, startDate: Date) => {
     try {
-      await api.post('/api/training/plans/assign', {
+      const response = await api.post('/api/training/plans/assign', {
         employeeId,
         planId,
         startDate,
       });
 
-      await fetchData(); // Refresh data after assignment
+      console.log('Assignment response:', response.data);
+      
+      // Refresh data after successful assignment
+      await fetchData();
       setIsAssignDialogOpen(false);
     } catch (err) {
-      setError('Failed to assign training plan');
       console.error('Error assigning training plan:', err);
+      setError('Failed to assign training plan');
     }
   };
 
   const handleCreatePlan = async (plan: NewTrainingPlan) => {
     try {
       const response = await api.post('/api/training/plans', plan);
-      setTrainingPlans([...trainingPlans, response.data]);
-      setIsCreatePlanOpen(false);
+      const newPlan = {
+        id: response.data._id,
+        name: response.data.name,
+        startDate: response.data.createdAt || new Date().toISOString(),
+        severity: response.data.severity || 1
+      } as SimplifiedTrainingPlan;
+      setTrainingPlans([...trainingPlans, newPlan]);
     } catch (err) {
       console.error('Error creating training plan:', err);
       setError('Failed to create training plan');
-      throw err;
+    }
+  };
+
+  const handleUpdatePlan = async (planId: string, updatedPlan: Partial<TrainingPlan>) => {
+    try {
+      const response = await api.put(`/api/training/plans/${planId}`, updatedPlan);
+      const updated = {
+        id: response.data._id,
+        name: response.data.name,
+        startDate: response.data.createdAt || new Date().toISOString(),
+        severity: response.data.severity || 1
+      } as SimplifiedTrainingPlan;
+      setTrainingPlans(trainingPlans.map(p => p.id === planId ? updated : p));
+    } catch (err) {
+      console.error('Error updating training plan:', err);
+      setError('Failed to update training plan');
+    }
+  };
+
+  const handleProgressUpdate = async () => {
+    try {
+      // Only fetch employee progress data since that's what changed
+      const { data: employeesData } = await api.get('/api/training/employees/training-progress');
+      
+      // Update only the employees that have changed
+      const updatedEmployees: EmployeeWithProgress[] = employeesData.map((emp: any) => {
+        const mappedTrainingProgress = Array.isArray(emp.trainingProgress) 
+          ? emp.trainingProgress.map((progress: any) => ({
+              ...progress,
+              trainingPlan: progress.trainingPlan ? {
+                id: progress.trainingPlan._id,
+                _id: progress.trainingPlan._id,
+                name: progress.trainingPlan.name,
+                startDate: progress.trainingPlan.createdAt || new Date().toISOString(),
+                severity: progress.trainingPlan.severity || 1,
+                type: progress.trainingPlan.type || 'REGULAR',
+                department: progress.trainingPlan.department || 'FOH',
+                numberOfDays: progress.trainingPlan.numberOfDays || 1,
+                modules: progress.trainingPlan.modules || [],
+                includesCoreValues: Boolean(progress.trainingPlan.includesCoreValues),
+                includesBrandStandards: Boolean(progress.trainingPlan.includesBrandStandards),
+                isTemplate: Boolean(progress.trainingPlan.isTemplate),
+                createdBy: {
+                  _id: progress.trainingPlan.createdBy?._id || 'system',
+                  firstName: progress.trainingPlan.createdBy?.firstName || 'System',
+                  lastName: progress.trainingPlan.createdBy?.lastName || 'User'
+                },
+                store: progress.trainingPlan.store || 'default',
+                createdAt: new Date(progress.trainingPlan.createdAt || new Date()),
+                updatedAt: new Date(progress.trainingPlan.updatedAt || new Date()),
+                description: progress.trainingPlan.description
+              } : undefined,
+              moduleProgress: Array.isArray(progress.moduleProgress) ? progress.moduleProgress : []
+            }))
+          : [];
+        
+        return {
+          _id: emp._id,
+          id: emp._id,
+          name: emp.name,
+          position: emp.position,
+          department: emp.department || (Array.isArray(emp.departments) && emp.departments.length > 0 ? emp.departments[0] : 'FOH'),
+          startDate: emp.startDate,
+          trainingProgress: mappedTrainingProgress,
+          moduleProgress: Array.isArray(emp.moduleProgress) ? emp.moduleProgress : []
+        } as EmployeeWithProgress;
+      });
+
+      // Batch update the state with proper typing
+      setEmployees((prevEmployees: EmployeeWithProgress[]) => {
+        const employeeMap = new Map<string, EmployeeWithProgress>();
+        updatedEmployees.forEach(emp => employeeMap.set(emp._id, emp));
+        return prevEmployees.map(emp => employeeMap.get(emp._id) || emp);
+      });
+    } catch (err) {
+      console.error('Error updating employee progress:', err);
+      setError('Failed to update progress');
     }
   };
 
   const filteredEmployees = useMemo(() => {
+    console.log('Filtering Employees:', employees);
     return employees.filter(employee => {
       const matchesSearch = 
         employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         employee.position.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDepartment = !departmentFilter || employee.department === departmentFilter;
+      
+      // Filter based on training status
+      const hasTrainingProgress = employee.trainingProgress && employee.trainingProgress.length > 0;
+      if (!hasTrainingProgress) return false;
+
+      const hasActiveTraining = employee.trainingProgress.some(progress => progress.status === 'IN_PROGRESS');
+      const hasCompletedTraining = employee.trainingProgress.some(progress => progress.status === 'COMPLETED');
+
+      if (filter === 'active') {
+        return matchesSearch && matchesDepartment && hasActiveTraining;
+      } else if (filter === 'completed') {
+        return matchesSearch && matchesDepartment && hasCompletedTraining;
+      }
+
       return matchesSearch && matchesDepartment;
     });
-  }, [employees, searchQuery, departmentFilter]);
+  }, [employees, searchQuery, departmentFilter, filter]);
 
   if (loading) {
     return (
@@ -245,14 +414,16 @@ const TrainingProgress: React.FC = () => {
                     value="progress"
                     className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-full px-4 whitespace-nowrap text-sm"
                   >
-                    {user?.position === 'Team Member' ? 'My Progress' : 'Team Progress'}
+                    {user?.position === 'Team Member' ? 'My Progress' : 'Team Training'}
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="plans"
-                    className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-full px-4 whitespace-nowrap text-sm"
-                  >
-                    Training Plans
-                  </TabsTrigger>
+                  {user?.position !== 'Team Member' && (
+                    <TabsTrigger
+                      value="plans"
+                      className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-full px-4 whitespace-nowrap text-sm"
+                    >
+                      Training Plans
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger
                     value="calendar"
                     className="data-[state=active]:bg-[#E51636] data-[state=active]:text-white rounded-full px-4 whitespace-nowrap text-sm"
@@ -269,51 +440,169 @@ const TrainingProgress: React.FC = () => {
               <TabsContent value="progress" className="p-6">
                 <div className="space-y-6">
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <TextField
-                      placeholder="Search employees..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon />
-                          </InputAdornment>
-                        ),
-                      }}
-                      fullWidth
-                    />
-                    <FormControl sx={{ minWidth: 200 }}>
-                      <InputLabel>Department</InputLabel>
-                      <Select
-                        value={departmentFilter}
-                        label="Department"
-                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                    <Box sx={{ 
+                      display: 'flex',
+                      justifyContent: { xs: 'stretch', sm: 'space-between' },
+                      width: '100%',
+                      alignItems: { xs: 'stretch', sm: 'center' }
+                    }}>
+                      <ButtonGroup 
+                        variant="outlined" 
+                        sx={{ 
+                          '& .MuiButton-root': {
+                            borderColor: 'rgba(39, 37, 31, 0.1)',
+                            color: 'rgba(39, 37, 31, 0.6)',
+                            textTransform: 'none',
+                            fontSize: '0.875rem',
+                            fontWeight: 500,
+                            px: 2.5,
+                            py: 0.75,
+                            minWidth: '100px',
+                            height: '36px',
+                            '&:hover': {
+                              borderColor: 'rgba(39, 37, 31, 0.2)',
+                              backgroundColor: 'rgba(39, 37, 31, 0.05)',
+                            },
+                            '&.active': {
+                              backgroundColor: '#E51636',
+                              borderColor: '#E51636',
+                              color: 'white',
+                              '&:hover': {
+                                backgroundColor: '#DD0031',
+                                borderColor: '#DD0031',
+                              }
+                            }
+                          }
+                        }}
                       >
-                        <MenuItem value="">All</MenuItem>
-                        <MenuItem value="FOH">Front of House</MenuItem>
-                        <MenuItem value="BOH">Back of House</MenuItem>
-                      </Select>
-                    </FormControl>
-                    {user?.position !== 'Team Member' && (
-                      <Button
-                        variant="contained"
-                        onClick={() => setIsAssignDialogOpen(true)}
-                        startIcon={<AddIcon />}
-                      >
-                        Assign Plan
-                      </Button>
-                    )}
+                        <Button 
+                          className={filter === 'active' ? 'active' : ''} 
+                          onClick={() => setFilter('active')}
+                        >
+                          Active
+                        </Button>
+                        <Button 
+                          className={filter === 'completed' ? 'active' : ''} 
+                          onClick={() => setFilter('completed')}
+                        >
+                          Completed
+                        </Button>
+                      </ButtonGroup>
+
+                      <Box sx={{ 
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 2,
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        ml: { xs: 0, sm: 2 }
+                      }}>
+                        <TextField
+                          placeholder="Search employees..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SearchIcon sx={{ color: 'rgba(39, 37, 31, 0.6)' }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            width: { xs: '100%', sm: '300px' },
+                            '& .MuiOutlinedInput-root': {
+                              backgroundColor: 'white',
+                              borderRadius: '12px',
+                              '& fieldset': {
+                                borderColor: 'rgba(39, 37, 31, 0.1)',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: 'rgba(39, 37, 31, 0.2)',
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#E51636',
+                              }
+                            },
+                            '& .MuiOutlinedInput-input': {
+                              '&::placeholder': {
+                                color: 'rgba(39, 37, 31, 0.6)',
+                                opacity: 1,
+                              },
+                            }
+                          }}
+                        />
+
+                        <FormControl sx={{ 
+                          width: { xs: '100%', sm: '200px' }
+                        }}>
+                          <Select
+                            value={departmentFilter}
+                            onChange={(e) => setDepartmentFilter(e.target.value)}
+                            displayEmpty
+                            renderValue={departmentFilter !== '' ? undefined : () => "Department"}
+                            sx={{
+                              backgroundColor: 'white',
+                              borderRadius: '12px',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(39, 37, 31, 0.1)',
+                              },
+                              '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'rgba(39, 37, 31, 0.2)',
+                              },
+                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#E51636',
+                              },
+                              '& .MuiSelect-select': {
+                                color: departmentFilter ? '#27251F' : 'rgba(39, 37, 31, 0.6)',
+                              }
+                            }}
+                          >
+                            <MenuItem value="">All Departments</MenuItem>
+                            <MenuItem value="FOH">Front of House</MenuItem>
+                            <MenuItem value="BOH">Back of House</MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        {user?.position !== 'Team Member' && (
+                          <Button
+                            variant="contained"
+                            onClick={() => setIsAssignDialogOpen(true)}
+                            startIcon={<AddIcon />}
+                            sx={{
+                              backgroundColor: '#E51636',
+                              color: 'white',
+                              borderRadius: '12px',
+                              textTransform: 'none',
+                              px: 3,
+                              py: 1.5,
+                              fontSize: '0.875rem',
+                              fontWeight: 500,
+                              boxShadow: 'none',
+                              width: { xs: '100%', sm: 'auto' },
+                              '&:hover': {
+                                backgroundColor: '#D31430',
+                                boxShadow: 'none',
+                              }
+                            }}
+                          >
+                            Assign Plan
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
                   </div>
                   
                   <EmployeeProgress
                     employees={filteredEmployees}
-                    onUpdateProgress={() => fetchData()}
+                    onUpdateProgress={handleProgressUpdate}
                   />
                 </div>
               </TabsContent>
 
               <TabsContent value="plans" className="p-6">
-                <TrainingPlanList plans={trainingPlans} />
+                <TrainingPlanList
+                  plans={trainingPlans}
+                  onPlanUpdated={fetchData}
+                />
               </TabsContent>
 
               <TabsContent value="calendar" className="p-6">

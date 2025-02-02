@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -52,6 +52,12 @@ interface TeamMemberDashboardData {
       progress: number;
       dueDate: string;
     }>;
+    completed: Array<{
+      id: string;
+      name: string;
+      completedAt: string;
+      type: string;
+    }>;
   };
   schedule: Array<{
     id: string;
@@ -73,16 +79,7 @@ export default function TeamMemberDashboard() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
-      </div>
-    );
-  }
-
-  // Provide default values if data is missing
-  const dashboardData = {
+  const [dashboardData, setDashboardData] = useState<TeamMemberDashboardData>({
     name: data?.name || 'Team Member',
     position: data?.position || 'Position',
     departments: data?.departments || [],
@@ -97,11 +94,70 @@ export default function TeamMemberDashboard() {
     activeGoals: data?.activeGoals || 0,
     goals: data?.goals || [],
     training: {
-      required: data?.training?.required || []
+      required: data?.training?.required || [],
+      completed: data?.training?.completed || []
     },
     achievements: data?.achievements || [],
     schedule: data?.schedule || []
-  };
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const [dashboardResponse, trainingResponse] = await Promise.all([
+          api.get('/api/dashboard/team-member'),
+          api.get('/api/training/progress')
+        ]);
+
+        const dashboardData = dashboardResponse.data;
+        const trainingData = trainingResponse.data;
+
+        // Transform training data for dashboard
+        const activeTraining = trainingData
+          .filter(progress => progress.status === 'IN_PROGRESS')
+          .map(progress => ({
+            id: progress._id,
+            name: progress.trainingPlan.name,
+            type: progress.trainingPlan.type,
+            completedModules: progress.moduleProgress.filter(mp => mp.completed).length,
+            totalModules: progress.trainingPlan.modules.length,
+            progress: Math.round((progress.moduleProgress.filter(mp => mp.completed).length / 
+                     progress.trainingPlan.modules.length) * 100)
+          }));
+
+        const completedTraining = trainingData
+          .filter(progress => progress.status === 'COMPLETED')
+          .map(progress => ({
+            id: progress._id,
+            name: progress.trainingPlan.name,
+            type: progress.trainingPlan.type,
+            completedAt: progress.completedAt
+          }))
+          .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+          .slice(0, 3);
+
+        setDashboardData(prev => ({
+          ...dashboardData,
+          training: {
+            required: activeTraining,
+            completed: completedTraining
+          }
+        }));
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
@@ -269,30 +325,86 @@ export default function TeamMemberDashboard() {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-xl font-bold text-[#27251F]">Training Progress</h2>
-                    <p className="text-[#27251F]/60 mt-1">Required training modules</p>
+                    <p className="text-[#27251F]/60 mt-1">Your assigned training plans</p>
                   </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/training')}
+                    className="text-[#E51636] border-[#E51636] hover:bg-[#E51636]/10"
+                  >
+                    View All
+                  </Button>
                 </div>
-                <div className="space-y-4">
+
+                {/* Active Training Plans */}
+                <div className="space-y-6">
                   {dashboardData.training.required.length === 0 ? (
-                    <p className="text-[#27251F]/60 text-center py-4">No required training</p>
+                    <p className="text-[#27251F]/60 text-center py-4">No active training plans</p>
                   ) : (
-                    dashboardData.training.required.map((training) => (
-                      <div key={training.id} className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors">
-                        <div className="flex justify-between mb-2">
-                          <div>
-                            <h3 className="font-medium text-[#27251F]">{training.name}</h3>
-                            <p className="text-sm text-[#27251F]/60">Due {new Date(training.dueDate).toLocaleDateString()}</p>
-                          </div>
-                          <span className="text-sm font-medium text-[#27251F]">{training.progress}%</span>
-                        </div>
-                        <div className="w-full bg-[#E51636]/10 rounded-full h-2">
+                    <>
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-[#27251F]">Active Training</h3>
+                        {dashboardData.training.required.map((training) => (
                           <div 
-                            className="bg-[#E51636] h-2 rounded-full" 
-                            style={{ width: `${training.progress}%` }}
-                          />
-                        </div>
+                            key={training.id} 
+                            className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/training/progress/${training.id}`)}
+                          >
+                            <div className="flex justify-between mb-2">
+                              <div>
+                                <h3 className="font-medium text-[#27251F]">{training.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-sm text-[#27251F]/60">
+                                    {training.completedModules} of {training.totalModules} tasks completed
+                                  </span>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#E51636]/10 text-[#E51636]">
+                                    {training.type}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="text-sm font-medium text-[#27251F]">{training.progress}%</span>
+                            </div>
+                            <div className="w-full bg-[#E51636]/10 rounded-full h-2">
+                              <div 
+                                className="bg-[#E51636] h-2 rounded-full transition-all duration-300" 
+                                style={{ width: `${training.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))
+
+                      {/* Recently Completed Training */}
+                      {dashboardData.training.completed.length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="font-medium text-[#27251F]">Recently Completed</h3>
+                          {dashboardData.training.completed.slice(0, 3).map((training) => (
+                            <div 
+                              key={training.id} 
+                              className="p-4 bg-[#F4F4F4] rounded-xl hover:bg-[#F4F4F4]/80 transition-colors cursor-pointer"
+                              onClick={() => navigate(`/training/progress/${training.id}`)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h3 className="font-medium text-[#27251F]">{training.name}</h3>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-sm text-[#27251F]/60">
+                                      Completed {new Date(training.completedAt).toLocaleDateString()}
+                                    </span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-600">
+                                      {training.type}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                  <BadgeCheck className="h-5 w-5 text-green-600" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -344,7 +456,11 @@ export default function TeamMemberDashboard() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  {dashboardData.schedule.length === 0 ? (
+                  {isLoading ? (
+                    <p className="text-[#27251F]/60 text-center py-4">Loading...</p>
+                  ) : !dashboardData?.schedule ? (
+                    <p className="text-[#27251F]/60 text-center py-4">No schedule data available</p>
+                  ) : dashboardData.schedule.length === 0 ? (
                     <p className="text-[#27251F]/60 text-center py-4">No upcoming events</p>
                   ) : (
                     dashboardData.schedule.map((event) => (

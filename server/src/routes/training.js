@@ -1,92 +1,14 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
-import TrainingPosition from '../models/TrainingPosition.js';
+import { NotificationService } from '../services/notificationService.js';
 import TrainingCategory from '../models/TrainingCategory.js';
 import TrainingPlan from '../models/TrainingPlan.js';
 import User from '../models/User.js';
+import TrainingProgress from '../models/TrainingProgress.js';
+import * as schedule from 'node-schedule';
+import emailTemplates from '../utils/emailTemplates.js';
 
 const router = express.Router();
-
-// Get all positions for the store
-router.get('/positions', auth, async (req, res) => {
-  try {
-    const positions = await TrainingPosition.find({ store: req.user.store._id })
-      .populate('category')
-      .sort({ name: 1 });
-    res.json(positions);
-  } catch (error) {
-    console.error('Error fetching positions:', error);
-    res.status(500).json({ message: 'Error fetching positions' });
-  }
-});
-
-// Create a new position
-router.post('/positions', auth, async (req, res) => {
-  try {
-    const position = new TrainingPosition({
-      ...req.body,
-      store: req.user.store._id
-    });
-    await position.save();
-    res.status(201).json(position);
-  } catch (error) {
-    console.error('Error creating position:', error);
-    res.status(500).json({ message: 'Error creating position' });
-  }
-});
-
-// Update a position
-router.put('/positions/:id', auth, async (req, res) => {
-  try {
-    const position = await TrainingPosition.findOneAndUpdate(
-      { _id: req.params.id, store: req.user.store._id },
-      req.body,
-      { new: true }
-    );
-    if (!position) {
-      return res.status(404).json({ message: 'Position not found' });
-    }
-    res.json(position);
-  } catch (error) {
-    console.error('Error updating position:', error);
-    res.status(500).json({ message: 'Error updating position' });
-  }
-});
-
-// Update position status
-router.patch('/positions/:id', auth, async (req, res) => {
-  try {
-    const position = await TrainingPosition.findOneAndUpdate(
-      { _id: req.params.id, store: req.user.store._id },
-      { isActive: req.body.isActive },
-      { new: true }
-    );
-    if (!position) {
-      return res.status(404).json({ message: 'Position not found' });
-    }
-    res.json(position);
-  } catch (error) {
-    console.error('Error updating position status:', error);
-    res.status(500).json({ message: 'Error updating position status' });
-  }
-});
-
-// Delete a position
-router.delete('/positions/:id', auth, async (req, res) => {
-  try {
-    const position = await TrainingPosition.findOneAndDelete({
-      _id: req.params.id,
-      store: req.user.store._id
-    });
-    if (!position) {
-      return res.status(404).json({ message: 'Position not found' });
-    }
-    res.json({ message: 'Position deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting position:', error);
-    res.status(500).json({ message: 'Error deleting position' });
-  }
-});
 
 // Get all categories for the store
 router.get('/categories', auth, async (req, res) => {
@@ -266,6 +188,21 @@ router.post('/templates/:id/duplicate', auth, async (req, res) => {
   }
 });
 
+// Get all training plans for the store
+router.get('/plans', auth, async (req, res) => {
+  try {
+    const plans = await TrainingPlan.find({
+      store: req.user.store._id
+    })
+    .populate('createdBy', 'firstName lastName')
+    .sort({ createdAt: -1 });
+    res.json(plans);
+  } catch (error) {
+    console.error('Error fetching training plans:', error);
+    res.status(500).json({ message: 'Error fetching training plans' });
+  }
+});
+
 // Get active training plans
 router.get('/plans/active', auth, async (req, res) => {
   try {
@@ -276,7 +213,7 @@ router.get('/plans/active', auth, async (req, res) => {
     })
       .populate('assignedTo')
       .populate('modules.position')
-      .populate('createdBy', 'name')
+      .populate('createdBy', 'firstName lastName')
       .sort({ createdAt: -1 });
     res.json(plans);
   } catch (error) {
@@ -290,40 +227,36 @@ router.get('/employees/training-progress', auth, async (req, res) => {
   try {
     const employees = await User.find({
       store: req.user.store._id,
-      isActive: true,
+      status: 'active'
     })
       .populate({
         path: 'trainingProgress',
-        populate: {
-          path: 'plan',
+        populate: [{
+          path: 'trainingPlan',
           populate: {
-            path: 'modules.position',
-          },
-        },
+            path: 'modules'
+          }
+        }, {
+          path: 'moduleProgress.completedBy',
+          model: 'User',
+          select: 'firstName lastName name'
+        }]
       })
-      .select('name position department trainingProgress')
+      .select('name position department trainingProgress startDate')
       .sort({ name: 1 });
 
+    console.log('Found employees:', employees.length);
+    console.log('Employee details:', employees.map(e => ({ 
+      name: e.name, 
+      position: e.position,
+      department: e.department,
+      hasTrainingProgress: e.trainingProgress && e.trainingProgress.length > 0
+    })));
+    
     res.json(employees);
   } catch (error) {
     console.error('Error fetching employee training progress:', error);
     res.status(500).json({ message: 'Error fetching employee training progress' });
-  }
-});
-
-// Get all training plans for the store
-router.get('/plans', auth, async (req, res) => {
-  try {
-    const plans = await TrainingPlan.find({
-      store: req.user.store._id,
-      isTemplate: true
-    })
-    .populate('createdBy', 'firstName lastName')
-    .sort({ createdAt: -1 });
-    res.json(plans);
-  } catch (error) {
-    console.error('Error fetching training plans:', error);
-    res.status(500).json({ message: 'Error fetching training plans' });
   }
 });
 
@@ -430,6 +363,268 @@ router.delete('/plans/:id', auth, async (req, res) => {
   } catch (error) {
     console.error('Error deleting training plan:', error);
     res.status(500).json({ message: 'Error deleting training plan' });
+  }
+});
+
+// Update module progress
+router.patch('/progress/:progressId/modules/:moduleId', auth, async (req, res) => {
+  try {
+    const { progressId, moduleId } = req.params;
+    const { completed, notes } = req.body;
+
+    // Add permission check for trainers and above
+    if (!['Director', 'Leader', 'Trainer'].includes(req.user.position)) {
+      return res.status(403).json({ message: 'Only trainers and above can mark modules as complete' });
+    }
+
+    const trainingProgress = await TrainingProgress.findOne({
+      _id: progressId,
+      store: req.user.store._id,
+    });
+
+    if (!trainingProgress) {
+      return res.status(404).json({ message: 'Training progress not found' });
+    }
+
+    // Populate training plan first
+    await trainingProgress.populate({
+      path: 'trainingPlan',
+      populate: {
+        path: 'modules'
+      }
+    });
+
+    // Find the module progress entry
+    const moduleProgress = trainingProgress.moduleProgress.find(
+      (mp) => mp.moduleId.toString() === moduleId
+    );
+
+    if (!moduleProgress) {
+      // If module progress doesn't exist, create it
+      trainingProgress.moduleProgress.push({
+        moduleId,
+        completed,
+        completionPercentage: completed ? 100 : 0,
+        completedBy: completed ? req.user._id : undefined,
+        completedAt: completed ? new Date() : undefined,
+        notes,
+      });
+    } else {
+      // Update existing module progress
+      moduleProgress.completed = completed;
+      moduleProgress.completionPercentage = completed ? 100 : 0;
+      moduleProgress.completedBy = completed ? req.user._id : undefined;
+      moduleProgress.completedAt = completed ? new Date() : undefined;
+      moduleProgress.notes = notes;
+    }
+
+    // Check if all modules are completed
+    console.log('Training Plan Modules:', trainingProgress.trainingPlan.modules.map(m => ({
+      id: m._id.toString(),
+      name: m.name
+    })));
+    console.log('Module Progress:', trainingProgress.moduleProgress.map(mp => ({
+      moduleId: mp.moduleId.toString(),
+      completed: mp.completed
+    })));
+
+    const allModulesCompleted = trainingProgress.trainingPlan.modules.every(
+      (planModule) => {
+        const moduleProgress = trainingProgress.moduleProgress.find(
+          (mp) => mp.moduleId.toString() === planModule._id.toString()
+        );
+        const isCompleted = moduleProgress && moduleProgress.completed;
+        console.log(`Module ${planModule.name} (${planModule._id}): ${isCompleted ? 'Completed' : 'Not Completed'}`);
+        return isCompleted;
+      }
+    );
+
+    console.log('All Modules Completed:', allModulesCompleted);
+
+    if (allModulesCompleted) {
+      trainingProgress.status = 'COMPLETED';
+    } else {
+      trainingProgress.status = 'IN_PROGRESS';
+    }
+
+    await trainingProgress.save();
+
+    // Populate for response
+    await trainingProgress.populate([
+      {
+        path: 'moduleProgress.completedBy',
+        model: 'User',
+        select: 'firstName lastName name'
+      }
+    ]);
+
+    res.json(trainingProgress);
+  } catch (error) {
+    console.error('Error updating module progress:', error);
+    res.status(500).json({ message: 'Error updating module progress' });
+  }
+});
+
+// Assign training plan to employee
+router.post('/plans/assign', auth, async (req, res) => {
+  try {
+    const { employeeId, planId, startDate } = req.body;
+
+    // Find the employee
+    const employee = await User.findOne({
+      _id: employeeId,
+      store: req.user.store._id,
+    }).select('name email position department');
+
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Find the training plan
+    const trainingPlan = await TrainingPlan.findOne({
+      _id: planId,
+      store: req.user.store._id,
+    });
+
+    if (!trainingPlan) {
+      return res.status(404).json({ message: 'Training plan not found' });
+    }
+
+    // Create a new training progress entry
+    const trainingProgress = new TrainingProgress({
+      trainee: employeeId,
+      trainingPlan: planId,
+      startDate: new Date(startDate),
+      assignedTrainer: req.user._id,
+      store: req.user.store._id,
+      status: 'IN_PROGRESS',
+      moduleProgress: [], // Will be populated as trainee completes modules
+    });
+
+    await trainingProgress.save();
+
+    // Add the training progress to the employee's trainingProgress array
+    employee.trainingProgress = employee.trainingProgress || [];
+    employee.trainingProgress.push(trainingProgress._id);
+    await employee.save();
+
+    // Send immediate assignment notification
+    try {
+      await NotificationService.notifyTrainingAssigned(employee, trainingPlan, startDate);
+      console.log(`Training assignment notification sent to ${employee.email}`);
+    } catch (notificationError) {
+      console.error('Error sending training assignment notification:', {
+        error: notificationError.message,
+        employee: employee._id,
+        trainingPlan: trainingPlan._id,
+      });
+      // Continue execution even if notification fails
+    }
+
+    // Schedule a reminder notification for 1 day before the start date
+    const reminderDate = new Date(startDate);
+    reminderDate.setDate(reminderDate.getDate() - 1);
+    
+    if (reminderDate > new Date()) { // Only schedule if start date is in the future
+      schedule.scheduleJob(reminderDate, async () => {
+        try {
+          const daysUntilStart = 1;
+          await NotificationService.sendEmail(
+            employee.email,
+            emailTemplates.upcomingTraining(employee, trainingPlan, daysUntilStart)
+          );
+          console.log(`Training reminder notification sent to ${employee.email}`);
+        } catch (reminderError) {
+          console.error('Error sending training reminder notification:', {
+            error: reminderError.message,
+            employee: employee._id,
+            trainingPlan: trainingPlan._id,
+          });
+        }
+      });
+      console.log(`Reminder scheduled for ${reminderDate.toISOString()}`);
+    }
+
+    // Populate the response
+    await trainingProgress.populate([
+      {
+        path: 'trainee',
+        select: 'name position department',
+      },
+      {
+        path: 'trainingPlan',
+        populate: {
+          path: 'modules',
+        },
+      },
+      {
+        path: 'assignedTrainer',
+        select: 'name',
+      },
+    ]);
+
+    res.status(201).json(trainingProgress);
+  } catch (error) {
+    console.error('Error assigning training plan:', error);
+    res.status(500).json({ message: 'Error assigning training plan' });
+  }
+});
+
+// Delete training progress
+router.delete('/trainee-progress/:id', auth, async (req, res) => {
+  try {
+    const trainingProgress = await TrainingProgress.findOne({
+      _id: req.params.id,
+      store: req.user.store._id,
+    });
+
+    if (!trainingProgress) {
+      return res.status(404).json({ message: 'Training progress not found' });
+    }
+
+    // Find the employee and remove the training progress from their array
+    const employee = await User.findOne({
+      _id: trainingProgress.trainee,
+      store: req.user.store._id,
+    });
+
+    if (employee) {
+      employee.trainingProgress = employee.trainingProgress.filter(
+        (progressId) => progressId.toString() !== trainingProgress._id.toString()
+      );
+      await employee.save();
+    }
+
+    // Delete the training progress
+    await TrainingProgress.deleteOne({ _id: trainingProgress._id });
+
+    res.json({ message: 'Training progress deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting training progress:', error);
+    res.status(500).json({ message: 'Error deleting training progress' });
+  }
+});
+
+// Get current user's training progress
+router.get('/progress', auth, async (req, res) => {
+  try {
+    const trainingProgress = await TrainingProgress.find({
+      trainee: req.user._id,
+      deleted: { $ne: true }
+    })
+    .populate({
+      path: 'trainingPlan',
+      populate: {
+        path: 'modules'
+      }
+    })
+    .populate('moduleProgress.completedBy', 'firstName lastName name')
+    .sort({ createdAt: -1 });
+
+    res.json(trainingProgress);
+  } catch (error) {
+    console.error('Error fetching user training progress:', error);
+    res.status(500).json({ message: 'Error fetching training progress' });
   }
 });
 

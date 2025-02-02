@@ -6,4 +6,5 @@ export { default as Template } from './Templates.js';
 export { default as Goal } from './Goal.js';
 export { default as Notification } from './Notification.js';
 export { default as Disciplinary } from './Disciplinary.js';
-export { default as GradingScale } from './GradingScale.js'; 
+export { default as GradingScale } from './GradingScale.js';
+export { default as TrainingProgress } from './TrainingProgress.js'; 

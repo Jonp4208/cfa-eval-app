@@ -1,25 +1,31 @@
 import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
-  user: {
+  userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    alias: 'user',
+    index: true
   },
-  store: {
+  storeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Store',
-    required: true
+    alias: 'store',
+    index: true
   },
   type: {
     type: String,
-    enum: ['disciplinary', 'evaluation', 'goal', 'recognition', 'system', 'reminder', 'task'],
-    required: true
+    enum: ['TRAINING_ASSIGNED', 'TRAINING_COMPLETED', 'DISCIPLINARY', 'EVALUATION', 'GOAL', 'RECOGNITION', 'SYSTEM', 'REMINDER', 'TASK', 'evaluation'],
+    required: true,
+    set: function(v) {
+      return v.toUpperCase();
+    }
   },
-  priority: {
+  status: {
     type: String,
-    enum: ['low', 'medium', 'high', 'urgent'],
-    default: 'medium'
+    enum: ['UNREAD', 'READ', 'ARCHIVED'],
+    default: 'UNREAD',
+    index: true
   },
   title: {
     type: String,
@@ -29,12 +35,9 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  read: {
-    type: Boolean,
-    default: false
-  },
-  readAt: {
-    type: Date
+  metadata: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   },
   evaluationId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -45,6 +48,9 @@ const notificationSchema = new mongoose.Schema({
     position: { type: String },
     department: { type: String }
   },
+  readAt: {
+    type: Date
+  },
   acknowledgedAt: {
     type: Date
   },
@@ -52,6 +58,14 @@ const notificationSchema = new mongoose.Schema({
     email: { type: Boolean, default: true },
     inApp: { type: Boolean, default: true },
     push: { type: Boolean, default: false }
+  },
+  priority: {
+    type: String,
+    default: 'normal'
+  },
+  read: {
+    type: Boolean,
+    default: false
   },
   relatedId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -64,24 +78,33 @@ const notificationSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 30 * 24 * 60 * 60 // Automatically delete after 30 days
+    expires: 30 * 24 * 60 * 60, // Automatically delete after 30 days
+    index: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Index for faster queries
-notificationSchema.index({ user: 1, read: 1 });
-notificationSchema.index({ store: 1, createdAt: -1 });
-notificationSchema.index({ priority: 1, createdAt: -1 });
-
-// Pre-save middleware to set readAt when read is true
+// Pre-save middleware to set readAt when status changes to READ
 notificationSchema.pre('save', function(next) {
-  if (this.isModified('read') && this.read && !this.readAt) {
+  if (this.isModified('status') && this.status === 'READ' && !this.readAt) {
     this.readAt = new Date();
+  }
+  if (this.evaluationId && (!this.metadata || !this.metadata.evaluationId)) {
+    this.metadata = {
+      ...this.metadata,
+      evaluationId: this.evaluationId
+    };
   }
   next();
 });
+
+// Create compound indexes
+notificationSchema.index({ userId: 1, status: 1 });
+notificationSchema.index({ storeId: 1, createdAt: -1 });
+notificationSchema.index({ type: 1, createdAt: -1 });
 
 const Notification = mongoose.model('Notification', notificationSchema);
 export default Notification; 

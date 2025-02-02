@@ -1,16 +1,8 @@
-import nodemailer from 'nodemailer';
 import config from '../config/index.js';
-
-// Create a transporter using SMTP
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+import User from '../models/User.js';
+import TrainingProgress from '../models/TrainingProgress.js';
+import Notification from '../models/Notification.js';
+import { sendEmail } from '../utils/email.js';
 
 // Email templates
 const emailTemplates = {
@@ -87,10 +79,10 @@ const emailTemplates = {
       <ul>
         ${updates.map(update => `
           <li>
-            <strong>${update.employee.name}:</strong>
+            <strong>${update.trainee.name}:</strong>
             ${update.type === 'module' 
               ? `Completed module "${update.module.name}"`
-              : `Completed training plan "${update.plan.name}"`}
+              : `Completed training plan "${update.trainingPlan.name}"`}
           </li>
         `).join('')}
       </ul>
@@ -101,49 +93,50 @@ const emailTemplates = {
 };
 
 export class NotificationService {
-  static async sendEmail(to, template) {
-    try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to,
-        subject: template.subject,
-        html: template.html,
-      });
-      console.log(`Email sent successfully to ${to}`);
-    } catch (error) {
-      console.error('Error sending email:', error);
-      throw error;
-    }
-  }
-
   static async notifyTrainingAssigned(employee, plan, startDate) {
     try {
-      console.log('Preparing training assignment notification for:', {
-        employeeName: employee.name,
-        employeeEmail: employee.email,
-        planName: plan.name,
-        startDate
-      });
-
+      // Send email notification
       const template = emailTemplates.trainingAssigned(employee, plan, startDate);
-      
-      console.log('Generated email template:', {
-        subject: template.subject,
+      await sendEmail({
         to: employee.email,
-        from: process.env.EMAIL_USER
+        subject: template.subject,
+        html: template.html
       });
 
-      await this.sendEmail(employee.email, template);
-      console.log('Training assignment notification sent successfully');
+      // Create in-app notification
+      const notification = new Notification({
+        userId: employee._id,
+        storeId: employee.store,
+        type: 'TRAINING_ASSIGNED',
+        status: 'UNREAD',
+        title: 'New Training Plan Assigned',
+        message: `You have been assigned to the training plan: ${plan.name}`,
+        metadata: {
+          trainingPlanId: plan._id,
+          startDate: startDate
+        },
+        employee: {
+          name: employee.name,
+          position: employee.position || 'Team Member',
+          department: employee.department || 'Uncategorized'
+        }
+      });
+
+      await notification.save();
+      return notification;
     } catch (error) {
-      console.error('Failed to send training assignment notification:', error);
+      console.error('Error in notifyTrainingAssigned:', error);
       throw error;
     }
   }
 
   static async notifyModuleCompleted(employee, module) {
     const template = emailTemplates.moduleCompleted(employee, module);
-    await this.sendEmail(employee.email, template);
+    await sendEmail({
+      to: employee.email,
+      subject: template.subject,
+      html: template.html
+    });
 
     // Also notify manager if module completion rate reaches certain thresholds
     const completedModules = employee.moduleProgress.filter(m => m.completed).length;
@@ -159,16 +152,21 @@ export class NotificationService {
           module,
         }]
       );
-      // Skip manager notification if no manager email is configured
-      if (process.env.MANAGER_EMAIL) {
-        await this.sendEmail(process.env.MANAGER_EMAIL, managerTemplate);
-      }
+      await sendEmail({
+        to: config.email.managerEmail,
+        subject: managerTemplate.subject,
+        html: managerTemplate.html
+      });
     }
   }
 
   static async notifyTrainingCompleted(employee, plan) {
     const template = emailTemplates.trainingCompleted(employee, plan);
-    await this.sendEmail(employee.email, template);
+    await sendEmail({
+      to: employee.email,
+      subject: template.subject,
+      html: template.html
+    });
 
     // Notify manager
     const managerTemplate = emailTemplates.progressUpdate(
@@ -179,33 +177,38 @@ export class NotificationService {
         plan,
       }]
     );
-    // Skip manager notification if no manager email is configured
-    if (process.env.MANAGER_EMAIL) {
-      await this.sendEmail(process.env.MANAGER_EMAIL, managerTemplate);
-    }
+    await sendEmail({
+      to: config.email.managerEmail,
+      subject: managerTemplate.subject,
+      html: managerTemplate.html
+    });
   }
 
   static async sendUpcomingTrainingReminders() {
     try {
       // Get all employees with upcoming training (within next 7 days)
-      const employees = await Employee.find({
-        'trainingPlan.startDate': {
+      const employees = await User.find({
+        'trainingProgress.startDate': {
           $gte: new Date(),
           $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
-      }).populate('trainingPlan');
+      }).populate('trainingProgress.trainingPlan');
 
       for (const employee of employees) {
         const daysUntilStart = Math.ceil(
-          (new Date(employee.trainingPlan.startDate) - new Date()) / (1000 * 60 * 60 * 24)
+          (new Date(employee.trainingProgress[0].startDate) - new Date()) / (1000 * 60 * 60 * 24)
         );
 
         const template = emailTemplates.upcomingTraining(
           employee,
-          employee.trainingPlan,
+          employee.trainingProgress[0].trainingPlan,
           daysUntilStart
         );
-        await this.sendEmail(employee.email, template);
+        await sendEmail({
+          to: employee.email,
+          subject: template.subject,
+          html: template.html
+        });
       }
     } catch (error) {
       console.error('Error sending upcoming training reminders:', error);
@@ -226,9 +229,13 @@ export class NotificationService {
         .populate('plan');
 
       if (updates.length > 0) {
-        const manager = await Employee.findById(managerId);
+        const manager = await User.findById(managerId);
         const template = emailTemplates.progressUpdate(manager, updates);
-        await this.sendEmail(manager.email, template);
+        await sendEmail({
+          to: manager.email,
+          subject: template.subject,
+          html: template.html
+        });
       }
     } catch (error) {
       console.error('Error sending weekly progress report:', error);

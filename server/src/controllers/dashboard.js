@@ -1,4 +1,4 @@
-import { Settings, Store, User, Evaluation, Template, Disciplinary, Notification } from '../models/index.js';
+import { Settings, Store, User, Evaluation, Template, Disciplinary, Notification, TrainingProgress } from '../models/index.js';
 
 // Get dashboard statistics
 export const getDashboardStats = async (req, res) => {
@@ -7,14 +7,14 @@ export const getDashboardStats = async (req, res) => {
 
         // Get notifications for the user
         const notifications = await Notification.find({
-            user: req.user._id,
-            read: false
+            userId: req.user._id,
+            status: 'UNREAD'
         }).lean();
 
         // Create a map of evaluation IDs to notification IDs
         const notificationMap = notifications.reduce((acc, notification) => {
-            if (notification.evaluationId) {
-                acc[notification.evaluationId.toString()] = notification._id;
+            if (notification.metadata?.evaluationId) {
+                acc[notification.metadata.evaluationId.toString()] = notification._id;
             }
             return acc;
         }, {});
@@ -143,7 +143,7 @@ export const getDashboardStats = async (req, res) => {
         // Create notifications for evaluations that don't have one
         const notificationsToCreate = [];
         const evaluationsWithNotifications = await Promise.all(upcomingEvaluations.map(async (evaluation) => {
-            // Only create notifications if the current user is the employee, evaluator, or manager
+            // Only check notifications if the current user is the employee, evaluator, or manager
             const shouldCreateNotification = 
                 evaluation.employee._id.toString() === req.user._id.toString() ||
                 evaluation.evaluator._id.toString() === req.user._id.toString() ||
@@ -156,36 +156,88 @@ export const getDashboardStats = async (req, res) => {
                 };
             }
 
-            // Check if notification exists
-            let notification = await Notification.findOne({
-                evaluationId: evaluation._id,
-                user: req.user._id,  // Create notification for the current user if they're involved
-                read: false
-            });
+            // Check if ANY notification exists for this evaluation and user
+            const existingNotification = await Notification.findOne({
+                $and: [
+                    {
+                        $or: [
+                            { userId: req.user._id },
+                            { user: req.user._id }
+                        ]
+                    },
+                    {
+                        $or: [
+                            { 'metadata.evaluationId': evaluation._id },
+                            { evaluationId: evaluation._id }
+                        ]
+                    }
+                ]
+            }).lean();
 
-            // If no notification exists, create one
-            if (!notification) {
-                let message = '';
-                if (evaluation.employee._id.toString() === req.user._id.toString()) {
-                    message = `You have an evaluation scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
-                } else if (evaluation.evaluator._id.toString() === req.user._id.toString()) {
-                    message = `You have an evaluation to conduct for ${evaluation.employee.name} scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
-                } else {
-                    message = `An evaluation is scheduled for ${evaluation.employee.name} on ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
-                }
-
-                notification = new Notification({
-                    user: req.user._id,
-                    store: req.user.store._id,
-                    type: 'evaluation',
-                    priority: 'high',
-                    title: 'Upcoming Evaluation',
-                    message,
-                    evaluationId: evaluation._id
-                });
-                notificationsToCreate.push(notification);
+            // If notification already exists, return it regardless of status
+            if (existingNotification) {
+                console.log('Found existing notification:', existingNotification._id, 'for evaluation:', evaluation._id);
+                return {
+                    ...evaluation,
+                    notificationId: existingNotification._id
+                };
             }
 
+            // Add a double-check to prevent race conditions
+            const doubleCheck = await Notification.findOne({
+                $and: [
+                    {
+                        $or: [
+                            { userId: req.user._id },
+                            { user: req.user._id }
+                        ]
+                    },
+                    {
+                        $or: [
+                            { 'metadata.evaluationId': evaluation._id },
+                            { evaluationId: evaluation._id }
+                        ]
+                    }
+                ]
+            }).lean();
+
+            if (doubleCheck) {
+                console.log('Found notification in double-check:', doubleCheck._id, 'for evaluation:', evaluation._id);
+                return {
+                    ...evaluation,
+                    notificationId: doubleCheck._id
+                };
+            }
+
+            // If no notification exists at all, create one
+            let message = '';
+            if (evaluation.employee._id.toString() === req.user._id.toString()) {
+                message = `You have an evaluation scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
+            } else if (evaluation.evaluator._id.toString() === req.user._id.toString()) {
+                message = `You have an evaluation to conduct for ${evaluation.employee.name} scheduled for ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
+            } else {
+                message = `An evaluation is scheduled for ${evaluation.employee.name} on ${new Date(evaluation.scheduledDate).toLocaleDateString()}`;
+            }
+
+            const notification = new Notification({
+                userId: req.user._id,
+                storeId: req.user.store._id,
+                type: 'EVALUATION',
+                status: 'UNREAD',
+                title: 'Upcoming Evaluation',
+                message,
+                metadata: {
+                    evaluationId: evaluation._id,
+                    scheduledDate: evaluation.scheduledDate
+                },
+                employee: {
+                    name: evaluation.employee.name,
+                    position: evaluation.employee.position || 'Team Member',
+                    department: evaluation.employee.department || 'Uncategorized'
+                }
+            });
+
+            notificationsToCreate.push(notification);
             return {
                 ...evaluation,
                 notificationId: notification._id
@@ -194,6 +246,7 @@ export const getDashboardStats = async (req, res) => {
 
         // Save all new notifications in bulk
         if (notificationsToCreate.length > 0) {
+            console.log('Creating new notifications:', notificationsToCreate.length);
             await Notification.insertMany(notificationsToCreate);
         }
 
@@ -236,10 +289,7 @@ export const getDashboardStats = async (req, res) => {
 
     } catch (error) {
         console.error('Error getting dashboard stats:', error);
-        res.status(500).json({ 
-            message: 'Error getting dashboard stats',
-            error: error.message 
-        });
+        res.status(500).json({ message: 'Error getting dashboard stats' });
     }
 };
 
@@ -438,8 +488,47 @@ export const getTeamMemberDashboard = async (req, res) => {
                     score: evaluation.score,
                     template: evaluation.template?.name,
                     evaluator: evaluation.evaluator?.name
-                }))
+                })),
+            training: {
+                required: [], // Will be populated from training progress
+                completed: []  // Will be populated from training progress
+            }
         };
+
+        // Fetch training progress
+        const trainingProgress = await TrainingProgress.find({ 
+            employee: user._id,
+            deleted: { $ne: true }
+        })
+        .populate('trainingPlan')
+        .lean();
+
+        // Process training progress
+        if (trainingProgress) {
+            dashboardData.training = {
+                required: trainingProgress
+                    .filter(progress => progress.status !== 'COMPLETED')
+                    .map(progress => ({
+                        id: progress._id.toString(),
+                        name: progress.trainingPlan?.name || 'Unnamed Training',
+                        type: progress.trainingPlan?.type || 'REGULAR',
+                        completedModules: progress.moduleProgress?.filter(m => m.status === 'COMPLETED').length || 0,
+                        totalModules: progress.trainingPlan?.modules?.length || 0,
+                        progress: Math.round((progress.moduleProgress?.filter(m => m.status === 'COMPLETED').length || 0) / 
+                                 (progress.trainingPlan?.modules?.length || 1) * 100)
+                    })),
+                completed: trainingProgress
+                    .filter(progress => progress.status === 'COMPLETED')
+                    .map(progress => ({
+                        id: progress._id.toString(),
+                        name: progress.trainingPlan?.name || 'Unnamed Training',
+                        type: progress.trainingPlan?.type || 'REGULAR',
+                        completedAt: progress.completedAt
+                    }))
+                    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+                    .slice(0, 3)
+            };
+        }
 
         res.json(dashboardData);
     } catch (error) {

@@ -41,6 +41,7 @@ interface TrainingDay {
 interface TrainingModule {
   name: string;
   duration: number;
+  pathwayUrl?: string;
 }
 
 interface FormErrors {
@@ -164,7 +165,11 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
 
   const addModule = (dayIndex: number) => {
     const updatedDays = [...days];
-    updatedDays[dayIndex].modules.push({ name: '', duration: 30 });
+    updatedDays[dayIndex].modules.push({ 
+      name: '', 
+      duration: 30,
+      pathwayUrl: ''
+    });
     setDays(updatedDays);
   };
 
@@ -230,10 +235,6 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
             {submitError}
           </Alert>
         )}
-
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Before creating a training plan, make sure you have created a training position for the department first.
-        </Alert>
 
         <TextField
           autoFocus
@@ -319,33 +320,38 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
           <Typography variant="subtitle1" gutterBottom sx={{ color: '#000000', fontWeight: 600 }}>
             Training Schedule
           </Typography>
-          {days.map((trainingDay, dayIndex) => (
-            <Box 
-              key={dayIndex} 
-              sx={{ 
-                mb: 3, 
-                p: 2, 
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 2,
-                bgcolor: '#FAFAFA',
-                '&:hover': {
-                  boxShadow: 1,
-                }
-              }}
-            >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#000000' }}>
-                  Day {trainingDay.dayNumber}
+          {days.map((day, dayIndex) => (
+            <Box key={dayIndex} sx={{ 
+              mb: 3, 
+              p: 3, 
+              bgcolor: 'rgba(39, 37, 31, 0.02)', 
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'rgba(39, 37, 31, 0.1)'
+            }}>
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                mb: 2 
+              }}>
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    color: '#27251F',
+                    fontWeight: 500
+                  }}
+                >
+                  Training Day {day.dayNumber}
                 </Typography>
-                {days.length > 1 && (
-                  <IconButton 
-                    size="small" 
+                {dayIndex > 0 && (
+                  <IconButton
                     onClick={() => removeTrainingDay(dayIndex)}
-                    sx={{ 
-                      color: '#E51636',
+                    sx={{
+                      color: 'rgba(39, 37, 31, 0.4)',
                       '&:hover': {
-                        bgcolor: 'rgba(229, 22, 54, 0.08)',
+                        color: '#E51636',
+                        bgcolor: 'rgba(229, 22, 54, 0.04)'
                       }
                     }}
                   >
@@ -354,84 +360,130 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
                 )}
               </Box>
 
-              <Typography variant="subtitle2" gutterBottom sx={{ color: '#000000', fontWeight: 500 }}>
-                Modules
-              </Typography>
-              {trainingDay.modules.map((module, moduleIndex) => (
+              {day.modules.map((module, moduleIndex) => (
                 <Box 
                   key={moduleIndex} 
                   sx={{ 
-                    display: 'flex', 
-                    gap: 1, 
-                    mb: 1,
-                    alignItems: 'center',
+                    mb: 2, 
+                    p: 2.5,
+                    bgcolor: 'white', 
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'rgba(39, 37, 31, 0.1)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
+                      borderColor: 'rgba(39, 37, 31, 0.2)'
+                    }
                   }}
                 >
+                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <TextField
+                      label="Training Module Name"
+                      value={module.name}
+                      onChange={(e) => updateModule(dayIndex, moduleIndex, 'name', e.target.value)}
+                      fullWidth
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          '& fieldset': {
+                            borderColor: 'rgba(39, 37, 31, 0.2)',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: 'rgba(39, 37, 31, 0.3)',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#E51636',
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: '#E51636',
+                        }
+                      }}
+                    />
+                    <TextField
+                      label="Duration (min)"
+                      type="number"
+                      value={module.duration}
+                      onChange={(e) => updateModule(dayIndex, moduleIndex, 'duration', parseInt(e.target.value) || 0)}
+                      sx={{
+                        width: 140,
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          '& fieldset': {
+                            borderColor: 'rgba(39, 37, 31, 0.2)',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: 'rgba(39, 37, 31, 0.3)',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#E51636',
+                          }
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': {
+                          color: '#E51636',
+                        }
+                      }}
+                    />
+                    <IconButton 
+                      onClick={() => removeModule(dayIndex, moduleIndex)}
+                      sx={{
+                        color: 'rgba(39, 37, 31, 0.4)',
+                        '&:hover': {
+                          color: '#E51636',
+                          bgcolor: 'rgba(229, 22, 54, 0.04)'
+                        }
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
                   <TextField
-                    size="small"
-                    label="Module Name"
-                    value={module.name}
-                    onChange={(e) => updateModule(dayIndex, moduleIndex, 'name', e.target.value)}
-                    sx={{ 
-                      flex: 2,
+                    label="Pathway URL"
+                    value={module.pathwayUrl || ''}
+                    onChange={(e) => updateModule(dayIndex, moduleIndex, 'pathwayUrl', e.target.value)}
+                    fullWidth
+                    placeholder="https://pathway.chick-fil-a.com/..."
+                    sx={{
                       '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        '& fieldset': {
+                          borderColor: 'rgba(39, 37, 31, 0.2)',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'rgba(39, 37, 31, 0.3)',
+                        },
                         '&.Mui-focused fieldset': {
                           borderColor: '#E51636',
-                        },
+                        }
                       },
                       '& .MuiInputLabel-root.Mui-focused': {
                         color: '#E51636',
-                      },
-                    }}
-                  />
-                  <TextField
-                    size="small"
-                    label="Duration (min)"
-                    type="number"
-                    value={module.duration}
-                    onChange={(e) => updateModule(dayIndex, moduleIndex, 'duration', parseInt(e.target.value) || 0)}
-                    sx={{ 
-                      flex: 1,
-                      '& .MuiOutlinedInput-root': {
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#E51636',
-                        },
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#E51636',
-                      },
-                    }}
-                  />
-                  <IconButton 
-                    size="small" 
-                    onClick={() => removeModule(dayIndex, moduleIndex)}
-                    sx={{ 
-                      color: '#E51636',
-                      '&:hover': {
-                        bgcolor: 'rgba(229, 22, 54, 0.08)',
                       }
                     }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  />
                 </Box>
               ))}
               
               <Button
                 startIcon={<AddIcon />}
                 onClick={() => addModule(dayIndex)}
-                size="small"
-                sx={{ 
-                  mt: 1,
-                  color: '#E51636',
-                  borderColor: '#E51636',
+                variant="outlined"
+                fullWidth
+                sx={{
+                  mt: 2,
+                  borderRadius: '12px',
+                  borderColor: 'rgba(39, 37, 31, 0.2)',
+                  color: '#27251F',
+                  height: '48px',
                   '&:hover': {
-                    borderColor: '#DD0031',
-                    bgcolor: 'rgba(229, 22, 54, 0.08)',
+                    borderColor: '#E51636',
+                    color: '#E51636',
+                    bgcolor: 'rgba(229, 22, 54, 0.04)'
                   }
                 }}
               >
-                Add Module
+                Add Training Module
               </Button>
             </Box>
           ))}

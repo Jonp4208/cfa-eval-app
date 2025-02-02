@@ -35,7 +35,7 @@ import History from '@/pages/Kitchen/FoodSafety/History';
 import FuturePage from '@/pages/FuturePage';
 import AssignManagers from '../pages/users/AssignManagers';
 import ViewCompletion from '@/pages/Kitchen/FoodSafety/ViewCompletion';
-import TrainingProgress from '@/pages/Training/Progress/TrainingProgress';
+import TrainingProgress from '@/pages/Training/Progress';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -119,6 +119,7 @@ export default function AppRoutes() {
         <Route path="day-vs-night" element={<DayVsNight />} />
       </Route>
       <Route path="/training" element={<PrivateRoute><TrainingProgress /></PrivateRoute>} />
+      <Route path="/training/progress/:id" element={<PrivateRoute><TrainingProgress /></PrivateRoute>} />
       <Route path="/future" element={<PrivateRoute><FuturePage /></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

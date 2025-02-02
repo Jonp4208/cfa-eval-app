@@ -77,6 +77,10 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
+  trainingProgress: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TrainingProgress'
+  }],
   previousRoles: [{
     position: {
       type: String,
