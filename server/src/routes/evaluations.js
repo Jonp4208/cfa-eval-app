@@ -13,7 +13,8 @@ import {
     markNotificationViewed,
     saveDraft,
     sendCompletedEvaluationEmail,
-    sendUnacknowledgedNotification
+    sendUnacknowledgedNotification,
+    startReview
 } from '../controllers/evaluations.js';
 import { auth } from '../middleware/auth.js';
 import { isManager } from '../middleware/roles.js';
@@ -33,6 +34,7 @@ router.get('/employee/:employeeId', auth, getEmployeeEvaluations);
 // Evaluation workflow routes
 router.post('/:evaluationId/self-evaluation', auth, submitSelfEvaluation);
 router.post('/:evaluationId/schedule-review', auth, isManager, scheduleReviewSession);
+router.post('/:evaluationId/start-review', auth, isManager, startReview);
 router.post('/:evaluationId/save-draft', auth, isManager, saveDraft);
 router.post('/:evaluationId/complete', auth, isManager, completeManagerEvaluation);
 router.post('/:evaluationId/acknowledge', auth, acknowledgeEvaluation);

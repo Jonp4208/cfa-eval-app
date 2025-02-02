@@ -536,111 +536,85 @@ export default function Evaluations() {
               const StatusIcon = getStatusIcon(evaluation.status);
               const dueStatus = getDueStatus(evaluation.scheduledDate, evaluation.status, evaluation.completedDate);
               return (
-                <Card 
-                  key={evaluation._id}
-                  className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 cursor-pointer"
-                  onClick={() => navigate(`/evaluations/${evaluation._id}`)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex gap-4">
-                          <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                            evaluation.status === 'completed' 
-                              ? 'bg-green-100' 
-                              : evaluation.status === 'in_review_session'
-                              ? 'bg-purple-100'
-                              : 'bg-[#E51636]/10'
-                          }`}>
-                            {React.createElement(StatusIcon, { className: `w-6 h-6 ${
-                              evaluation.status === 'completed'
-                                ? 'text-green-600'
-                                : evaluation.status === 'in_review_session'
-                                ? 'text-purple-600'
-                                : 'text-[#E51636]'
-                            }` })}
+                <Card key={evaluation._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-2">
+                          <h3 className="text-lg font-medium text-[#27251F]">{evaluation.employee.name}</h3>
+                          <p className="text-[#27251F]/60">{evaluation.template.name}</p>
+                        </div>
+                        {(user?._id === evaluation.evaluator._id) && evaluation.status !== 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleDelete(e, evaluation._id)}
+                            className="h-8 w-8 text-[#E51636] hover:text-[#E51636]/90 hover:bg-[#E51636]/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <StatusIcon className="h-4 w-4" />
+                            <span>{getStatusDisplay(evaluation)}</span>
                           </div>
-                          <div>
-                            <h3 className="font-medium text-[#27251F]">{evaluation.employee?.name || 'Unknown Employee'}</h3>
-                            <p className="text-sm text-[#27251F]/60 mt-1">{evaluation.template?.name || 'No Template'}</p>
-                            <div className="flex flex-col gap-2 mt-2">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-[#27251F]/40" />
-                                <span className={`text-sm ${dueStatus.class}`}>
-                                  Scheduled: {new Date(evaluation.scheduledDate).toLocaleDateString()}
-                                </span>
-                              </div>
-                              {evaluation.reviewSessionDate && (
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="w-4 h-4 text-purple-500" />
-                                  <span className="text-sm text-purple-700">
-                                    Review Session: {new Date(evaluation.reviewSessionDate).toLocaleDateString()}
-                                  </span>
-                                </div>
-                              )}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2 text-sm text-[#27251F]/60">
+                              <Calendar className="h-4 w-4" />
+                              <span>Scheduled: {new Date(evaluation.scheduledDate).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-[#27251F]/60">
+                              <Users className="h-4 w-4" />
+                              <span>Evaluator: {evaluation.evaluator.name}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <span>{getStatusDisplay(evaluation)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {evaluation.status === 'completed' && (
-                              <>
+                        
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 sm:mt-0 sm:justify-end">
+                          {evaluation.status === 'completed' && (
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  sendEvaluationEmail(evaluation._id);
+                                }}
+                                title="Send evaluation to store email"
+                                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                              {!evaluation.acknowledgement?.acknowledged && user?._id === evaluation.evaluator._id && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    sendEvaluationEmail(evaluation._id);
+                                    sendUnacknowledgedNotification.mutate(evaluation._id);
                                   }}
-                                  title="Send evaluation to store email"
-                                  className="h-10 w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
+                                  title="Send acknowledgement reminder"
+                                  className="h-9 w-9 sm:h-10 sm:w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
                                 >
-                                  <Mail className="h-4 w-4" />
+                                  <Bell className="h-4 w-4" />
                                 </Button>
-                                {!evaluation.acknowledgement?.acknowledged && user?._id === evaluation.evaluator._id && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      sendUnacknowledgedNotification.mutate(evaluation._id);
-                                    }}
-                                    title="Send acknowledgement reminder"
-                                    className="h-10 w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
-                                  >
-                                    <Bell className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                            {(user?._id === evaluation.evaluator._id) && evaluation.status !== 'completed' && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => handleDelete(e, evaluation._id)}
-                                className="h-8 w-8 text-[#E51636] hover:text-[#E51636]/90 hover:bg-[#E51636]/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      {(evaluation.status === 'pending_manager_review' || evaluation.status === 'in_review_session') && (
-                        <div className="mt-auto flex justify-center md:justify-end gap-2">
-                          {evaluation.status === 'pending_manager_review' && (
-                            <>
+                              )}
+                            </div>
+                          )}
+                          {evaluation.status === 'pending_manager_review' && user?._id === evaluation.evaluator._id && (
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                               <Button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/evaluations/${evaluation._id}?showSchedule=true`);
                                 }}
-                                className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
+                                className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm whitespace-nowrap w-full sm:w-auto"
                               >
                                 Schedule Review
                               </Button>
@@ -649,25 +623,26 @@ export default function Evaluations() {
                                   e.stopPropagation();
                                   navigate(`/evaluations/${evaluation._id}?edit=true`);
                                 }}
-                                className="border border-[#E51636] text-[#E51636] hover:bg-[#E51636]/10 h-9 px-4 rounded-xl text-sm"
+                                className="border border-[#E51636] text-[#E51636] hover:bg-[#E51636]/10 h-9 px-4 rounded-xl text-sm whitespace-nowrap w-full sm:w-auto"
                               >
                                 Complete Now
                               </Button>
-                            </>
+                            </div>
                           )}
                           {evaluation.status === 'in_review_session' && (
                             <Button
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
-                                navigate(`/evaluations/${evaluation._id}`);
+                                navigate(`/evaluations/${evaluation._id}/review`);
                               }}
-                              className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm"
+                              className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm whitespace-nowrap w-full sm:w-auto"
                             >
                               Complete Review
                             </Button>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

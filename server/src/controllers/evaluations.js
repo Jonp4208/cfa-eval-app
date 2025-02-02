@@ -744,6 +744,12 @@ export const scheduleReviewSession = async (req, res) => {
 // Complete manager evaluation
 export const completeManagerEvaluation = async (req, res) => {
     try {
+        console.log('Starting completeManagerEvaluation with:', {
+            evaluationId: req.params.evaluationId,
+            userId: req.user._id,
+            requestBody: req.body
+        });
+
         const evaluation = await Evaluation.findOne({
             _id: req.params.evaluationId,
             evaluator: req.user._id,
@@ -751,27 +757,91 @@ export const completeManagerEvaluation = async (req, res) => {
         })
         .populate('employee', 'name email position metrics')
         .populate('evaluator', 'name position')
-        .populate('store', 'storeEmail');
+        .populate('store', 'storeEmail')
+        .populate({
+            path: 'template',
+            populate: {
+                path: 'sections.criteria.gradingScale',
+                model: 'GradingScale'
+            }
+        });
+
+        console.log('Found evaluation:', {
+            found: !!evaluation,
+            status: evaluation?.status,
+            hasTemplate: !!evaluation?.template,
+            templateSections: evaluation?.template?.sections?.length
+        });
 
         if (!evaluation) {
             return res.status(404).json({ message: 'Evaluation not found' });
         }
 
+        // Get default grading scale for any criteria without a specific scale
+        const defaultScale = await GradingScale.findOne({ 
+            store: req.user.store._id,
+            isDefault: true,
+            isActive: true
+        });
+
+        console.log('Default grading scale:', {
+            found: !!defaultScale,
+            grades: defaultScale?.grades
+        });
+
         // Update evaluation data
-        evaluation.managerEvaluation = new Map(Object.entries(req.body.evaluation));
+        try {
+            evaluation.managerEvaluation = new Map(Object.entries(req.body.evaluation));
+        } catch (error) {
+            console.error('Error creating managerEvaluation map:', error);
+            return res.status(400).json({ message: 'Invalid evaluation data format' });
+        }
+
         evaluation.overallComments = req.body.overallComments;
         evaluation.developmentPlan = req.body.developmentPlan;
         evaluation.status = 'completed';
         evaluation.completedDate = new Date();
 
-        // Calculate percentage score
-        const scores = Object.values(req.body.evaluation).map(Number);
-        const totalScore = scores.reduce((sum, score) => sum + score, 0);
-        const percentageScore = (totalScore / (scores.length * 5)) * 100;
+        // Calculate percentage score using proper grading scales
+        let totalScore = 0;
+        let totalPossible = 0;
+
+        console.log('Starting score calculation');
+        evaluation.template.sections.forEach((section, sectionIndex) => {
+            section.criteria.forEach((criterion, criterionIndex) => {
+                const key = `${sectionIndex}-${criterionIndex}`;
+                const score = req.body.evaluation[key];
+                const scale = criterion.gradingScale || defaultScale;
+                
+                console.log('Processing criterion score:', {
+                    key,
+                    score,
+                    hasScale: !!scale,
+                    scaleGrades: scale?.grades
+                });
+                
+                if (score !== undefined && scale) {
+                    const numericScore = Number(score);
+                    totalScore += numericScore;
+                    // Use the highest possible value from the grading scale
+                    const maxPossible = Math.max(...scale.grades.map(g => g.value));
+                    totalPossible += maxPossible;
+                }
+            });
+        });
+
+        const percentageScore = totalPossible > 0 ? (totalScore / totalPossible) * 100 : 0;
+
+        console.log('Score calculation complete:', {
+            totalScore,
+            totalPossible,
+            percentageScore
+        });
 
         // Get the user to update their metrics
         const user = await User.findById(evaluation.employee._id);
         if (!user) {
+            console.error('Employee not found:', evaluation.employee._id);
             return res.status(404).json({ message: 'Employee not found' });
         }
 
@@ -788,14 +858,27 @@ export const completeManagerEvaluation = async (req, res) => {
             score: percentageScore
         });
 
-        // Save both evaluation and user
-        await Promise.all([
-            evaluation.save(),
-            user.save()
-        ]);
+        try {
+            // Save evaluation first
+            await evaluation.save();
+            console.log('Evaluation saved successfully');
+
+            // Then save user
+            await user.save();
+            console.log('User metrics updated successfully');
+        } catch (saveError) {
+            console.error('Error saving documents:', saveError);
+            throw saveError;
+        }
 
         // Create notification for employee
-        await createNotificationIfNeeded(evaluation, 'completed');
+        try {
+            await createNotificationIfNeeded(evaluation, 'completed');
+            console.log('Notification created successfully');
+        } catch (notificationError) {
+            console.error('Error creating notification:', notificationError);
+            // Continue execution - don't fail the completion
+        }
 
         // Send email to employee
         if (evaluation.employee.email) {
@@ -827,7 +910,7 @@ export const completeManagerEvaluation = async (req, res) => {
                         </div>
                     `
                 });
-                console.log('Successfully sent completion email to employee:', evaluation.employee.email);
+                console.log('Completion email sent successfully');
             } catch (emailError) {
                 console.error('Failed to send completion email:', emailError);
             }
@@ -837,12 +920,18 @@ export const completeManagerEvaluation = async (req, res) => {
         const evaluationResponse = evaluation.toObject();
         evaluationResponse.managerEvaluation = Object.fromEntries(evaluation.managerEvaluation);
 
+        console.log('Completion successful, sending response');
         res.json({ 
             message: 'Evaluation completed successfully',
             evaluation: evaluationResponse
         });
     } catch (error) {
-        console.error('Error completing manager evaluation:', error);
+        console.error('Error completing manager evaluation:', {
+            error: error.message,
+            stack: error.stack,
+            evaluationId: req.params.evaluationId,
+            userId: req.user._id
+        });
         res.status(500).json({ message: 'Failed to complete evaluation', error: error.message });
     }
 };
@@ -1290,5 +1379,39 @@ export const sendUnacknowledgedNotification = async (req, res) => {
     } catch (error) {
         console.error('Error sending unacknowledged notification:', error);
         res.status(500).json({ message: 'Error sending notification' });
+    }
+};
+
+// Start review without scheduling
+export const startReview = async (req, res) => {
+    try {
+        const evaluation = await Evaluation.findOne({
+            _id: req.params.evaluationId,
+            evaluator: req.user._id,
+            store: req.user.store._id,
+            status: 'pending_manager_review'
+        });
+
+        if (!evaluation) {
+            return res.status(404).json({ message: 'Evaluation not found or cannot be started' });
+        }
+
+        // Update status to in_review_session
+        evaluation.status = 'in_review_session';
+        evaluation.reviewSessionDate = new Date(); // Set to current time since we're starting now
+        
+        await evaluation.save();
+
+        // Create notification for the employee
+        await createNotificationIfNeeded(evaluation, 'review_started');
+
+        res.json({ 
+            message: 'Review started successfully',
+            evaluation 
+        });
+
+    } catch (error) {
+        console.error('Start review error:', error);
+        res.status(500).json({ message: 'Error starting review' });
     }
 };

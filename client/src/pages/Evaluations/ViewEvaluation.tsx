@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -98,6 +98,7 @@ export default function ViewEvaluation() {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const queryClient = useQueryClient();
 
   // Initialize showScheduleReview based on URL parameter
   useEffect(() => {
@@ -333,23 +334,16 @@ export default function ViewEvaluation() {
       return response.data;
     },
     onSuccess: () => {
-      // Create a custom notification element
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center';
-      notification.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        <span>Review Completed Successfully</span>
-      `;
-      document.body.appendChild(notification);
-
-      // Remove the notification after 3 seconds
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
-
-      // Navigate back to evaluations page immediately
+      toast({
+        title: "Success",
+        description: "Evaluation completed successfully",
+      });
+      
+      // Invalidate and refetch queries to update the UI
+      queryClient.invalidateQueries(['evaluation', id]);
+      queryClient.invalidateQueries(['evaluations']);
+      
+      // Navigate back to evaluations list
       navigate('/evaluations');
     },
     onError: (error) => {
@@ -516,28 +510,82 @@ export default function ViewEvaluation() {
   // Complete review mutation
   const completeReview = useMutation({
     mutationFn: async () => {
-      await api.post(`/api/evaluations/${id}/complete`, {
+      const response = await api.post(`/api/evaluations/${id}/complete`, {
         evaluation: answers,
         overallComments,
-        developmentPlan: ''  // Adding this as it's expected by the server
+        developmentPlan: ''
+      }, {
+        timeout: 30000 // 30 second timeout
       });
+      return response.data;
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['evaluation', id] });
+      await queryClient.cancelQueries({ queryKey: ['evaluations'] });
+
+      // Snapshot current state
+      const previousEvaluation = queryClient.getQueryData(['evaluation', id]);
+
+      // Return context with snapshotted value
+      return { previousEvaluation };
+    },
+    onSuccess: (data) => {
+      // Only update cache after successful server response
+      queryClient.setQueryData(['evaluation', id], (old: any) => ({
+        ...old,
+        status: 'completed',
+        managerEvaluation: answers,
+        overallComments,
+      }));
+
       toast({
         title: "Success",
         description: "Review has been completed successfully.",
       });
-      navigate('/evaluations');
+
+      // Navigate after a delay to allow toast to be seen
+      setTimeout(() => {
+        navigate('/evaluations');
+      }, 1000);
     },
-    onError: (error) => {
+    onError: async (error, _, context: any) => {
+      // First rollback the optimistic update
+      if (context?.previousEvaluation) {
+        await queryClient.setQueryData(['evaluation', id], context.previousEvaluation);
+      }
+      
+      // Then show error toast
       console.error('Complete review error:', error);
       toast({
         title: "Error",
         description: "Failed to complete review. Please try again.",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['evaluation', id] });
+      queryClient.invalidateQueries({ queryKey: ['evaluations'] });
     }
   });
+
+  // Handle complete review
+  const handleCompleteReview = () => {
+    // Validate all required fields
+    const errors = validateAnswers(true);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      toast({
+        title: "Validation Error",
+        description: "Please complete all required fields before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    completeReview.mutate();
+  };
 
   const handleAnswerChange = (sectionIndex: number, questionIndex: number, value: string) => {
     setAnswers(prev => ({
@@ -615,6 +663,30 @@ export default function ViewEvaluation() {
     if (managerValue < employeeValue) return 'bg-red-50 border-red-200';
     return 'bg-[#27251F]/5'; // Default background for matching ratings
   };
+
+  // Add a new mutation for starting the review without scheduling
+  const startReviewNow = useMutation({
+    mutationFn: async () => {
+      const response = await api.post(`/api/evaluations/${id}/start-review`);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate and refetch queries to update the UI
+      queryClient.invalidateQueries(['evaluation', id]);
+      queryClient.invalidateQueries(['evaluations']);
+      
+      // Update local state
+      setShowScheduleReview(false);
+      setIsEditing(true);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to start review. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   if (isLoading) {
     return <div className="text-center py-4">Loading evaluation...</div>;
@@ -930,13 +1002,11 @@ export default function ViewEvaluation() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          setShowScheduleReview(false);
-                          setIsEditing(true);
-                        }}
+                        onClick={() => startReviewNow.mutate()}
+                        disabled={startReviewNow.isPending}
                         className="inline-flex items-center justify-center px-6 py-3 bg-white border border-[#E51636] text-[#E51636] font-medium rounded-xl hover:bg-[#E51636]/10 transition-colors"
                       >
-                        Complete Now
+                        {startReviewNow.isPending ? 'Starting...' : 'Complete Now'}
                       </button>
                     </div>
                   </div>
@@ -1215,20 +1285,11 @@ export default function ViewEvaluation() {
                       <div className="flex justify-end">
                         <Button
                           type="button"
-                          onClick={() => {
-                            if (validateAnswers(true).length === 0) {
-                              setShowConfirmSubmit(true);
-                            } else {
-                              toast({
-                                title: "Validation Error",
-                                description: "Please complete all required questions before submitting.",
-                                variant: "destructive",
-                              });
-                            }
-                          }}
+                          onClick={handleCompleteReview}
+                          disabled={completeReview.isPending}
                           className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-12 px-6 rounded-2xl"
                         >
-                          Complete Review
+                          {completeReview.isPending ? 'Completing...' : 'Complete'}
                         </Button>
                       </div>
 
@@ -1250,13 +1311,11 @@ export default function ViewEvaluation() {
                                 Cancel
                               </Button>
                               <Button
-                                onClick={() => {
-                                  completeReview.mutate();
-                                  setShowConfirmSubmit(false);
-                                }}
+                                onClick={handleCompleteReview}
+                                disabled={completeReview.isPending}
                                 className="bg-[#E51636] text-white hover:bg-[#E51636]/90"
                               >
-                                Complete
+                                {completeReview.isPending ? 'Completing...' : 'Complete'}
                               </Button>
                             </DialogFooter>
                           </DialogContent>
