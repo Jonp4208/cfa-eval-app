@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 const Kitchen: React.FC = () => {
   const navigate = useNavigate();
@@ -23,8 +23,8 @@ const Kitchen: React.FC = () => {
     }
   };
 
-  const handleCreateList = () => {
-    // Implementation of handleCreateList function
+  const handleBackToDashboard = () => {
+    navigate('/dashboard');
   };
 
   return (
@@ -41,11 +41,11 @@ const Kitchen: React.FC = () => {
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
-                  onClick={handleCreateList}
+                  onClick={handleBackToDashboard}
                   className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6"
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Create List
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  Back to Dashboard
                 </Button>
               </div>
             </div>
