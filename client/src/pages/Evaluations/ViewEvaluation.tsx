@@ -340,8 +340,8 @@ export default function ViewEvaluation() {
       });
       
       // Invalidate and refetch queries to update the UI
-      queryClient.invalidateQueries(['evaluation', id]);
-      queryClient.invalidateQueries(['evaluations']);
+      queryClient.invalidateQueries({ queryKey: ['evaluation', id] });
+      queryClient.invalidateQueries({ queryKey: ['evaluations'] });
       
       // Navigate back to evaluations list
       navigate('/evaluations');
@@ -672,8 +672,8 @@ export default function ViewEvaluation() {
     },
     onSuccess: () => {
       // Invalidate and refetch queries to update the UI
-      queryClient.invalidateQueries(['evaluation', id]);
-      queryClient.invalidateQueries(['evaluations']);
+      queryClient.invalidateQueries({ queryKey: ['evaluation', id] });
+      queryClient.invalidateQueries({ queryKey: ['evaluations'] });
       
       // Update local state
       setShowScheduleReview(false);
