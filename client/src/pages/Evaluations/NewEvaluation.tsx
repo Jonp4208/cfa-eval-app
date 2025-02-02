@@ -300,23 +300,23 @@ export default function NewEvaluation() {
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-4 sm:p-8 text-white shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
           <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Create Evaluation</h1>
-                <p className="text-white/80 mt-2 text-lg">Schedule performance evaluations for your team</p>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Create Evaluation</h1>
+                <p className="text-white/80 mt-1 sm:mt-2 text-base sm:text-lg">Schedule performance evaluations</p>
               </div>
               <Button 
                 variant="secondary"
-                className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
+                className="bg-white/10 hover:bg-white/20 text-white border-0 h-10 sm:h-12 px-4 sm:px-6 flex-none"
                 onClick={() => navigate('/evaluations')}
               >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                Back to Evaluations
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Back
               </Button>
             </div>
           </div>
@@ -324,12 +324,12 @@ export default function NewEvaluation() {
 
         {/* Progress Steps */}
         <Card className="bg-white rounded-[20px] shadow-md">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex justify-between items-center">
               {steps.map((step, index) => (
-                <div key={step} className="flex items-center">
+                <div key={step} className="flex items-center flex-1">
                   <div className={`flex flex-col items-center ${index + 1 === currentStep ? 'text-[#E51636]' : 'text-[#27251F]/40'}`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${
                       index + 1 === currentStep 
                         ? 'border-[#E51636] bg-[#E51636]/10' 
                         : index + 1 < currentStep
@@ -337,17 +337,20 @@ export default function NewEvaluation() {
                         : 'border-gray-200'
                     }`}>
                       {index + 1 < currentStep ? (
-                        <CheckCircle className="w-6 h-6 text-[#E51636]" />
+                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#E51636]" />
                       ) : (
-                        <span className={index + 1 === currentStep ? 'text-[#E51636] font-semibold' : 'text-[#27251F]/40'}>
+                        <span className={index + 1 === currentStep ? 'text-[#E51636] font-semibold text-sm sm:text-base' : 'text-[#27251F]/40 text-sm sm:text-base'}>
                           {index + 1}
                         </span>
                       )}
                     </div>
-                    <span className="mt-2 text-sm font-medium">{step}</span>
+                    <span className="mt-1 sm:mt-2 text-xs sm:text-sm font-medium hidden sm:block">{step}</span>
+                    <span className="mt-1 text-xs font-medium sm:hidden">
+                      {step.split(' ')[0]}
+                    </span>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className="w-full mx-4 h-[2px] bg-gray-200">
+                    <div className="w-full mx-2 sm:mx-4 h-[2px] bg-gray-200">
                       <div className={`h-full bg-[#E51636] transition-all ${
                         index + 1 < currentStep ? 'w-full' : 'w-0'
                       }`} />
@@ -361,13 +364,13 @@ export default function NewEvaluation() {
 
         {/* Content Section */}
         <Card className="bg-white rounded-[20px] shadow-md">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             {currentStep === 1 && (
               <>
                 {/* Filters */}
                 <Card className="bg-white rounded-[20px] shadow-md">
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#27251F]/40 w-5 h-5" />
                         <input
@@ -375,11 +378,11 @@ export default function NewEvaluation() {
                           placeholder="Search employees..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                          className="w-full h-11 sm:h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent text-base"
                         />
                       </div>
                       <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                        <SelectTrigger className="h-12 rounded-xl border-gray-200 hover:border-gray-300">
+                        <SelectTrigger className="h-11 sm:h-12 rounded-xl border-gray-200 hover:border-gray-300">
                           <SelectValue placeholder="All Departments" />
                         </SelectTrigger>
                         <SelectContent>
@@ -399,19 +402,40 @@ export default function NewEvaluation() {
                           onCheckedChange={setShowAllEmployees}
                         />
                         <Label htmlFor="show-all" className="text-sm text-gray-600">
-                          {showAllEmployees ? 'Showing All Employees' : 'Showing My Team Only'}
+                          {showAllEmployees ? 'All Employees' : 'My Team Only'}
                         </Label>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
+                {/* Quick Department Filters */}
+                <div className="mt-6 -mx-4 px-4">
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {DEPARTMENTS.map((dept) => (
+                      <Button
+                        key={dept}
+                        variant={selectedDepartment === dept ? 'default' : 'outline'}
+                        onClick={() => setSelectedDepartment(dept)}
+                        size="sm"
+                        className={`rounded-full px-4 whitespace-nowrap flex-shrink-0 h-9 sm:h-10 ${
+                          selectedDepartment === dept 
+                            ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                            : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
+                        }`}
+                      >
+                        {dept === 'all' ? 'All' : dept}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Search Results */}
                 <div className="mt-6">
                   {/* Headers */}
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-lg font-medium text-[#27251F]">Available for Evaluation</h2>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <h2 className="text-base sm:text-lg font-medium text-[#27251F]">Available for Evaluation</h2>
                       {Object.values(selectedCountByDepartment).some(count => count > 0) && (
                         <Badge variant="outline" className="bg-[#E51636]/10 text-[#E51636] border-[#E51636]/20">
                           {Object.values(selectedCountByDepartment).reduce((a, b) => a + b, 0)} selected
@@ -420,10 +444,10 @@ export default function NewEvaluation() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 gap-6 sm:gap-8">
                     {/* Available Employees */}
                     <div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 gap-6">
                         {Object.entries(groupedEmployees)
                           .filter(([_, employees]) => employees.some(emp => !emp.pendingEvaluation))
                           .map(([department, departmentEmployees]) => {
@@ -431,47 +455,64 @@ export default function NewEvaluation() {
                             if (availableEmployees.length === 0) return null;
                             
                             return (
-                              <div key={department}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium text-[#27251F]">{department}</h3>
-                                  {selectedCountByDepartment[department] > 0 && (
-                                    <Badge variant="outline" className="bg-[#E51636]/10 text-[#E51636] border-[#E51636]/20">
-                                      {selectedCountByDepartment[department]} selected
-                                    </Badge>
-                                  )}
+                              <div key={department} className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-medium text-[#27251F]">{department}</h3>
+                                    {selectedCountByDepartment[department] > 0 && (
+                                      <Badge variant="outline" className="bg-[#E51636]/10 text-[#E51636] border-[#E51636]/20">
+                                        {selectedCountByDepartment[department]} selected
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      const newSelected = [...selectedEmployees];
+                                      availableEmployees.forEach(emp => {
+                                        if (!newSelected.find(selected => selected._id === emp._id)) {
+                                          newSelected.push(emp);
+                                        }
+                                      });
+                                      setSelectedEmployees(newSelected);
+                                    }}
+                                    className="text-sm text-[#E51636] hover:text-[#E51636] hover:bg-[#E51636]/10"
+                                  >
+                                    Select All
+                                  </Button>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
                                   {availableEmployees.map((employee) => (
                                     <Card
                                       key={employee._id}
-                                      className={`cursor-pointer transition-all rounded-[20px] ${
+                                      className={`cursor-pointer transition-all rounded-xl hover:shadow-md touch-manipulation ${
                                         selectedEmployees.find(emp => emp._id === employee._id)
-                                          ? 'bg-[#E51636]/10 border-[#E51636]/20'
+                                          ? 'ring-2 ring-[#E51636] bg-[#E51636]/10'
                                           : 'hover:border-[#E51636]/20'
                                       }`}
                                       onClick={(e) => handleEmployeeToggle(employee, e)}
                                     >
-                                      <CardContent className="p-4">
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-3">
-                                            {employee.imageUrl ? (
-                                              <img
-                                                src={employee.imageUrl}
-                                                alt={employee.name}
-                                                className="w-10 h-10 rounded-full"
-                                              />
-                                            ) : (
-                                              <div className="w-10 h-10 rounded-full bg-[#E51636]/10 flex items-center justify-center">
-                                                <Users className="w-5 h-5 text-[#E51636]" />
-                                              </div>
-                                            )}
-                                            <div>
-                                              <p className="font-medium text-[#27251F]">{employee.name}</p>
-                                              <p className="text-sm text-[#27251F]/60">{employee.position}</p>
+                                      <CardContent className="p-3 sm:p-4">
+                                        <div className="flex items-center gap-3">
+                                          {employee.imageUrl ? (
+                                            <img
+                                              src={employee.imageUrl}
+                                              alt={employee.name}
+                                              className="w-10 h-10 rounded-full"
+                                            />
+                                          ) : (
+                                            <div className="w-10 h-10 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
+                                              <Users className="w-5 h-5 text-[#E51636]" />
                                             </div>
+                                          )}
+                                          <div className="min-w-0 flex-1">
+                                            <p className="font-medium text-[#27251F] truncate text-sm sm:text-base">{employee.name}</p>
+                                            <p className="text-xs sm:text-sm text-[#27251F]/60 truncate">{employee.position}</p>
                                           </div>
                                           {selectedEmployees.find(emp => emp._id === employee._id) && (
-                                            <Check className="w-5 h-5 text-[#E51636]" />
+                                            <CheckCircle className="w-5 h-5 text-[#E51636] flex-shrink-0" />
                                           )}
                                         </div>
                                       </CardContent>
@@ -486,8 +527,8 @@ export default function NewEvaluation() {
 
                     {/* Pending Evaluations */}
                     <div>
-                      <h2 className="text-lg font-medium text-[#27251F] mb-4">Pending Evaluations</h2>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <h2 className="text-base sm:text-lg font-medium text-[#27251F] mb-4">Pending Evaluations</h2>
+                      <div className="grid grid-cols-1 gap-6">
                         {Object.entries(groupedEmployees)
                           .filter(([_, employees]) => employees.some(emp => emp.pendingEvaluation))
                           .map(([department, departmentEmployees]) => {
@@ -495,34 +536,32 @@ export default function NewEvaluation() {
                             if (pendingEmployees.length === 0) return null;
                             
                             return (
-                              <div key={department}>
-                                <h3 className="font-medium text-[#27251F] mb-2">{department}</h3>
-                                <div className="space-y-2">
+                              <div key={department} className="space-y-3">
+                                <h3 className="font-medium text-[#27251F]">{department}</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
                                   {pendingEmployees.map((employee) => (
                                     <Card
                                       key={employee._id}
-                                      className="rounded-[20px] opacity-50 cursor-not-allowed"
+                                      className="rounded-xl opacity-50 cursor-not-allowed"
                                     >
-                                      <CardContent className="p-4">
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-3">
-                                            {employee.imageUrl ? (
-                                              <img
-                                                src={employee.imageUrl}
-                                                alt={employee.name}
-                                                className="w-10 h-10 rounded-full"
-                                              />
-                                            ) : (
-                                              <div className="w-10 h-10 rounded-full bg-[#E51636]/10 flex items-center justify-center">
-                                                <Users className="w-5 h-5 text-[#E51636]" />
-                                              </div>
-                                            )}
-                                            <div>
-                                              <p className="font-medium text-[#27251F]">{employee.name}</p>
-                                              <p className="text-sm text-[#27251F]/60">{employee.position}</p>
+                                      <CardContent className="p-3 sm:p-4">
+                                        <div className="flex items-center gap-3">
+                                          {employee.imageUrl ? (
+                                            <img
+                                              src={employee.imageUrl}
+                                              alt={employee.name}
+                                              className="w-10 h-10 rounded-full"
+                                            />
+                                          ) : (
+                                            <div className="w-10 h-10 rounded-full bg-[#E51636]/10 flex items-center justify-center flex-shrink-0">
+                                              <Users className="w-5 h-5 text-[#E51636]" />
                                             </div>
+                                          )}
+                                          <div className="min-w-0 flex-1">
+                                            <p className="font-medium text-[#27251F] truncate text-sm sm:text-base">{employee.name}</p>
+                                            <p className="text-xs sm:text-sm text-[#27251F]/60 truncate">{employee.position}</p>
                                           </div>
-                                          <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200">
+                                          <Badge variant="outline" className="bg-yellow-50 text-yellow-600 border-yellow-200 flex-shrink-0 text-xs">
                                             Pending
                                           </Badge>
                                         </div>
@@ -544,14 +583,14 @@ export default function NewEvaluation() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="flex flex-col gap-4">
-                  <h2 className="text-lg font-medium text-[#27251F]">Select a Template</h2>
-                  <div className="overflow-x-auto -mx-4 px-4 pb-2">
+                  <h2 className="text-base sm:text-lg font-medium text-[#27251F]">Select a Template</h2>
+                  <div className="overflow-x-auto -mx-4 px-4">
                     <div className="flex gap-2 mb-4 min-w-max">
                       <Button
                         variant={selectedTag === 'All' ? 'default' : 'outline'}
                         onClick={() => setSelectedTag('All')}
                         size="sm"
-                        className={`rounded-full px-4 ${
+                        className={`rounded-full px-4 h-9 sm:h-10 ${
                           selectedTag === 'All' 
                             ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
                             : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
@@ -565,7 +604,7 @@ export default function NewEvaluation() {
                           variant={selectedTag === tag ? 'default' : 'outline'}
                           onClick={() => setSelectedTag(tag)}
                           size="sm"
-                          className={`rounded-full px-4 ${
+                          className={`rounded-full px-4 h-9 sm:h-10 ${
                             selectedTag === tag 
                               ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
                               : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
@@ -583,7 +622,7 @@ export default function NewEvaluation() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636] mx-auto"></div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {(templates || [])
                       .filter((template: Template) => 
                         selectedTag === 'All' || (template.tags && template.tags.includes(selectedTag))
@@ -592,22 +631,22 @@ export default function NewEvaluation() {
                         <Card
                           key={`template-${template._id || template.id}`}
                           onClick={() => setSelectedTemplate(template)}
-                          className={`cursor-pointer transition-all rounded-[20px] hover:shadow-md
+                          className={`cursor-pointer transition-all rounded-[20px] hover:shadow-md touch-manipulation
                             ${selectedTemplate?.id === (template.id || template._id) 
                               ? 'ring-2 ring-[#E51636] bg-[#E51636]/10' 
                               : 'hover:border-[#E51636]/20'
                             }`}
                         >
-                          <CardContent className="p-4">
+                          <CardContent className="p-3 sm:p-4">
                             <div className="flex items-center justify-between mb-2">
-                              <h3 className="font-medium text-[#27251F]">{template.name}</h3>
-                              <FileText className={`w-5 h-5 ${
+                              <h3 className="font-medium text-[#27251F] text-sm sm:text-base">{template.name}</h3>
+                              <FileText className={`w-4 h-4 sm:w-5 sm:h-5 ${
                                 selectedTemplate?.id === (template.id || template._id) 
                                   ? 'text-[#E51636]' 
                                   : 'text-[#27251F]/40'
                               }`} />
                             </div>
-                            <div className="flex gap-2 mb-3">
+                            <div className="flex flex-wrap gap-1 sm:gap-2 mb-2 sm:mb-3">
                               {(template.tags || []).map(tag => (
                                 <Badge 
                                   key={tag} 
@@ -618,8 +657,8 @@ export default function NewEvaluation() {
                                 </Badge>
                               ))}
                             </div>
-                            <p className="text-sm text-[#27251F]/60">{template.description}</p>
-                            <div className="flex items-center gap-4 mt-4 text-sm text-[#27251F]/60">
+                            <p className="text-xs sm:text-sm text-[#27251F]/60">{template.description}</p>
+                            <div className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-4 text-xs sm:text-sm text-[#27251F]/60">
                               <div className="flex items-center gap-1">
                                 <FileText className="w-4 h-4" />
                                 {template.sectionsCount} {template.sectionsCount === 1 ? 'section' : 'sections'}
@@ -641,7 +680,7 @@ export default function NewEvaluation() {
             {currentStep === 3 && (
               <div className="max-w-md mx-auto space-y-6">
                 <div>
-                  <h2 className="text-lg font-medium text-[#27251F] mb-4">Schedule the Evaluation</h2>
+                  <h2 className="text-base sm:text-lg font-medium text-[#27251F] mb-4">Schedule the Evaluation</h2>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-[#27251F]/60 mb-1">
@@ -651,7 +690,7 @@ export default function NewEvaluation() {
                         type="date"
                         value={scheduledDate}
                         onChange={(e) => setScheduledDate(e.target.value)}
-                        className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
+                        className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent text-base"
                         min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
@@ -663,22 +702,22 @@ export default function NewEvaluation() {
         </Card>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between mt-6">
+        <div className="flex justify-between mt-4 sm:mt-6">
           <Button
             variant="outline"
             onClick={handleBack}
-            className={`h-12 px-6 rounded-xl border-gray-200 hover:bg-gray-50 text-[#27251F] ${currentStep === 1 ? 'invisible' : ''}`}
+            className={`h-10 sm:h-12 px-4 sm:px-6 rounded-xl border-gray-200 hover:bg-gray-50 text-[#27251F] ${currentStep === 1 ? 'invisible' : ''}`}
           >
-            <ChevronLeft className="w-5 h-5 mr-2" />
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Back
           </Button>
           <Button
             onClick={handleNext}
             disabled={isNextDisabled()}
-            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-12 px-6 rounded-xl"
+            className="bg-[#E51636] hover:bg-[#E51636]/90 text-white h-10 sm:h-12 px-4 sm:px-6 rounded-xl"
           >
             {currentStep === steps.length ? 'Create Evaluation' : 'Next'}
-            {currentStep !== steps.length && <ChevronRight className="w-5 h-5 ml-2" />}
+            {currentStep !== steps.length && <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />}
           </Button>
         </div>
       </div>
