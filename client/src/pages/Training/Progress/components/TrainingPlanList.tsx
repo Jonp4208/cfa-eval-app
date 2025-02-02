@@ -98,10 +98,13 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
       <Box sx={{ 
         display: 'flex',
         flexDirection: { xs: 'column', sm: 'row' },
-        gap: 2,
-        mb: 3,
+        gap: { xs: 1.5, sm: 2 },
+        mb: { xs: 2, sm: 3 },
+        mt: { xs: 2, sm: 0 },
+        px: { xs: 2, sm: 0 },
         alignItems: { xs: 'stretch', sm: 'center' },
-        justifyContent: 'flex-end'
+        justifyContent: 'space-between',
+        width: '100%'
       }}>
         <TextField
           placeholder="Search plans..."
@@ -115,10 +118,12 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
             ),
           }}
           sx={{
-            width: { xs: '100%', sm: '300px' },
+            width: '100%',
+            maxWidth: { sm: '300px' },
             '& .MuiOutlinedInput-root': {
               backgroundColor: 'white',
-              borderRadius: '12px',
+              borderRadius: '8px',
+              height: '40px',
               '& fieldset': {
                 borderColor: 'rgba(39, 37, 31, 0.1)',
               },
@@ -130,6 +135,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
               }
             },
             '& .MuiOutlinedInput-input': {
+              padding: '8px 14px',
               '&::placeholder': {
                 color: 'rgba(39, 37, 31, 0.6)',
                 opacity: 1,
@@ -138,7 +144,10 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
           }}
         />
 
-        <FormControl sx={{ width: { xs: '100%', sm: '200px' } }}>
+        <FormControl sx={{ 
+          width: '100%',
+          maxWidth: { sm: '200px' }
+        }}>
           <Select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -146,7 +155,8 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
             renderValue={departmentFilter !== '' ? undefined : () => "Department"}
             sx={{
               backgroundColor: 'white',
-              borderRadius: '12px',
+              borderRadius: '8px',
+              height: '40px',
               '& .MuiOutlinedInput-notchedOutline': {
                 borderColor: 'rgba(39, 37, 31, 0.1)',
               },
@@ -158,6 +168,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
               },
               '& .MuiSelect-select': {
                 color: departmentFilter ? '#27251F' : 'rgba(39, 37, 31, 0.6)',
+                padding: '8px 14px',
               }
             }}
           >
@@ -191,15 +202,22 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
           key={plan.id} 
           sx={{ 
             mb: 2,
+            mx: { xs: 2, sm: 0 },
             backgroundColor: 'white',
-            borderRadius: '20px',
+            borderRadius: { xs: '12px', sm: '20px' },
             boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)',
             border: '1px solid',
             borderColor: 'rgba(39, 37, 31, 0.1)'
           }}
         >
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' }, 
+              justifyContent: 'space-between',
+              gap: { xs: 2, sm: 0 }
+            }}>
               <Box sx={{ flex: 1 }}>
                 <Typography 
                   variant="h6" 
@@ -207,12 +225,18 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                   sx={{ 
                     color: '#27251F',
                     fontWeight: 500,
-                    mb: 2
+                    mb: { xs: 1, sm: 2 },
+                    fontSize: { xs: '1rem', sm: '1.25rem' }
                   }}
                 >
                   {plan.name}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  flexWrap: 'wrap',
+                  mb: { xs: 1, sm: 0 }
+                }}>
                   <Chip
                     icon={<CategoryIcon />}
                     label={plan.name}
@@ -221,8 +245,10 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                       backgroundColor: 'rgba(229, 22, 54, 0.1)',
                       color: '#E51636',
                       borderRadius: '16px',
+                      height: '28px',
                       '& .MuiChip-icon': {
-                        color: '#E51636'
+                        color: '#E51636',
+                        fontSize: '16px'
                       }
                     }}
                   />
@@ -234,14 +260,21 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                       backgroundColor: 'rgba(39, 37, 31, 0.1)',
                       color: 'rgba(39, 37, 31, 0.8)',
                       borderRadius: '16px',
+                      height: '28px',
                       '& .MuiChip-icon': {
-                        color: 'rgba(39, 37, 31, 0.8)'
+                        color: 'rgba(39, 37, 31, 0.8)',
+                        fontSize: '16px'
                       }
                     }}
                   />
                 </Box>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1,
+                ml: { xs: 0, sm: 2 },
+                alignSelf: { xs: 'flex-end', sm: 'center' }
+              }}>
                 <IconButton 
                   onClick={() => handleEditClick(plan)} 
                   size="small"

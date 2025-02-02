@@ -59,10 +59,10 @@ const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ employees, plans 
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Box sx={{ p: isMobile ? 1 : 2 }}>
-        <Grid container spacing={isMobile ? 1.5 : 3}>
+      <Box sx={{ p: isMobile ? 0 : 2 }}>
+        <Grid container spacing={isMobile ? 2 : 3}>
           {/* Key Statistics */}
-          <Grid item xs={12} md={6} lg={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
               title="Total Employees"
               value={totalEmployees}
@@ -70,7 +70,7 @@ const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ employees, plans 
               icon={<PersonIcon />}
             />
           </Grid>
-          <Grid item xs={12} md={6} lg={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
               title="Training Plans"
               value={totalPlans}
@@ -78,7 +78,7 @@ const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ employees, plans 
               icon={<AssignmentIcon />}
             />
           </Grid>
-          <Grid item xs={12} md={6} lg={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
               title="Total Modules"
               value={totalModules}
@@ -86,7 +86,7 @@ const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ employees, plans 
               icon={<MenuBookIcon />}
             />
           </Grid>
-          <Grid item xs={12} md={6} lg={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
               title="Average Completion"
               value={`${Math.round(averageCompletion)}%`}
@@ -97,15 +97,37 @@ const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ employees, plans 
 
           {/* Department Progress */}
           <Grid item xs={12} md={6}>
-            <DepartmentProgress data={trainingData.departmentProgress} />
+            <Box sx={{ 
+              bgcolor: 'background.paper',
+              borderRadius: { xs: 2, sm: 3 },
+              p: { xs: 2, sm: 3 },
+              height: '100%',
+              boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)'
+            }}>
+              <Typography variant="h6" sx={{ mb: { xs: 2, sm: 3 }, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                Department Progress
+              </Typography>
+              <DepartmentProgress data={trainingData.departmentProgress} />
+            </Box>
           </Grid>
 
           {/* Upcoming Trainings */}
           <Grid item xs={12} md={6}>
-            <UpcomingTrainings 
-              data={trainingData.upcomingTrainings} 
-              onEmployeeClick={(employeeId) => console.log('Employee clicked:', employeeId)} 
-            />
+            <Box sx={{ 
+              bgcolor: 'background.paper',
+              borderRadius: { xs: 2, sm: 3 },
+              p: { xs: 2, sm: 3 },
+              height: '100%',
+              boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)'
+            }}>
+              <Typography variant="h6" sx={{ mb: { xs: 2, sm: 3 }, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                Upcoming Trainings
+              </Typography>
+              <UpcomingTrainings 
+                data={trainingData.upcomingTrainings} 
+                onEmployeeClick={handleEmployeeClick}
+              />
+            </Box>
           </Grid>
         </Grid>
       </Box>
