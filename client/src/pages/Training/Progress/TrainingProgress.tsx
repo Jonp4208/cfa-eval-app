@@ -238,7 +238,7 @@ const TrainingProgress: React.FC = () => {
           if (planStats) {
             planStats.assignedCount++;
             planStats.trainees.add(p.traineeId);
-            if (p.moduleProgress?.every(m => m.completed)) {
+            if (p.moduleProgress && Array.isArray(p.moduleProgress) && p.moduleProgress.every(m => m.completed)) {
               planStats.completedCount++;
             }
           }

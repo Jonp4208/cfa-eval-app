@@ -112,14 +112,11 @@ const TrainingModuleProgress: React.FC<TrainingModuleProgressProps> = ({
         }
 
         // Calculate if all modules are completed
-        const allModulesCompleted = trainingProgress.trainingPlan.modules.every(
-          (planModule) => {
-            const progress = updatedProgress.moduleProgress.find(
-              (mp) => mp.moduleId.toString() === planModule._id.toString()
-            );
-            return progress && progress.completed;
-          }
-        );
+        const allModulesCompleted = trainingProgress.trainingPlan?.modules && 
+          Array.isArray(trainingProgress.trainingPlan.modules) &&
+          trainingProgress.trainingPlan.modules.every(
+            (module) => moduleProgress.find((mp) => mp.moduleId === module._id)?.completed
+          );
 
         updatedProgress.status = allModulesCompleted ? 'COMPLETED' : 'IN_PROGRESS';
         console.log('Final Updated Progress:', updatedProgress);

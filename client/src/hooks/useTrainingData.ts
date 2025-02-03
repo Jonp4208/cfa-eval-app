@@ -12,6 +12,7 @@ const useTrainingData = (employees: Employee[]) => {
   const completedTrainings = useMemo(
     () =>
       employees.filter((employee) =>
+        employee.moduleProgress && Array.isArray(employee.moduleProgress) && 
         employee.moduleProgress.every((module) => module.completed)
       ).length,
     [employees]
@@ -21,15 +22,18 @@ const useTrainingData = (employees: Employee[]) => {
     const progress: { [key: string]: { total: number; completed: number } } = {};
 
     employees.forEach((employee) => {
+      const isCompleted = employee.moduleProgress && Array.isArray(employee.moduleProgress) && 
+        employee.moduleProgress.every((module) => module.completed);
+      
       if (progress[employee.department]) {
         progress[employee.department].total++;
-        if (employee.moduleProgress.every((module) => module.completed)) {
+        if (isCompleted) {
           progress[employee.department].completed++;
         }
       } else {
         progress[employee.department] = {
           total: 1,
-          completed: employee.moduleProgress.every((module) => module.completed) ? 1 : 0,
+          completed: isCompleted ? 1 : 0,
         };
       }
     });
