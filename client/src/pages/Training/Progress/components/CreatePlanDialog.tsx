@@ -365,7 +365,7 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
                   key={moduleIndex} 
                   sx={{ 
                     mb: 2, 
-                    p: 2.5,
+                    p: { xs: 1.5, sm: 2.5 },
                     bgcolor: 'white', 
                     borderRadius: 2,
                     border: '1px solid',
@@ -377,13 +377,19 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
                     }
                   }}
                 >
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2, 
+                    mb: 2 
+                  }}>
                     <TextField
                       label="Training Module Name"
                       value={module.name}
                       onChange={(e) => updateModule(dayIndex, moduleIndex, 'name', e.target.value)}
                       fullWidth
                       sx={{
+                        flexGrow: 1,
                         '& .MuiOutlinedInput-root': {
                           borderRadius: '12px',
                           '& fieldset': {
@@ -401,42 +407,50 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
                         }
                       }}
                     />
-                    <TextField
-                      label="Duration (min)"
-                      type="number"
-                      value={module.duration}
-                      onChange={(e) => updateModule(dayIndex, moduleIndex, 'duration', parseInt(e.target.value) || 0)}
-                      sx={{
-                        width: 140,
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '12px',
-                          '& fieldset': {
-                            borderColor: 'rgba(39, 37, 31, 0.2)',
+                    <Box sx={{ 
+                      display: 'flex', 
+                      gap: 1,
+                      width: { xs: '100%', sm: 'auto' }
+                    }}>
+                      <TextField
+                        label="Duration (min)"
+                        type="number"
+                        value={module.duration}
+                        onChange={(e) => updateModule(dayIndex, moduleIndex, 'duration', parseInt(e.target.value) || 0)}
+                        sx={{
+                          flexGrow: { xs: 1, sm: 0 },
+                          width: { sm: 140 },
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            '& fieldset': {
+                              borderColor: 'rgba(39, 37, 31, 0.2)',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'rgba(39, 37, 31, 0.3)',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#E51636',
+                            }
                           },
-                          '&:hover fieldset': {
-                            borderColor: 'rgba(39, 37, 31, 0.3)',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#E51636',
+                          '& .MuiInputLabel-root.Mui-focused': {
+                            color: '#E51636',
                           }
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#E51636',
-                        }
-                      }}
-                    />
-                    <IconButton 
-                      onClick={() => removeModule(dayIndex, moduleIndex)}
-                      sx={{
-                        color: 'rgba(39, 37, 31, 0.4)',
-                        '&:hover': {
-                          color: '#E51636',
-                          bgcolor: 'rgba(229, 22, 54, 0.04)'
-                        }
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                        }}
+                      />
+                      <IconButton 
+                        onClick={() => removeModule(dayIndex, moduleIndex)}
+                        sx={{
+                          alignSelf: 'center',
+                          color: 'rgba(39, 37, 31, 0.4)',
+                          '&:hover': {
+                            color: '#E51636',
+                            bgcolor: 'rgba(229, 22, 54, 0.04)'
+                          }
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </Box>
                   <TextField
                     label="Pathway URL"

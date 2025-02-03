@@ -238,6 +238,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                   mb: { xs: 1, sm: 0 }
                 }}>
                   <Chip
+                    key={`${plan.id}-department`}
                     icon={<CategoryIcon />}
                     label={plan.name}
                     size="small"
@@ -253,6 +254,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                     }}
                   />
                   <Chip
+                    key={`${plan.id}-duration`}
                     icon={<AccessTimeIcon />}
                     label={`${calculateTotalDuration(plan)} minutes total`}
                     size="small"
@@ -276,6 +278,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                 alignSelf: { xs: 'flex-end', sm: 'center' }
               }}>
                 <IconButton 
+                  key={`${plan.id}-edit`}
                   onClick={() => handleEditClick(plan)} 
                   size="small"
                   sx={{
@@ -289,6 +292,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                   <Edit2 size={18} />
                 </IconButton>
                 <IconButton 
+                  key={`${plan.id}-delete`}
                   onClick={() => handleDeleteClick(plan)} 
                   size="small"
                   sx={{
@@ -301,7 +305,8 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                 >
                   <Trash2 size={18} />
                 </IconButton>
-                <IconButton 
+                <IconButton
+                  key={`${plan.id}-expand`}
                   onClick={() => handleExpandClick(plan.id)}
                   size="small"
                   sx={{
@@ -324,10 +329,20 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
             <Collapse in={expandedPlan === plan.id}>
               <List sx={{ mt: 2 }}>
                 {plan.modules?.map((module, index) => (
-                  <ListItem key={`${plan.id}-module-${index}`}>
+                  <ListItem 
+                    key={`${plan.id}-module-${index}-${module.name}`}
+                    disablePadding
+                    sx={{ mb: 1 }}
+                  >
                     <ListItemText
                       primary={module.name}
                       secondary={`${module.estimatedDuration} minutes`}
+                      primaryTypographyProps={{
+                        sx: { color: '#27251F', fontWeight: 500 }
+                      }}
+                      secondaryTypographyProps={{
+                        sx: { color: 'rgba(39, 37, 31, 0.6)' }
+                      }}
                     />
                   </ListItem>
                 ))}
