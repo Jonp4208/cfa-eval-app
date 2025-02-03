@@ -95,12 +95,13 @@ export default function AppRoutes() {
       <Route path="/goals" element={<PrivateRoute><FuturePage /></PrivateRoute>} />
       
       <Route path="/kitchen" element={<PrivateRoute><Kitchen /></PrivateRoute>}>
-        <Route index element={<Navigate to="/kitchen/food-safety" replace />} />
-        <Route path="food-safety" element={<FoodSafety />} />
-        <Route path="food-safety/complete/:id" element={<CompleteChecklist />} />
-        <Route path="food-safety/history/:id" element={<History />} />
-        <Route path="food-safety/checklist/:id/completion/:completionId" element={<ViewCompletion />} />
+        <Route index element={<Navigate to="/food-safety" replace />} />
       </Route>
+
+      <Route path="/food-safety" element={<PrivateRoute><FoodSafety /></PrivateRoute>} />
+      <Route path="/food-safety/complete/:id" element={<PrivateRoute><CompleteChecklist /></PrivateRoute>} />
+      <Route path="/food-safety/history/:id" element={<PrivateRoute><History /></PrivateRoute>} />
+      <Route path="/food-safety/checklist/:id/completion/:completionId" element={<PrivateRoute><ViewCompletion /></PrivateRoute>} />
       
       <Route path="/templates" element={<PrivateRoute><Templates /></PrivateRoute>} />
       <Route path="/templates/new" element={<PrivateRoute><TemplateBuilder /></PrivateRoute>} />

@@ -387,73 +387,128 @@ export default function Evaluations() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7]">
-      <div className="container mx-auto py-8 space-y-6">
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-4 sm:p-8 text-white shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
           <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Evaluations</h1>
-                <p className="text-white/80 mt-2 text-lg">Manage and track team performance</p>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Performance Reviews</h1>
+                <p className="text-white/80 mt-1 sm:mt-2 text-base sm:text-lg">Track and manage employee evaluations</p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {(user?.isAdmin || user?.position === 'Director') && (
-                  <Button 
-                    variant="secondary"
-                    className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"
-                    onClick={() => navigate('/templates')}
-                  >
-                    <FileText className="w-5 h-5 mr-2" />
-                    Manage Templates
-                  </Button>
-                )}
-                <Button 
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
-                  onClick={() => navigate('/evaluations/new')}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  New Evaluation
-                </Button>
-              </div>
+              <Button 
+                className="bg-white text-[#E51636] hover:bg-white/90 h-10 sm:h-12 px-4 sm:px-6 rounded-xl inline-flex items-center justify-center font-medium transition-colors"
+                onClick={() => navigate('/evaluations/new')}
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                New Evaluation
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Filters Section */}
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white rounded-[20px] hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">Pending Reviews</p>
+                  <h3 className="text-2xl font-bold mt-2 text-[#27251F]">
+                    {evaluations?.filter((e: Evaluation) => e.status !== 'completed').length || 0}
+                  </h3>
+                </div>
+                <div className="h-12 w-12 bg-[#E51636]/10 rounded-xl flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-[#E51636]" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[20px] hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">In Review</p>
+                  <h3 className="text-2xl font-bold mt-2 text-[#27251F]">
+                    {evaluations?.filter((e: Evaluation) => e.status === 'in_review_session').length || 0}
+                  </h3>
+                </div>
+                <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[20px] hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">Completed</p>
+                  <h3 className="text-2xl font-bold mt-2 text-[#27251F]">
+                    {evaluations?.filter((e: Evaluation) => e.status === 'completed').length || 0}
+                  </h3>
+                </div>
+                <div className="h-12 w-12 bg-green-100 rounded-xl flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[20px] hover:shadow-lg transition-all">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[#27251F]/60 font-medium">Unacknowledged</p>
+                  <h3 className="text-2xl font-bold mt-2 text-[#27251F]">
+                    {evaluations?.filter((e: Evaluation) => !e.acknowledgement?.acknowledged).length || 0}
+                  </h3>
+                </div>
+                <div className="h-12 w-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                  <Bell className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters and Search */}
         <Card className="bg-white rounded-[20px] shadow-md">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#27251F]/40 w-5 h-5" />
                 <input
                   type="text"
                   placeholder="Search evaluations..."
-                  className="w-full h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-11 sm:h-12 pl-10 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#E51636] focus:border-transparent text-base"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={view === 'all' ? 'default' : 'outline'}
                   onClick={() => setView('all')}
-                  className={`h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium ${
+                  className={`rounded-full ${
                     view === 'all' 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
-                      : 'bg-white hover:bg-gray-50 text-[#27251F]'
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                      : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
                   }`}
                 >
-                  All
+                  All Reviews
                 </Button>
                 <Button
                   variant={view === 'pending' ? 'default' : 'outline'}
                   onClick={() => setView('pending')}
-                  className={`h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium ${
+                  className={`rounded-full ${
                     view === 'pending' 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
-                      : 'bg-white hover:bg-gray-50 text-[#27251F]'
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                      : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
                   }`}
                 >
                   Pending
@@ -461,201 +516,71 @@ export default function Evaluations() {
                 <Button
                   variant={view === 'completed' ? 'default' : 'outline'}
                   onClick={() => setView('completed')}
-                  className={`h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium ${
+                  className={`rounded-full ${
                     view === 'completed' 
-                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white border-0' 
-                      : 'bg-white hover:bg-gray-50 text-[#27251F]'
+                      ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                      : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
                   }`}
                 >
                   Completed
                 </Button>
               </div>
-              {user?.position !== 'Team Member' && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="h-10 px-4 md:px-8 rounded-full text-base md:text-lg font-medium bg-white hover:bg-gray-50 text-[#27251F] flex items-center gap-2"
-                    >
-                      <Filter className="w-5 h-5" />
-                      Filter
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <div className="p-2">
-                      <h3 className="font-medium text-sm mb-2">Department</h3>
-                      <select
-                        className="w-full p-2 rounded-lg border border-gray-200"
-                        value={departmentFilter}
-                        onChange={(e) => setDepartmentFilter(e.target.value)}
-                      >
-                        <option value="all">All Departments</option>
-                        {departments.map((dept) => (
-                          <option key={dept.value} value={dept.value}>
-                            {dept.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Evaluations Grid */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {isLoading ? (
-            // Loading skeleton
-            [...Array(3)].map((_, i) => (
-              <Card key={i} className="bg-white rounded-[20px] shadow-md animate-pulse">
+            <div className="col-span-full flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636]" />
+            </div>
+          ) : filteredEvaluations?.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-[#27251F]/60">No evaluations found</p>
+            </div>
+          ) : (
+            filteredEvaluations?.sort(sortEvaluations).map((evaluation: Evaluation) => (
+              <Card
+                key={evaluation._id}
+                className="bg-white rounded-[20px] hover:shadow-lg transition-all cursor-pointer"
+                onClick={() => navigate(`/evaluations/${evaluation._id}`)}
+              >
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-3">
-                      <div className="h-6 w-48 bg-gray-200 rounded-md" />
-                      <div className="h-4 w-32 bg-gray-200 rounded-md" />
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
+                      <p className="text-sm text-[#27251F]/60">{evaluation.employee.position}</p>
                     </div>
-                    <div className="h-10 w-24 bg-gray-200 rounded-md" />
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      evaluation.status === 'completed' 
+                        ? 'bg-green-100 text-green-800'
+                        : evaluation.status === 'in_review_session'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {evaluation.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[#27251F]/60">Template:</span>
+                      <span className="font-medium text-[#27251F]">{evaluation.template.name}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[#27251F]/60">Scheduled:</span>
+                      <span className="font-medium text-[#27251F]">
+                        {new Date(evaluation.scheduledDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-[#27251F]/60">Evaluator:</span>
+                      <span className="font-medium text-[#27251F]">{evaluation.evaluator.name}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))
-          ) : filteredEvaluations?.length === 0 ? (
-            // Empty state
-            <Card className="bg-white rounded-[20px] shadow-md">
-              <CardContent className="p-8">
-                <div className="flex flex-col items-center text-center">
-                  <div className="h-16 w-16 bg-[#E51636]/10 rounded-full flex items-center justify-center mb-4">
-                    <FileText className="w-8 h-8 text-[#E51636]" />
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2 text-[#27251F]">No Evaluations Found</h2>
-                  <p className="text-[#27251F]/60 mb-6">No evaluations match your current filters.</p>
-                  <Button onClick={() => navigate('/evaluations/new')}>
-                    <Plus className="w-5 h-5 mr-2" />
-                    Create New Evaluation
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            // Evaluation cards
-            filteredEvaluations?.map((evaluation: Evaluation) => {
-              const StatusIcon = getStatusIcon(evaluation.status);
-              const dueStatus = getDueStatus(evaluation.scheduledDate, evaluation.status, evaluation.completedDate);
-              return (
-                <Card key={evaluation._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-4 sm:p-6">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex flex-col gap-2">
-                          <h3 className="text-lg font-medium text-[#27251F]">{evaluation.employee.name}</h3>
-                          <p className="text-[#27251F]/60">{evaluation.template.name}</p>
-                        </div>
-                        {(user?._id === evaluation.evaluator._id) && evaluation.status !== 'completed' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => handleDelete(e, evaluation._id)}
-                            className="h-8 w-8 text-[#E51636] hover:text-[#E51636]/90 hover:bg-[#E51636]/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <StatusIcon className="h-4 w-4" />
-                            <span>{getStatusDisplay(evaluation)}</span>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2 text-sm text-[#27251F]/60">
-                              <Calendar className="h-4 w-4" />
-                              <span>Scheduled: {new Date(evaluation.scheduledDate).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-[#27251F]/60">
-                              <Users className="h-4 w-4" />
-                              <span>Evaluator: {evaluation.evaluator.name}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 sm:mt-0 sm:justify-end">
-                          {evaluation.status === 'completed' && (
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  sendEvaluationEmail(evaluation._id);
-                                }}
-                                title="Send evaluation to store email"
-                                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
-                              >
-                                <Mail className="h-4 w-4" />
-                              </Button>
-                              {!evaluation.acknowledgement?.acknowledged && user?._id === evaluation.evaluator._id && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    sendUnacknowledgedNotification.mutate(evaluation._id);
-                                  }}
-                                  title="Send acknowledgement reminder"
-                                  className="h-9 w-9 sm:h-10 sm:w-10 rounded-full text-[#E51636] hover:bg-[#E51636]/10 active:scale-95 transition-transform duration-100"
-                                >
-                                  <Bell className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                          {evaluation.status === 'pending_manager_review' && user?._id === evaluation.evaluator._id && (
-                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                              <Button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/evaluations/${evaluation._id}?showSchedule=true`);
-                                }}
-                                className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm whitespace-nowrap w-full sm:w-auto"
-                              >
-                                Schedule Review
-                              </Button>
-                              <Button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/evaluations/${evaluation._id}?edit=true`);
-                                }}
-                                className="border border-[#E51636] text-[#E51636] hover:bg-[#E51636]/10 h-9 px-4 rounded-xl text-sm whitespace-nowrap w-full sm:w-auto"
-                              >
-                                Complete Now
-                              </Button>
-                            </div>
-                          )}
-                          {evaluation.status === 'in_review_session' && (
-                            <Button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                navigate(`/evaluations/${evaluation._id}/review`);
-                              }}
-                              className="bg-[#E51636] text-white hover:bg-[#E51636]/90 h-9 px-4 rounded-xl text-sm whitespace-nowrap w-full sm:w-auto"
-                            >
-                              Complete Review
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
           )}
         </div>
       </div>

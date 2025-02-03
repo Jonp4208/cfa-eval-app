@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, PlayCircle, History, X, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, PlayCircle, History, X, Clock, Check } from 'lucide-react';
 import { kitchenService } from '@/services/kitchenService';
 import { FoodSafetyChecklist, ChecklistFrequency, FoodSafetyChecklistCompletion } from '@/types/kitchen';
 import { cn } from "@/lib/utils";
@@ -288,270 +288,312 @@ const FoodSafety: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Food Safety Checklists</h1>
-          <p className="text-gray-500 mt-2">Manage and complete your food safety checks</p>
+    <div className="min-h-screen bg-[#F4F4F4]">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] p-4 sm:p-6 text-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl sm:text-3xl font-bold">Food Safety</h1>
+              <Button 
+                className="bg-white/10 text-white hover:bg-white/20 h-10 px-4 rounded-xl inline-flex items-center justify-center text-sm font-medium transition-colors"
+                onClick={() => navigate('/dashboard')}
+              >
+                Back
+              </Button>
+            </div>
+            <p className="text-white/80 text-sm sm:text-base">Manage and track kitchen food safety checklists</p>
+            <Button 
+              className="bg-white text-[#E51636] hover:bg-white/90 h-12 rounded-xl inline-flex items-center justify-center font-medium transition-colors w-full sm:w-auto"
+              onClick={() => handleOpenDialog()}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              New Checklist
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="bg-[#E51636] text-white hover:bg-[#DD0031] w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" /> Create New Checklist
-        </Button>
       </div>
 
-      {/* View Selection Tabs */}
-      <div className="flex justify-center px-4">
-        <div className="bg-white rounded-full p-1 flex flex-nowrap overflow-x-auto w-full max-w-md gap-1 no-scrollbar">
-          <Button 
-            variant="ghost"
-            className={cn(
-              "rounded-full px-3 py-2 text-sm whitespace-nowrap flex-1 min-w-0",
-              view === 'active' && "bg-[#E51636] text-white hover:bg-[#E51636]/90"
-            )}
+      {/* Content Section */}
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="bg-white rounded-xl hover:shadow-md transition-all">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-[#E51636]/10 rounded-lg flex items-center justify-center shrink-0">
+                  <PlayCircle className="h-5 w-5 text-[#E51636]" />
+                </div>
+                <div>
+                  <p className="text-[#27251F]/60 text-sm font-medium">Active Today</p>
+                  <h3 className="text-xl font-bold text-[#27251F]">
+                    {checklists.filter(c => c.frequency === 'daily').length}
+                  </h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-xl hover:shadow-md transition-all">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[#27251F]/60 text-sm font-medium">Weekly</p>
+                  <h3 className="text-xl font-bold text-[#27251F]">
+                    {checklists.filter(c => c.frequency === 'weekly').length}
+                  </h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-xl hover:shadow-md transition-all">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                  <History className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[#27251F]/60 text-sm font-medium">Monthly</p>
+                  <h3 className="text-xl font-bold text-[#27251F]">
+                    {checklists.filter(c => c.frequency === 'monthly').length}
+                  </h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-xl hover:shadow-md transition-all">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center shrink-0">
+                  <Check className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-[#27251F]/60 text-sm font-medium">Done Today</p>
+                  <h3 className="text-xl font-bold text-[#27251F]">
+                    {completions.filter(c => 
+                      new Date(c.completedAt).toDateString() === new Date().toDateString()
+                    ).length}
+                  </h3>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <Button
+            variant={view === 'active' ? 'default' : 'outline'}
             onClick={() => setView('active')}
+            className={`rounded-full shrink-0 ${
+              view === 'active' 
+                ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
+            }`}
           >
-            Active
+            Active Tasks
           </Button>
-          <Button 
-            variant="ghost"
-            className={cn(
-              "rounded-full px-3 py-2 text-sm whitespace-nowrap flex-1 min-w-0",
-              view === 'upcoming' && "bg-[#E51636] text-white hover:bg-[#E51636]/90"
-            )}
+          <Button
+            variant={view === 'upcoming' ? 'default' : 'outline'}
             onClick={() => setView('upcoming')}
+            className={`rounded-full shrink-0 ${
+              view === 'upcoming' 
+                ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
+            }`}
           >
             Upcoming
           </Button>
-          <Button 
-            variant="ghost"
-            className={cn(
-              "rounded-full px-3 py-2 text-sm whitespace-nowrap flex-1 min-w-0",
-              view === 'completed' && "bg-[#E51636] text-white hover:bg-[#E51636]/90"
-            )}
+          <Button
+            variant={view === 'completed' ? 'default' : 'outline'}
             onClick={() => setView('completed')}
+            className={`rounded-full shrink-0 ${
+              view === 'completed' 
+                ? 'bg-[#E51636] hover:bg-[#E51636]/90 text-white' 
+                : 'hover:bg-[#E51636]/10 hover:text-[#E51636]'
+            }`}
           >
             Completed
           </Button>
         </div>
-      </div>
 
-      {/* Content based on selected view */}
-      {view === 'upcoming' ? (
-        <div className="space-y-8">
-          {getUpcomingChecklists().map(({ date, checklists }) => (
-            <div key={date.toISOString()} className="space-y-4">
-              <h3 className="text-xl font-bold text-[#27251F] sticky top-0 bg-[#F4F4F4] py-4 z-10">
-                {date.toLocaleDateString('en-US', { 
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </h3>
-              <div className="space-y-4">
-                {checklists.map((checklist) => (
-                  <Card 
-                    key={checklist._id}
-                    className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full"
-                  >
-                    <CardContent className="p-8">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-xl font-bold text-[#27251F]">{checklist.name}</h3>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                              {checklist.frequency.charAt(0).toUpperCase() + checklist.frequency.slice(1)}
-                            </Badge>
-                          </div>
-                          <div className="mt-2 text-sm text-[#27251F]/60">
-                            {checklist.items.length} items • Passing Score: {checklist.passingScore}%
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+        {/* Checklists Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {loading ? (
+            <div className="col-span-full flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E51636]" />
             </div>
-          ))}
-          {getUpcomingChecklists().length === 0 && (
-            <Card className="bg-white rounded-[20px] w-full">
-              <CardContent className="p-8 text-center">
-                <p className="text-[#27251F]/60">
-                  No upcoming checklists found for the next 30 days
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      ) : view === 'completed' ? (
-        <div className="space-y-4">
-          {completions.map((completion) => {
-            const checklist = checklists.find(c => c._id === completion.checklist);
-            if (!checklist) return null;
-
-            return (
-              <Card 
-                key={completion._id}
-                className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer w-full bg-green-50 border-green-100"
-                onClick={() => navigate(`/kitchen/food-safety/checklist/${checklist._id}/completion/${completion._id}`)}
-              >
-                <CardContent className="p-8">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-xl font-bold text-[#27251F]">{checklist.name}</h3>
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                          {completion.overallStatus.toUpperCase()}
+          ) : view === 'active' ? (
+            checklists.length === 0 ? (
+              <div className="col-span-full bg-white rounded-xl p-8 text-center">
+                <p className="text-[#27251F]/60">No active checklists found</p>
+                <Button
+                  className="mt-4 bg-[#E51636] text-white hover:bg-[#E51636]/90"
+                  onClick={() => handleOpenDialog()}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create First Checklist
+                </Button>
+              </div>
+            ) : (
+              checklists.map((checklist) => (
+                <Card
+                  key={checklist._id}
+                  className="bg-white rounded-xl hover:shadow-md transition-all group"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-[#27251F] truncate">{checklist.name}</h3>
+                        <p className="text-sm text-[#27251F]/60 mt-0.5 line-clamp-2">{checklist.description}</p>
+                      </div>
+                      <div className="flex items-start gap-1 ml-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDialog(checklist);
+                          }}
+                          className="h-8 w-8 text-gray-500 hover:text-[#E51636] hover:bg-[#E51636]/10"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(checklist._id!);
+                          }}
+                          className="h-8 w-8 text-gray-500 hover:text-[#E51636] hover:bg-[#E51636]/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-[#27251F]/60">
+                          {checklist.items.length} items to check
+                        </div>
+                        <Badge 
+                          className={cn(
+                            "capitalize shrink-0",
+                            checklist.frequency === 'daily' ? "bg-[#E51636]/10 text-[#E51636]" :
+                            checklist.frequency === 'weekly' ? "bg-blue-100 text-blue-600" :
+                            "bg-green-100 text-green-600"
+                          )}
+                        >
+                          {checklist.frequency}
                         </Badge>
                       </div>
-                      <div className="mt-2 text-sm text-[#27251F]/60">
-                        {completion.items.length} items • Score: {completion.score}%
-                      </div>
-                      <div className="mt-4">
-                        <div className="h-2 bg-green-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-green-500 rounded-full transition-all duration-300"
-                            style={{ width: `${completion.score}%` }} 
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-green-200">
-                        <div className="text-sm text-[#27251F]/60">
-                          <p>Completed at: {new Date(completion.completedAt).toLocaleString()}</p>
-                          <p>Completed by: {typeof completion.completedBy === 'string' ? completion.completedBy : completion.completedBy.name}</p>
-                          {completion.reviewedBy && (
-                            <p>Reviewed by: {typeof completion.reviewedBy === 'string' ? completion.reviewedBy : completion.reviewedBy.name}</p>
-                          )}
-                        </div>
-                      </div>
+                      
+                      <Button
+                        size="sm"
+                        className="w-full bg-[#E51636] text-white hover:bg-[#E51636]/90"
+                        onClick={() => handleStartChecklist(checklist._id!)}
+                      >
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        Start
+                      </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-          {completions.length === 0 && (
-            <Card className="bg-white rounded-[20px] w-full">
-              <CardContent className="p-8 text-center">
-                <p className="text-[#27251F]/60">
-                  No completed checklists found
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {checklists.length === 0 ? (
-            <Card className="bg-white rounded-[20px] w-full">
-              <CardContent className="p-8 text-center">
-                <p className="text-[#27251F]/60 mb-4">No checklists found</p>
-                <Button onClick={() => handleOpenDialog()} variant="outline" className="w-full sm:w-auto">
-                  <Plus className="mr-2 h-4 w-4" /> Create Your First Checklist
-                </Button>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              ))
+            )
+          ) : view === 'upcoming' ? (
+            getUpcomingChecklists().length === 0 ? (
+              <div className="col-span-full bg-white rounded-xl p-8 text-center">
+                <p className="text-[#27251F]/60">No upcoming checklists found</p>
+              </div>
+            ) : (
+              getUpcomingChecklists().map((day, index) => (
+                <Card key={index} className="bg-white rounded-xl hover:shadow-md transition-all">
+                  <CardContent className="p-4">
+                    <div className="mb-3">
+                      <h3 className="font-medium text-[#27251F]">
+                        {day.date.toLocaleDateString('en-US', { 
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </h3>
+                    </div>
+                    <div className="space-y-2">
+                      {day.checklists.map((checklist, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded-lg">
+                          <span className="text-[#27251F] truncate mr-2">{checklist.name}</span>
+                          <Badge 
+                            className={cn(
+                              "capitalize shrink-0",
+                              checklist.frequency === 'daily' ? "bg-[#E51636]/10 text-[#E51636]" :
+                              checklist.frequency === 'weekly' ? "bg-blue-100 text-blue-600" :
+                              "bg-green-100 text-green-600"
+                            )}
+                          >
+                            {checklist.frequency}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )
           ) : (
-            checklists.map((checklist) => (
-              <Card 
-                key={checklist._id}
-                className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 w-full"
-                onClick={() => handleStartChecklist(checklist._id!)}
-              >
-                <CardContent className="p-6">
-                  {/* Title and Actions Row */}
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-xl font-bold text-[#27251F]">{checklist.name}</h3>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenDialog(checklist);
-                        }}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(checklist._id!);
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+            completions.length === 0 ? (
+              <div className="col-span-full bg-white rounded-xl p-8 text-center">
+                <p className="text-[#27251F]/60">No completed checklists found</p>
+              </div>
+            ) : (
+              completions.map((completion) => (
+                <Card
+                  key={completion._id}
+                  className="bg-white rounded-xl hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => navigate(`/food-safety/view/${completion._id}`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium text-[#27251F] truncate">{completion.checklist.name}</h3>
+                        <p className="text-sm text-[#27251F]/60 mt-0.5">
+                          Completed {new Date(completion.completedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge className="bg-green-100 text-green-600 shrink-0">
+                        Completed
+                      </Badge>
                     </div>
-                  </div>
-
-                  {/* Badges and Info */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex flex-wrap gap-2">
-                      <span className="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full font-medium">
-                        {checklist.frequency.charAt(0).toUpperCase() + checklist.frequency.slice(1)}
-                      </span>
-                      <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">
-                        {checklist.items.length} items
-                      </span>
-                      <span className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">
-                        Passing: {checklist.passingScore}%
-                      </span>
+                    <div className="space-y-2">
+                      <div className="text-sm flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                        <span className="text-[#27251F]/60">Completed by:</span>
+                        <span className="text-[#27251F] font-medium">{completion.completedBy.name}</span>
+                      </div>
+                      <div className="text-sm flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                        <span className="text-[#27251F]/60">Items checked:</span>
+                        <span className="text-[#27251F] font-medium">{completion.items.length}</span>
+                      </div>
                     </div>
-                    {(checklist.frequency === 'weekly' && checklist.weeklyDay) && (
-                      <p className="text-sm text-[#27251F]/60">
-                        Every {checklist.weeklyDay.charAt(0).toUpperCase() + checklist.weeklyDay.slice(1)}
-                      </p>
-                    )}
-                    {(checklist.frequency === 'monthly' && checklist.monthlyWeek && checklist.monthlyDay) && (
-                      <p className="text-sm text-[#27251F]/60">
-                        {checklist.monthlyWeek}th {checklist.monthlyDay.charAt(0).toUpperCase() + checklist.monthlyDay.slice(1)} of each month
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-100">
-                    <Button 
-                      className="bg-[#E51636] text-white hover:bg-[#DD0031] w-full h-11"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartChecklist(checklist._id!);
-                      }}
-                    >
-                      <PlayCircle className="mr-2 h-5 w-5" /> Complete Checklist
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      className="w-full h-11 border-gray-200"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/kitchen/food-safety/history/${checklist._id}`);
-                      }}
-                    >
-                      <History className="mr-2 h-5 w-5" /> View History
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              ))
+            )
           )}
         </div>
-      )}
+      </div>
 
+      {/* Create/Edit Dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="p-0 bg-white w-[95vw] sm:max-w-[600px] max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader className="bg-[#FF1654] p-6 sm:p-8">
-            <DialogTitle className="text-xl sm:text-2xl font-semibold text-white">
-              {editingChecklist ? 'Edit Checklist' : 'Create New Checklist'}
-            </DialogTitle>
-            <p className="text-white/80 text-base sm:text-lg mt-2">
-              {editingChecklist ? 'Modify existing checklist details' : 'Create a new checklist to manage food safety'}
-            </p>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingChecklist ? 'Edit Checklist' : 'Create New Checklist'}</DialogTitle>
           </DialogHeader>
           <div className="p-6 sm:p-8 space-y-6 overflow-y-auto">
             <div>

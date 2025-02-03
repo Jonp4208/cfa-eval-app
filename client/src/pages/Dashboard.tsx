@@ -107,34 +107,31 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-      </div>
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-4 sm:p-8 text-white shadow-xl relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
           <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Welcome back, {user?.name}</h1>
-                <p className="text-white/80 mt-2 text-lg">CFA Store #{user?.store?.storeNumber}</p>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Welcome back, {user?.name}</h1>
+                <p className="text-white/80 mt-1 sm:mt-2 text-base sm:text-lg">CFA Store #{user?.store?.storeNumber}</p>
               </div>
-              <div className="flex flex-col max-[430px]:w-full sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   variant="secondary" 
-                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"
+                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-10 sm:h-12 px-4 sm:px-6 w-full sm:w-auto"
                   onClick={() => navigate('/evaluations/new')}
                 >
-                  <ClipboardList className="w-5 h-5 mr-2" />
+                  <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   New Evaluation
                 </Button>
                 <Button 
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
+                  className="bg-white text-[#E51636] hover:bg-white/90 h-10 sm:h-12 px-4 sm:px-6 w-full sm:w-auto"
                   onClick={() => navigate('/disciplinary/new')}
                 >
-                  <AlertCircle className="w-5 h-5 mr-2" />
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                   New Incident
                 </Button>
               </div>
@@ -143,7 +140,7 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <Card 
             className="bg-white rounded-[20px] hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
             onClick={() => navigate('/evaluations')}

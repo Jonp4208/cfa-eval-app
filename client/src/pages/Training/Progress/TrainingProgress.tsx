@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -47,6 +47,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import api from '@/lib/axios';
 import CreatePlanDialog from './components/CreatePlanDialog';
+import { toast } from '@/components/ui/use-toast';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -115,6 +116,17 @@ const MobileNav: React.FC<{
   );
 };
 
+// Add type definitions at the top
+interface TrainingPlanWithModules {
+  _id: string;
+  modules: Array<{
+    _id: string;
+    title: string;
+    description?: string;
+    estimatedDuration: number;
+  }>;
+}
+
 const TrainingProgress: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -130,98 +142,123 @@ const TrainingProgress: React.FC = () => {
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const { user } = useAuth();
   const [filter, setFilter] = useState<'active' | 'completed'>('active');
+  const [traineeProgress, setTraineeProgress] = useState<TraineeProgress[]>([]);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Add refs for storing computed values
+  const employeeProgressMapRef = useRef(new Map<string, any>());
+  const planProgressMapRef = useRef(new Map<string, any>());
+  const departmentProgressMapRef = useRef(new Map<string, any>());
 
-  const fetchData = async () => {
+  // Optimize data fetching with better caching and batching
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [plansResponse, employeesResponse] = await Promise.all([
-        api.get('/api/training/plans'),
-        api.get('/api/training/employees/training-progress')
+      
+      // Create a cache key
+      const cacheKey = `training_data_${user?._id}`;
+      
+      // Try to get data from sessionStorage first
+      const cachedData = sessionStorage.getItem(cacheKey);
+      if (cachedData) {
+        const { plans, employees, progress, timestamp } = JSON.parse(cachedData);
+        // Check if cache is less than 30 seconds old
+        if (Date.now() - timestamp < 30000) {
+          setTrainingPlans(plans);
+          setEmployees(employees);
+          setTraineeProgress(progress);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // If no cache or cache is old, fetch fresh data
+      const [plans, employees, progress] = await Promise.all([
+        api.get('/training/plans').then(res => res.data),
+        api.get('/employees').then(res => res.data),
+        api.get('/training/progress').then(res => res.data)
       ]);
+
+      // Pre-compute progress maps
+      const employeeProgressMap = new Map();
+      const planProgressMap = new Map();
+      const departmentProgressMap = new Map();
       
-      const plansWithId = plansResponse.data.map((plan: any) => ({
-        id: plan._id,
-        _id: plan._id,
-        name: plan.name,
-        startDate: plan.createdAt || new Date().toISOString(),
-        severity: plan.severity || 1,
-        type: plan.type || 'REGULAR',
-        department: plan.department || 'FOH',
-        numberOfDays: plan.numberOfDays || 1,
-        modules: plan.modules || [],
-        includesCoreValues: Boolean(plan.includesCoreValues),
-        includesBrandStandards: Boolean(plan.includesBrandStandards),
-        isTemplate: Boolean(plan.isTemplate),
-        createdBy: {
-          _id: plan.createdBy?._id || 'system',
-          firstName: plan.createdBy?.firstName || 'System',
-          lastName: plan.createdBy?.lastName || 'User'
-        },
-        store: plan.store || 'default',
-        createdAt: new Date(plan.createdAt || new Date()),
-        updatedAt: new Date(plan.updatedAt || new Date()),
-        description: plan.description
-      })) as SimplifiedTrainingPlan[];
-      
-      // Always update plans to ensure UI is in sync
-      setTrainingPlans(plansWithId);
-      
-      const employeesWithId = employeesResponse.data.map((emp: any) => {
-        const mappedTrainingProgress = Array.isArray(emp.trainingProgress) 
-          ? emp.trainingProgress.map((progress: any) => ({
-              ...progress,
-              trainingPlan: progress.trainingPlan ? {
-                id: progress.trainingPlan._id,
-                _id: progress.trainingPlan._id,
-                name: progress.trainingPlan.name,
-                startDate: progress.trainingPlan.createdAt || new Date().toISOString(),
-                severity: progress.trainingPlan.severity || 1,
-                type: progress.trainingPlan.type || 'REGULAR',
-                department: progress.trainingPlan.department || 'FOH',
-                numberOfDays: progress.trainingPlan.numberOfDays || 1,
-                modules: progress.trainingPlan.modules || [],
-                includesCoreValues: Boolean(progress.trainingPlan.includesCoreValues),
-                includesBrandStandards: Boolean(progress.trainingPlan.includesBrandStandards),
-                isTemplate: Boolean(progress.trainingPlan.isTemplate),
-                createdBy: {
-                  _id: progress.trainingPlan.createdBy?._id || 'system',
-                  firstName: progress.trainingPlan.createdBy?.firstName || 'System',
-                  lastName: progress.trainingPlan.createdBy?.lastName || 'User'
-                },
-                store: progress.trainingPlan.store || 'default',
-                createdAt: new Date(progress.trainingPlan.createdAt || new Date()),
-                updatedAt: new Date(progress.trainingPlan.updatedAt || new Date()),
-                description: progress.trainingPlan.description
-              } : undefined,
-              moduleProgress: Array.isArray(progress.moduleProgress) ? progress.moduleProgress : []
-            }))
-          : [];
+      progress.forEach((p: TraineeProgress) => {
+        // Employee progress
+        const completedModules = p.moduleProgress.filter(m => m.completed).length;
+        const plan = typeof p.trainingPlanId === 'object' ? 
+          p.trainingPlanId as TrainingPlanWithModules : null;
+        const totalModules = plan?.modules?.length || 0;
         
-        return {
-          _id: emp._id,
-          id: emp._id,
-          name: emp.name,
-          position: emp.position,
-          department: emp.department || (Array.isArray(emp.departments) && emp.departments.length > 0 ? emp.departments[0] : 'FOH'),
-          startDate: emp.startDate,
-          trainingProgress: mappedTrainingProgress,
-          moduleProgress: Array.isArray(emp.moduleProgress) ? emp.moduleProgress : []
-        } as EmployeeWithProgress;
+        employeeProgressMap.set(p.traineeId, {
+          completed: completedModules,
+          total: totalModules,
+          rate: totalModules > 0 ? (completedModules / totalModules) * 100 : 0
+        });
+        
+        // Plan progress
+        const planId = plan ? plan._id : p.trainingPlanId as string;
+        if (!planProgressMap.has(planId)) {
+          planProgressMap.set(planId, {
+            assignedCount: 0,
+            completedCount: 0,
+            trainees: new Set()
+          });
+        }
+        const planStats = planProgressMap.get(planId);
+        planStats.assignedCount++;
+        planStats.trainees.add(p.traineeId);
+        if (p.moduleProgress.every(m => m.completed)) {
+          planStats.completedCount++;
+        }
+        
+        // Department progress
+        const employee = employees.find((e: Employee) => e.id === p.traineeId);
+        if (employee?.department) {
+          if (!departmentProgressMap.has(employee.department)) {
+            departmentProgressMap.set(employee.department, {
+              totalModules: 0,
+              completedModules: 0,
+              employees: new Set()
+            });
+          }
+          const deptStats = departmentProgressMap.get(employee.department);
+          deptStats.totalModules += totalModules;
+          deptStats.completedModules += completedModules;
+          deptStats.employees.add(employee.id);
+        }
       });
+
+      // Cache the results
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        plans,
+        employees,
+        progress,
+        timestamp: Date.now()
+      }));
       
-      // Always update employees to ensure UI is in sync
-      setEmployees(employeesWithId);
-    } catch (err) {
-      console.error('Error fetching training progress:', err);
-      setError('Failed to load training progress data');
+      // Update state and refs
+      setTrainingPlans(plans);
+      setEmployees(employees);
+      setTraineeProgress(progress);
+      employeeProgressMapRef.current = employeeProgressMap;
+      planProgressMapRef.current = planProgressMap;
+      departmentProgressMapRef.current = departmentProgressMap;
+    } catch (error) {
+      console.error('Error fetching training data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load training data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?._id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     console.log('Current Employees State:', employees);
@@ -340,30 +377,54 @@ const TrainingProgress: React.FC = () => {
     }
   };
 
+  // Optimize filtered employees with memoization
   const filteredEmployees = useMemo(() => {
-    console.log('Filtering Employees:', employees);
+    if (!employees.length) return [];
+    
     return employees.filter(employee => {
-      const matchesSearch = 
-        employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        employee.position.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = employee.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDepartment = !departmentFilter || employee.department === departmentFilter;
-      
-      // Filter based on training status
-      const hasTrainingProgress = employee.trainingProgress && employee.trainingProgress.length > 0;
-      if (!hasTrainingProgress) return false;
-
-      const hasActiveTraining = employee.trainingProgress.some(progress => progress.status === 'IN_PROGRESS');
-      const hasCompletedTraining = employee.trainingProgress.some(progress => progress.status === 'COMPLETED');
-
-      if (filter === 'active') {
-        return matchesSearch && matchesDepartment && hasActiveTraining;
-      } else if (filter === 'completed') {
-        return matchesSearch && matchesDepartment && hasCompletedTraining;
-      }
-
       return matchesSearch && matchesDepartment;
-    });
-  }, [employees, searchQuery, departmentFilter, filter]);
+    }).map(employee => ({
+      ...employee,
+      progress: employeeProgressMapRef.current.get(employee.id) || {
+        completed: 0,
+        total: 0,
+        rate: 0
+      }
+    }));
+  }, [employees, searchQuery, departmentFilter]);
+
+  // Optimize filtered plans with memoization
+  const filteredPlans = useMemo(() => {
+    if (!trainingPlans.length) return [];
+    
+    return trainingPlans.filter(plan => {
+      const matchesSearch = plan.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDepartment = !departmentFilter || plan.department === departmentFilter;
+      return matchesSearch && matchesDepartment;
+    }).map(plan => ({
+      ...plan,
+      progress: planProgressMapRef.current.get(plan._id) || {
+        assignedCount: 0,
+        completedCount: 0,
+        trainees: new Set()
+      }
+    }));
+  }, [trainingPlans, searchQuery, departmentFilter]);
+
+  // Optimize department progress calculation
+  const departmentProgress = useMemo(() => {
+    const departments = Array.from(departmentProgressMapRef.current.entries()).map(([dept, stats]) => ({
+      name: dept,
+      completionRate: (stats.completedModules / stats.totalModules) * 100,
+      employeeCount: stats.employees.size,
+      totalModules: stats.totalModules,
+      completedModules: stats.completedModules
+    }));
+    
+    return departments.sort((a, b) => b.completionRate - a.completionRate);
+  }, [traineeProgress]);
 
   if (loading) {
     return (
@@ -603,7 +664,7 @@ const TrainingProgress: React.FC = () => {
 
               <TabsContent value="plans" className="p-3 md:p-6">
                 <TrainingPlanList
-                  plans={trainingPlans}
+                  plans={filteredPlans}
                   onPlanUpdated={fetchData}
                 />
               </TabsContent>

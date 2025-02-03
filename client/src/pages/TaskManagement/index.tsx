@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { taskService } from '../../services/taskService';
 import { TaskList as TaskListType, TaskInstance, Department, Shift, TaskItem } from '../../types/task';
@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { cn } from '../../lib/utils';
 import { MongoId } from '../../types/task';
 import userService from '../../services/userService';
+import { useNavigate } from 'react-router-dom';
 
 const getIdString = (id: string | MongoId | undefined): string => {
   if (!id) return '';
@@ -32,11 +33,13 @@ const TaskManagement = () => {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedInstance, setSelectedInstance] = useState<TaskInstance | null>(null);
+  const [instanceMetricsCache, setInstanceMetricsCache] = useState<Map<string, any>>(new Map());
   const { user } = useAuth();
   const [selectedList, setSelectedList] = useState<TaskListType | null>(null);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [completedByUsers, setCompletedByUsers] = useState<Record<string, { name: string }>>({});
+  const navigate = useNavigate();
 
   // Available departments
   const departments: Department[] = ['Front Counter', 'Drive Thru', 'Kitchen'];
@@ -69,31 +72,183 @@ const TaskManagement = () => {
     view: 'current'
   });
 
-  // Fetch task lists and active instances
-  const fetchData = async () => {
+  // Optimize data fetching with better caching and batching
+  const fetchData = useCallback(async () => {
     try {
-      console.log('Fetching task data...');
+      setLoading(true);
+      
+      // Create a cache key based on filters
+      const cacheKey = `tasks_${filters.area || 'all'}`;
+      
+      // Try to get data from sessionStorage first
+      const cachedData = sessionStorage.getItem(cacheKey);
+      if (cachedData) {
+        const { lists, instances, timestamp } = JSON.parse(cachedData);
+        // Check if cache is less than 30 seconds old
+        if (Date.now() - timestamp < 30000) {
+          setTaskLists(lists);
+          setActiveInstances(instances);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // If no cache or cache is old, fetch fresh data
       const [lists, instances] = await Promise.all([
         taskService.getLists(filters.area),
         taskService.getInstances(filters.area)
       ]);
-      console.log('Fetched task lists:', lists);
-      console.log('Fetched instances:', instances);
-      setTaskLists(lists);
-      setActiveInstances(instances.sort((a, b) => 
+      
+      // Pre-sort instances once
+      const sortedInstances = instances.sort((a, b) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      ));
-      setLoading(false);
+      );
+
+      // Pre-compute metrics and instance lookup maps
+      const instanceMetrics = new Map();
+      const completedInstanceIds = new Set();
+      const instanceMap = new Map();
+      
+      sortedInstances.forEach(instance => {
+        // Compute metrics
+        const completedTasks = instance.tasks.filter(t => t.status === 'completed').length;
+        const totalTasks = instance.tasks.length;
+        const metrics = {
+          completedTasks,
+          totalTasks,
+          completionRate: totalTasks ? (completedTasks / totalTasks) * 100 : 0,
+          remainingTime: instance.tasks
+            .filter(t => t.status === 'pending')
+            .reduce((acc, t) => acc + (t.estimatedTime || 0), 0)
+        };
+        instanceMetrics.set(getIdString(instance._id), metrics);
+        
+        // Track completed instances
+        if (instance.status === 'completed') {
+          completedInstanceIds.add(getIdString(instance._id));
+        }
+        
+        // Build instance map
+        const listId = typeof instance.taskList === 'string' 
+          ? instance.taskList 
+          : getIdString(instance.taskList?._id);
+        instanceMap.set(listId, instance);
+      });
+
+      // Cache the results
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        lists,
+        instances: sortedInstances,
+        timestamp: Date.now()
+      }));
+      
+      setTaskLists(lists);
+      setActiveInstances(sortedInstances);
+      setInstanceMetricsCache(instanceMetrics);
+      
+      // Store pre-computed sets and maps in ref to avoid re-renders
+      completedInstanceIdsRef.current = completedInstanceIds;
+      instanceMapRef.current = instanceMap;
     } catch (error) {
       console.error('Error fetching task data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load task data",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    console.log('TaskManagement component mounted');
-    fetchData();
   }, [filters.area]);
+
+  // Add refs for storing computed values
+  const completedInstanceIdsRef = useRef(new Set<string>());
+  const instanceMapRef = useRef(new Map<string, TaskInstance>());
+
+  // Optimize filteredInstances with refs
+  const filteredInstances = useMemo(() => {
+    if (!activeInstances.length) return [];
+    
+    return activeInstances.filter(instance => {
+      const isCompleted = completedInstanceIdsRef.current.has(getIdString(instance._id));
+      
+      if (filters.status === 'completed') return isCompleted;
+      if (filters.status === 'in_progress') return !isCompleted;
+      if (filters.department && instance.department !== filters.department) return false;
+      if (filters.shift && instance.shift !== filters.shift) return false;
+      return true;
+    });
+  }, [activeInstances, filters.status, filters.department, filters.shift]);
+
+  // Optimize filteredTaskLists with refs
+  const filteredTaskLists = useMemo(() => {
+    if (!taskLists.length) return [];
+    
+    const today = new Date();
+    const dayName = today.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const currentDate = today.getDate();
+    
+    return taskLists.filter(list => {
+      const instance = instanceMapRef.current.get(getIdString(list._id));
+      if (instance?.status === 'completed' && !list.isRecurring) {
+        return false;
+      }
+
+      if (list.isRecurring) {
+        if (list.recurringType === 'monthly' && currentDate !== list.monthlyDate) {
+          return false;
+        }
+        if (list.recurringType === 'weekly' && !list.recurringDays?.includes(dayName)) {
+          return false;
+        }
+      }
+
+      return (!filters.department || list.department === filters.department) &&
+             (!filters.shift || list.shift === filters.shift);
+    });
+  }, [taskLists, filters.department, filters.shift]);
+
+  // Memoize handlers
+  const handleTaskComplete = useCallback(async (instanceId: string, taskId: string, status: 'pending' | 'completed') => {
+    try {
+      await taskService.updateTaskStatus(instanceId, taskId, status);
+      fetchData(); // Refresh data after update
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task status",
+        variant: "destructive",
+      });
+    }
+  }, [fetchData]);
+
+  const handleAssignTask = useCallback(async (taskId: string, userId: string) => {
+    try {
+      if (!selectedInstance) return;
+      await taskService.assignTask(getIdString(selectedInstance._id), taskId, userId);
+      fetchData();
+      setAssignDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Task assigned successfully",
+        variant: "default",
+        className: "bg-green-50 border-green-200",
+      });
+    } catch (error) {
+      console.error('Error assigning task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to assign task",
+        variant: "destructive",
+      });
+    }
+  }, [selectedInstance, fetchData]);
+
+  // Effect to fetch data
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Effect to populate form when editing
   useEffect(() => {
@@ -183,198 +338,22 @@ const TaskManagement = () => {
     }
   };
 
-  // Get active instance for a list
-  const getActiveInstance = (listId: string) => {
-    if (!listId) return null;
-    return activeInstances.find(i => {
+  // Calculate completion metrics for active instance
+  const metrics = useMemo(() => {
+    if (!activeInstances.length || !activeInstances[0]) return null;
+    return instanceMetricsCache.get(getIdString(activeInstances[0]._id));
+  }, [activeInstances, instanceMetricsCache]);
+
+  // Get instance and metrics for a specific list
+  const getListInstanceAndMetrics = (listId?: string) => {
+    if (!listId) return { instance: null, metrics: null };
+    const instance = activeInstances.find(i => {
       if (typeof i.taskList === 'string') {
         return i.taskList === listId;
       }
       return i.taskList?._id === listId;
     });
-  };
-
-  // Handle task completion
-  const handleTaskComplete = async (instanceId: string, taskId: string, status: 'pending' | 'completed') => {
-    try {
-      console.log('Updating task status:', { instanceId, taskId, status });
-      
-      // Check if the task exists in the instance
-      const instance = activeInstances.find(i => getIdString(i._id) === instanceId);
-      const task = instance?.tasks.find(t => getIdString(t._id) === taskId);
-      
-      if (!task) {
-        throw new Error('Task not found');
-      }
-
-      // Check if the task is assigned to the current user or if the user is a Leader/Director
-      if (status === 'completed' && 
-          task.assignedTo && 
-          getIdString(task.assignedTo._id) !== user?._id && 
-          !['Leader', 'Director'].includes(user?.position || '')) {
-        toast({
-          title: "Not Authorized",
-          description: (
-            <div className="mt-1 flex items-center gap-2 text-destructive">
-              <XCircle className="h-4 w-4" />
-              <span>This task is assigned to {task.assignedTo.name}. Only the assigned user can mark it as complete.</span>
-            </div>
-          ),
-          variant: "destructive",
-          duration: 4000,
-        });
-        return;
-      }
-      
-      // If no instance exists yet, create one
-      let currentInstanceId = instanceId;
-      if (!instanceId) {
-        const taskList = taskLists.find(list => list.tasks.some(task => task._id === taskId));
-        if (!taskList) return;
-        
-        const newInstance = await taskService.createInstance({
-          taskListId: getIdString(taskList._id),
-          date: new Date().toISOString()
-        });
-        currentInstanceId = getIdString(newInstance._id);
-      }
-      
-      // Update task status
-      const updatedInstance = await taskService.updateTaskStatus(currentInstanceId, taskId, status);
-      console.log('Task status updated successfully:', updatedInstance);
-
-      // Check if all tasks are completed
-      const allTasksCompleted = updatedInstance.tasks.every(task => task.status === 'completed');
-      
-      // Refresh data
-      await fetchData();
-
-      // If all tasks are completed and it's not a recurring task, close the dialog
-      if (allTasksCompleted && selectedList && !selectedList.isRecurring) {
-        setTaskDialogOpen(false);
-      }
-
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 
-        typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
-        'An unexpected error occurred';
-      
-      console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: (
-          <div className="mt-1 flex items-center gap-2 text-destructive">
-            <XCircle className="h-4 w-4" />
-            <span>{errorMessage}</span>
-          </div>
-        ),
-        variant: "destructive",
-        duration: 4000,
-      });
-    }
-  };
-
-  // Handle task assignment
-  const handleAssignTask = async (taskId: string, userId: string) => {
-    try {
-      if (!selectedInstance) return;
-      
-      await taskService.assignTask(getIdString(selectedInstance._id), taskId, userId);
-      await fetchData();
-      setAssignDialogOpen(false);
-      toast({
-        title: "Task Assigned",
-        description: (
-          <div className="mt-1 flex items-center gap-2 text-green-600">
-            <CheckCircle className="h-4 w-4" />
-            <span>Task assigned successfully</span>
-          </div>
-        ),
-        variant: "default",
-        className: "bg-green-50 border-green-200",
-        duration: 4000,
-      });
-    } catch (error: unknown) {
-      console.error('Error:', error);
-      const errorMessage = error instanceof Error ? error.message : 
-        typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
-        'Failed to assign task';
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 4000,
-      });
-    }
-  };
-
-  // Calculate completion metrics for active instance
-  const getInstanceMetrics = (instance: TaskInstance) => {
-    const totalTasks = instance.tasks.length;
-    const completedTasks = instance.tasks.filter(t => t.status === 'completed').length;
-    const totalTime = instance.tasks.reduce((acc, t) => acc + (t.estimatedTime || 0), 0);
-    const remainingTime = instance.tasks
-      .filter(t => t.status === 'pending')
-      .reduce((acc, t) => acc + (t.estimatedTime || 0), 0);
-
-    return {
-      completedTasks,
-      totalTasks,
-      completionRate: (completedTasks / totalTasks) * 100,
-      remainingTime
-    };
-  };
-
-  // Filter task lists based on selected filters
-  const filteredTaskLists = taskLists.filter(list => {
-    // First check if there's a completed instance for this list
-    const instance = getActiveInstance(getIdString(list._id));
-    if (instance?.status === 'completed' && !list.isRecurring) {
-      return false; // Don't show completed non-recurring tasks
-    }
-
-    // For monthly recurring tasks, only show on the specified date
-    if (list.isRecurring && list.recurringType === 'monthly') {
-      const today = new Date();
-      if (today.getDate() !== list.monthlyDate) {
-        return false; // Don't show if it's not the specified day of the month
-      }
-    }
-
-    // For weekly recurring tasks, only show on the specified days
-    if (list.isRecurring && list.recurringType === 'weekly') {
-      const today = new Date();
-      const dayName = today.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-      return list.recurringDays?.includes(dayName) ?? false;
-    }
-
-    // Then apply other filters
-    if (filters.department && list.department !== filters.department) return false;
-    if (filters.shift && list.shift !== filters.shift) return false;
-    return true;
-  });
-
-  // Filter instances based on status and other filters
-  const filteredInstances = activeInstances
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Sort by newest first
-    .filter(instance => {
-      // Filter by status
-      if (filters.status === 'completed') return instance.status === 'completed';
-      if (filters.status === 'in_progress') return instance.status !== 'completed';
-      
-      // Filter by department and shift if set
-      if (filters.department && instance.department !== filters.department) return false;
-      if (filters.shift && instance.shift !== filters.shift) return false;
-      
-      return true;
-    });
-
-  // Get instance and metrics for a specific list
-  const getListInstanceAndMetrics = (listId?: string) => {
-    if (!listId) return { instance: null, metrics: null };
-    const instance = getActiveInstance(listId);
-    const metrics = instance ? getInstanceMetrics(instance) : null;
+    const metrics = instance ? instanceMetricsCache.get(getIdString(instance._id)) : null;
     return { instance, metrics };
   };
 
@@ -456,8 +435,8 @@ const TaskManagement = () => {
     }
   };
 
-  // Get upcoming tasks for the next 30 days
-  const getUpcomingTasks = () => {
+  // Memoize upcoming tasks
+  const upcomingTasks = useMemo(() => {
     const upcoming: { date: Date; tasks: TaskListType[] }[] = [];
     const today = new Date();
     
@@ -489,7 +468,7 @@ const TaskManagement = () => {
     }
     
     return upcoming;
-  };
+  }, [taskLists]);
 
   const handleAreaChange = (value: string | undefined) => {
     setFilters(prev => ({
@@ -521,277 +500,26 @@ const TaskManagement = () => {
   }
 
   const activeInstance = activeInstances[0];
-  const metrics = activeInstance ? getInstanceMetrics(activeInstance) : null;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-          <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Task Management</h1>
-                <p className="text-white/80 mt-2 text-lg">Manage and track daily operation tasks</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4">
-                {(user?.position === 'Leader' || user?.position === 'Director') && (
-                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6">
-                        <Plus className="w-5 h-5 mr-2" />
-                        Create List
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="w-[95vw] sm:max-w-[600px] h-[90vh] sm:h-auto max-h-[90vh] overflow-hidden flex flex-col">
-                      <DialogHeader className="bg-gradient-to-r from-[#E51636] to-[#DD0031] text-white p-6 relative">
-                        <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-                        <div className="relative">
-                          <DialogTitle className="text-lg sm:text-xl font-bold">
-                            {selectedList ? 'Edit Task List' : 'Create New Task List'}
-                          </DialogTitle>
-                          <p className="text-white/80 mt-1 text-sm">
-                            {selectedList ? 'Modify existing task list details' : 'Create a new task list to manage operations'}
-                          </p>
-                        </div>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4 overflow-y-auto px-4 sm:px-6">
-                        <div className="space-y-2">
-                          <Label htmlFor="name" className="text-sm sm:text-base font-medium">List Name</Label>
-                          <Input
-                            id="name"
-                            value={newTaskList.name}
-                            onChange={(e) => setNewTaskList(prev => ({ ...prev, name: e.target.value }))}
-                            placeholder="Enter list name"
-                            className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm sm:text-base font-medium">Department</Label>
-                            <Select
-                              value={newTaskList.department}
-                              onValueChange={(value: Department) => 
-                                setNewTaskList(prev => ({ ...prev, department: value }))
-                              }
-                            >
-                              <SelectTrigger className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]">
-                                <SelectValue placeholder="Select department" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {departments.map(dept => (
-                                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-sm sm:text-base font-medium">Shift</Label>
-                            <Select
-                              value={newTaskList.shift}
-                              onValueChange={(value: Shift) => 
-                                setNewTaskList(prev => ({ ...prev, shift: value }))
-                              }
-                            >
-                              <SelectTrigger className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]">
-                                <SelectValue placeholder="Select shift" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="day">Day Shift</SelectItem>
-                                <SelectItem value="night">Night Shift</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center space-x-2 py-2">
-                          <Checkbox
-                            id="recurring"
-                            checked={newTaskList.isRecurring}
-                            onCheckedChange={(checked) => 
-                              setNewTaskList(prev => ({ 
-                                ...prev, 
-                                isRecurring: checked as boolean,
-                                recurringType: checked ? 'daily' : undefined,
-                                recurringDays: [],
-                                monthlyDate: 1
-                              }))
-                            }
-                            className="h-5 w-5 border-gray-200 text-[#E51636] focus:ring-[#E51636]"
-                          />
-                          <Label htmlFor="recurring" className="text-sm sm:text-base font-medium">Recurring Task List</Label>
-                        </div>
-
-                        {newTaskList.isRecurring && (
-                          <div className="space-y-4 bg-gray-50 rounded-lg p-4">
-                            <div className="space-y-2">
-                              <Label className="text-sm sm:text-base font-medium">Recurring Type</Label>
-                              <Select
-                                value={newTaskList.recurringType}
-                                onValueChange={(value: 'daily' | 'weekly' | 'monthly') => 
-                                  setNewTaskList(prev => ({ 
-                                    ...prev, 
-                                    recurringType: value,
-                                    recurringDays: [],
-                                    monthlyDate: 1
-                                  }))
-                                }
-                              >
-                                <SelectTrigger className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]">
-                                  <SelectValue placeholder="Select recurring type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="daily">Daily</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center">
-                            <Label className="text-sm sm:text-base font-medium">Tasks ({newTaskList.tasks.length})</Label>
-                          </div>
-                          
-                          {newTaskList.tasks.map((task, index) => (
-                            <div key={index} className="space-y-3 bg-gray-50 p-4 rounded-lg">
-                              <Input
-                                placeholder="Task title"
-                                value={task.title}
-                                onChange={(e) => setNewTaskList(prev => ({
-                                  ...prev,
-                                  tasks: prev.tasks.map((t, i) =>
-                                    i === index ? { ...t, title: e.target.value } : t
-                                  )
-                                }))}
-                                className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
-                              />
-                              <Input
-                                placeholder="Description (optional)"
-                                value={task.description || ''}
-                                onChange={(e) => setNewTaskList(prev => ({
-                                  ...prev,
-                                  tasks: prev.tasks.map((t, i) =>
-                                    i === index ? { ...t, description: e.target.value } : t
-                                  )
-                                }))}
-                                className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
-                              />
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium">Estimated time (minutes)</Label>
-                                  <Input
-                                    type="number"
-                                    placeholder="Estimated time"
-                                    value={task.estimatedTime || ''}
-                                    onChange={(e) => setNewTaskList(prev => ({
-                                      ...prev,
-                                      tasks: prev.tasks.map((t, i) =>
-                                        i === index ? { ...t, estimatedTime: parseInt(e.target.value) || undefined } : t
-                                      )
-                                    }))}
-                                    className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm font-medium">Scheduled time</Label>
-                                  <Input
-                                    type="time"
-                                    placeholder="Scheduled time"
-                                    value={task.scheduledTime || ''}
-                                    onChange={(e) => setNewTaskList(prev => ({
-                                      ...prev,
-                                      tasks: prev.tasks.map((t, i) =>
-                                        i === index ? { ...t, scheduledTime: e.target.value } : t
-                                      )
-                                    }))}
-                                    className="h-10 sm:h-11 border-gray-200 focus:border-[#E51636] focus:ring-[#E51636]"
-                                  />
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="w-full h-9 sm:h-10 text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200"
-                                onClick={() => setNewTaskList(prev => ({
-                                  ...prev,
-                                  tasks: prev.tasks.filter((_, i) => i !== index)
-                                }))}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Remove Task
-                              </Button>
-                            </div>
-                          ))}
-                          
-                          {newTaskList.tasks.length === 0 && (
-                            <div className="text-center py-8 text-gray-500">
-                              <ClipboardList className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                              <p>No tasks added yet</p>
-                              <p className="text-sm text-gray-400 mt-1">Click the Add Task button below to get started</p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex justify-between items-center space-x-3 pt-4 sticky bottom-0 bg-white border-t p-4 -mx-6">
-                          <Button 
-                            type="button" 
-                            onClick={() => setNewTaskList(prev => ({ 
-                              ...prev, 
-                              tasks: [...prev.tasks, { title: '', description: '', estimatedTime: undefined, scheduledTime: undefined }] 
-                            }))} 
-                            variant="outline" 
-                            size="sm"
-                            className="h-10 sm:h-11 border-[#E51636] text-[#E51636] hover:bg-[#E51636]/5"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Task
-                          </Button>
-
-                          <div className="flex space-x-3">
-                            <Button 
-                              variant="outline" 
-                              onClick={() => {
-                                setCreateDialogOpen(false);
-                                setSelectedList(null);
-                                setNewTaskList({
-                                  name: '',
-                                  department: departments[0],
-                                  shift: '' as Shift,
-                                  isRecurring: false,
-                                  recurringType: undefined,
-                                  recurringDays: [],
-                                  monthlyDate: 1,
-                                  tasks: []
-                                });
-                              }}
-                              className="h-10 sm:h-11 border-gray-200 hover:bg-gray-50"
-                            >
-                              Cancel
-                            </Button>
-                            <Button 
-                              onClick={handleCreateTaskList}
-                              className="h-10 sm:h-11 bg-[#E51636] hover:bg-[#DD0031] text-white"
-                            >
-                              {selectedList ? 'Update' : 'Create List'}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#F4F4F4]">
+      {/* Header Section */}
+      <div className="bg-[#E51636] rounded-[20px] m-4 p-6">
+        <h1 className="text-2xl font-bold text-white mb-2">Task Management</h1>
+        <p className="text-white/80">Track and manage team tasks</p>
+        <div className="bg-white rounded-xl mt-6 py-3 px-4 flex items-center justify-center hover:bg-white/90 transition-colors cursor-pointer"
+          onClick={() => {
+            setSelectedList(null);
+            setCreateDialogOpen(true);
+          }}
+        >
+          <Plus className="w-5 h-5 mr-2 text-[#E51636]" />
+          <span className="text-[#E51636] font-medium">New Task List</span>
         </div>
+      </div>
 
+      {/* Content Section */}
+      <div className="max-w-7xl mx-auto px-6 space-y-6">
         {/* Filter Section */}
         <div className="mb-6">
           <Card className="bg-white rounded-[20px]">
@@ -934,7 +662,7 @@ const TaskManagement = () => {
         {/* Content */}
         {filters.view === 'upcoming' ? (
           <div className="space-y-8">
-            {getUpcomingTasks().map(({ date, tasks }) => (
+            {upcomingTasks.map(({ date, tasks }) => (
               <div key={date.toISOString()} className="space-y-4">
                 <h3 className="text-xl font-bold text-[#27251F] sticky top-0 bg-[#F4F4F4] py-4 z-10">
                   {date.toLocaleDateString('en-US', { 
@@ -990,7 +718,7 @@ const TaskManagement = () => {
                 </div>
               </div>
             ))}
-            {getUpcomingTasks().length === 0 && (
+            {upcomingTasks.length === 0 && (
               <Card className="bg-white rounded-[20px] w-full">
                 <CardContent className="p-8 text-center">
                   <p className="text-[#27251F]/60">
