@@ -144,7 +144,7 @@ const TrainingModuleProgress: React.FC<TrainingModuleProgressProps> = ({
     );
   };
 
-  const filteredModules = localProgress.trainingPlan?.modules.filter(module => {
+  const filteredModules = localProgress.trainingPlan?.modules?.filter(module => {
     const progress = getModuleProgress(module._id);
     const isCompleted = progress?.completed || false;
 
@@ -230,7 +230,7 @@ const TrainingModuleProgress: React.FC<TrainingModuleProgressProps> = ({
       )}
 
       <Box sx={{ mt: 2 }}>
-        {localProgress.trainingPlan.modules.map((module) => {
+        {(localProgress.trainingPlan.modules || []).map((module) => {
           const progress = getModuleProgress(module._id);
           const isCompleted = progress?.completed || false;
           const isPlanCompleted = localProgress.status === 'COMPLETED';

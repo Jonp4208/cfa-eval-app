@@ -50,9 +50,12 @@ const useTrainingData = (employees: Employee[]) => {
   );
 
   const overallProgress = useMemo(() => {
-    const totalModules = employees.reduce((total, employee) => total + employee.moduleProgress.length, 0);
+    const totalModules = employees.reduce((total, employee) => 
+      total + (employee.moduleProgress && Array.isArray(employee.moduleProgress) ? employee.moduleProgress.length : 0), 0);
     const completedModules = employees.reduce(
-      (completed, employee) => completed + employee.moduleProgress.filter((module) => module.completed).length,
+      (completed, employee) => completed + 
+        (employee.moduleProgress && Array.isArray(employee.moduleProgress) ? 
+          employee.moduleProgress.filter((module) => module.completed).length : 0),
       0
     );
 

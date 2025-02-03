@@ -38,10 +38,10 @@ const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ employees, plans 
   
   // Calculate average completion percentage
   const averageCompletion = employees.reduce((total, emp) => {
-    const progressPercentages = emp.trainingProgress.map(tp => {
+    const progressPercentages = (emp.trainingProgress || []).map(tp => {
       const totalModules = tp.trainingPlan?.modules?.length || 0;
       if (totalModules === 0) return 0;
-      const completedModules = tp.moduleProgress?.filter(mp => mp.completed).length || 0;
+      const completedModules = tp.moduleProgress?.filter(mp => mp.completed)?.length || 0;
       return (completedModules / totalModules) * 100;
     });
     
