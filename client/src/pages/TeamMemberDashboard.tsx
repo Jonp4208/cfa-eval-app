@@ -166,6 +166,7 @@ export default function TeamMemberDashboard() {
         <PageHeader
           title={`Welcome back, ${dashboardData.name}!`}
           subtitle={`${dashboardData.position} • ${dashboardData.departments.join(', ')}`}
+          showBackButton={false}
           actions={
             <button
               onClick={() => navigate(`/users/${user?._id}`)}

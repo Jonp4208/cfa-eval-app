@@ -113,6 +113,7 @@ export default function Dashboard() {
         <PageHeader
           title={`Welcome back, ${user?.name}`}
           subtitle={`CFA Store #${user?.store?.storeNumber}`}
+          showBackButton={false}
           actions={
             <>
               <button
