@@ -23,8 +23,76 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, PlayCircle, History, X, Clock, Check } from 'lucide-react';
 import { kitchenService } from '@/services/kitchenService';
-import { FoodSafetyChecklist, ChecklistFrequency, FoodSafetyChecklistCompletion } from '@/types/kitchen';
+import { FoodSafetyChecklist, ChecklistFrequency, FoodSafetyChecklistCompletion, WeekDay, ValidationCriteria, CheckType } from '@/types/kitchen';
 import { cn } from "@/lib/utils";
+import PageHeader from '@/components/PageHeader';
+
+interface ChecklistItem {
+  name: string;
+  type: CheckType;
+  isCritical: boolean;
+  validation: ValidationCriteria;
+  order: number;
+}
+
+interface CompletionItem extends ChecklistItem {}
+interface CompletionItemRaw {
+  name?: string;
+  type?: string;
+  isCritical?: boolean;
+  validation?: ValidationCriteria;
+  order?: number;
+}
+
+interface ChecklistCompletionRaw {
+  _id?: string;
+  checklist: any;
+  completedBy: string | { name?: string };
+  completedAt: string;
+  items?: CompletionItemRaw[];
+}
+
+interface Completion {
+  _id: string;
+  checklist: FoodSafetyChecklist;
+  completedBy: { name: string };
+  completedAt: string;
+  items: CompletionItem[];
+}
+
+interface ValidationMap {
+  yes_no: { requiredValue: 'yes' | 'no' };
+  temperature: { minTemp: number; maxTemp: number; warningThreshold: number; criticalThreshold: number };
+  text: { requiredPattern?: string };
+}
+
+interface NewItem {
+  name: string;
+  type: CheckType;
+  validation: ValidationCriteria;
+  isCritical: boolean;
+}
+
+interface FormData {
+  name: string;
+  description: string;
+  frequency: ChecklistFrequency;
+  weeklyDay: WeekDay;
+  monthlyWeek: 1 | 2 | 3 | 4;
+  monthlyDay: WeekDay;
+  items: ChecklistItem[];
+}
+
+const defaultValidation: Record<CheckType, ValidationCriteria> = {
+  'yes_no': { requiredValue: 'yes' },
+  'temperature': { 
+    minTemp: 0, 
+    maxTemp: 100, 
+    warningThreshold: 0, 
+    criticalThreshold: 0 
+  },
+  'text': { requiredPattern: '' }
+};
 
 const FoodSafety: React.FC = () => {
   const navigate = useNavigate();
@@ -33,27 +101,20 @@ const FoodSafety: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingChecklist, setEditingChecklist] = useState<FoodSafetyChecklist | null>(null);
   const [view, setView] = useState<'active' | 'upcoming' | 'completed'>('active');
-  const [completions, setCompletions] = useState<FoodSafetyChecklistCompletion[]>([]);
-  const [formData, setFormData] = useState({
+  const [completions, setCompletions] = useState<Completion[]>([]);
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    frequency: 'daily' as ChecklistFrequency,
+    frequency: 'daily',
     weeklyDay: 'monday',
     monthlyWeek: 1,
     monthlyDay: 'monday',
     items: []
   });
-  const [newItem, setNewItem] = useState({
+  const [newItem, setNewItem] = useState<NewItem>({
     name: '',
-    type: 'yes_no',
-    validation: {
-      requiredValue: 'yes',
-      minTemp: 0,
-      maxTemp: 0,
-      requiredPattern: '',
-      warningThreshold: 0,
-      criticalThreshold: 0
-    },
+    type: 'yes_no' as const,
+    validation: defaultValidation['yes_no'],
     isCritical: false
   });
   const { enqueueSnackbar } = useSnackbar();
@@ -85,11 +146,57 @@ const FoodSafety: React.FC = () => {
 
   const loadCompletions = async () => {
     try {
-      const allCompletions: FoodSafetyChecklistCompletion[] = [];
+      const allCompletions: Completion[] = [];
       for (const checklist of checklists) {
         if (!checklist._id) continue;
-        const checklistCompletions = await kitchenService.getChecklistCompletions(checklist._id);
-        allCompletions.push(...checklistCompletions);
+        const checklistCompletions = (await kitchenService.getChecklistCompletions(checklist._id)) as ChecklistCompletionRaw[];
+        allCompletions.push(...checklistCompletions.map(completion => {
+          const completedBy = typeof completion.completedBy === 'string' 
+            ? completion.completedBy 
+            : completion.completedBy?.name || '';
+
+          const items = ((completion.items || []) as CompletionItemRaw[])
+            .map(item => {
+              if (!item) return null;
+              const type = String(item.type || '');
+              if (!['yes_no', 'temperature', 'text'].includes(type)) {
+                return null;
+              }
+              const validation = item.validation || {};
+              let typedValidation: ValidationCriteria;
+              
+              if (type === 'yes_no') {
+                typedValidation = { type: 'yes_no', requiredValue: validation.requiredValue || 'yes' } as ValidationCriteria;
+              } else if (type === 'temperature') {
+                typedValidation = {
+                  type: 'temperature',
+                  minTemp: validation.minTemp || 0,
+                  maxTemp: validation.maxTemp || 0,
+                  warningThreshold: validation.warningThreshold || 0,
+                  criticalThreshold: validation.criticalThreshold || 0
+                } as ValidationCriteria;
+              } else {
+                typedValidation = { type: 'text', requiredPattern: validation.requiredPattern } as ValidationCriteria;
+              }
+
+              return {
+                name: String(item.name || ''),
+                type: type as CheckType,
+                isCritical: Boolean(item.isCritical),
+                validation: typedValidation,
+                order: Number(item.order || 0)
+              } as CompletionItem;
+            })
+            .filter((item): item is CompletionItem => item !== null);
+
+          return {
+            _id: completion._id || '',
+            checklist: completion.checklist as unknown as FoodSafetyChecklist,
+            completedBy: { name: completedBy },
+            completedAt: completion.completedAt,
+            items
+          };
+        }));
       }
       setCompletions(allCompletions);
     } catch (error) {
@@ -143,7 +250,16 @@ const FoodSafety: React.FC = () => {
         weeklyDay: checklist.weeklyDay || 'monday',
         monthlyWeek: checklist.monthlyWeek || 1,
         monthlyDay: checklist.monthlyDay || 'monday',
-        items: checklist.items
+        items: (checklist.items || []).map(item => ({
+          name: item.name || '',
+          type: item.type as CheckType,
+          isCritical: !!item.isCritical,
+          validation: {
+            type: item.type,
+            ...(item.validation || {})
+          },
+          order: item.order || 0
+        }))
       });
     } else {
       setEditingChecklist(null);
@@ -176,20 +292,16 @@ const FoodSafety: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      const submitData = {
+      const baseData = {
         ...formData,
         department: 'Kitchen'
       };
 
-      // Only include frequency-specific fields when needed
-      if (submitData.frequency === 'daily') {
-        delete submitData.weeklyDay;
-        delete submitData.monthlyWeek;
-        delete submitData.monthlyDay;
-      } else if (submitData.frequency === 'weekly') {
-        delete submitData.monthlyWeek;
-        delete submitData.monthlyDay;
-      }
+      const submitData = baseData.frequency === 'daily' ? 
+        { ...baseData, weeklyDay: undefined, monthlyWeek: undefined, monthlyDay: undefined } :
+        baseData.frequency === 'weekly' ? 
+        { ...baseData, monthlyWeek: undefined, monthlyDay: undefined } :
+        baseData;
 
       console.log('Submitting checklist data:', submitData);
 
@@ -226,50 +338,44 @@ const FoodSafety: React.FC = () => {
 
   const handleAddItem = () => {
     if (!newItem.name) return;
-    
-    // Clean up validation data based on item type
-    let validation = {};
-    if (newItem.type === 'temperature') {
-      validation = {
-        minTemp: newItem.validation.minTemp,
-        maxTemp: newItem.validation.maxTemp,
-        warningThreshold: newItem.validation.warningThreshold,
-        criticalThreshold: newItem.validation.criticalThreshold
-      };
-    } else if (newItem.type === 'yes_no') {
-      validation = {
-        requiredValue: newItem.validation.requiredValue
-      };
-    } else if (newItem.type === 'text') {
-      validation = newItem.validation.requiredPattern ? {
-        requiredPattern: newItem.validation.requiredPattern
-      } : {};
-    }
 
-    setFormData(prev => ({
+    const newChecklistItem: ChecklistItem = {
+      name: newItem.name,
+      type: newItem.type,
+      isCritical: newItem.isCritical,
+      validation: newItem.validation,
+      order: formData.items.length + 1
+    };
+
+    setFormData((prev: FormData) => ({
       ...prev,
-      items: [...prev.items, {
-        name: newItem.name,
-        type: newItem.type,
-        isCritical: newItem.isCritical,
-        validation,
-        order: prev.items.length + 1 // Add order field
-      }]
+      items: [...prev.items, newChecklistItem]
     }));
 
     setNewItem({
       name: '',
-      type: 'yes_no',
-      validation: {
-        requiredValue: 'yes',
-        minTemp: 0,
-        maxTemp: 0,
-        requiredPattern: '',
-        warningThreshold: 0,
-        criticalThreshold: 0
-      },
+      type: 'yes_no' as const,
+      validation: defaultValidation['yes_no'],
       isCritical: false
     });
+  };
+
+  const handleTypeChange = (newType: CheckType) => {
+    setNewItem(prev => ({
+      ...prev,
+      type: newType,
+      validation: defaultValidation[newType]
+    }));
+  };
+
+  const handleValidationChange = (field: keyof ValidationCriteria, value: ValidationCriteria[keyof ValidationCriteria]) => {
+    setNewItem(prev => ({
+      ...prev,
+      validation: {
+        ...prev.validation,
+        [field]: value
+      }
+    }));
   };
 
   const handleRemoveItem = (index: number) => {
@@ -288,34 +394,22 @@ const FoodSafety: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4]">
-      {/* Header Section */}
-      <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] p-4 sm:p-6 text-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl sm:text-3xl font-bold">Food Safety</h1>
-              <Button 
-                className="bg-white/10 text-white hover:bg-white/20 h-10 px-4 rounded-xl inline-flex items-center justify-center text-sm font-medium transition-colors"
-                onClick={() => navigate('/dashboard')}
-              >
-                Back
-              </Button>
-            </div>
-            <p className="text-white/80 text-sm sm:text-base">Manage and track kitchen food safety checklists</p>
-            <Button 
-              className="bg-white text-[#E51636] hover:bg-white/90 h-12 rounded-xl inline-flex items-center justify-center font-medium transition-colors w-full sm:w-auto"
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <PageHeader
+          title="Food Safety"
+          subtitle="Manage and track kitchen food safety checklists"
+          actions={
+            <button
               onClick={() => handleOpenDialog()}
+              className="w-full bg-white hover:bg-gray-50 text-[#E51636] flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              New Checklist
-            </Button>
-          </div>
-        </div>
-      </div>
+              <Plus className="w-4 h-4" />
+              <span>New Checklist</span>
+            </button>
+          }
+        />
 
-      {/* Content Section */}
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card className="bg-white rounded-xl hover:shadow-md transition-all">
@@ -591,11 +685,11 @@ const FoodSafety: React.FC = () => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingChecklist ? 'Edit Checklist' : 'Create New Checklist'}</DialogTitle>
           </DialogHeader>
-          <div className="p-6 sm:p-8 space-y-6 overflow-y-auto">
+          <div className="p-6 sm:p-8 space-y-6 overflow-y-auto flex-1">
             <div>
               <Label htmlFor="name" className="text-base font-semibold">Name</Label>
               <Input
@@ -637,7 +731,7 @@ const FoodSafety: React.FC = () => {
                   <Label htmlFor="weeklyDay" className="text-base font-semibold">Day of Week</Label>
                   <Select
                     value={formData.weeklyDay}
-                    onValueChange={(value) => setFormData({ ...formData, weeklyDay: value })}
+                    onValueChange={(value) => setFormData({ ...formData, weeklyDay: value as WeekDay })}
                   >
                     <SelectTrigger className="mt-2">
                       <SelectValue />
@@ -661,7 +755,7 @@ const FoodSafety: React.FC = () => {
                     <Label htmlFor="monthlyWeek" className="text-base font-semibold">Week of Month</Label>
                     <Select
                       value={formData.monthlyWeek.toString()}
-                      onValueChange={(value) => setFormData({ ...formData, monthlyWeek: parseInt(value) })}
+                      onValueChange={(value) => setFormData({ ...formData, monthlyWeek: parseInt(value) as 1 | 2 | 3 | 4 })}
                     >
                       <SelectTrigger className="mt-2">
                         <SelectValue />
@@ -678,7 +772,7 @@ const FoodSafety: React.FC = () => {
                     <Label htmlFor="monthlyDay" className="text-base font-semibold">Day of Week</Label>
                     <Select
                       value={formData.monthlyDay}
-                      onValueChange={(value) => setFormData({ ...formData, monthlyDay: value })}
+                      onValueChange={(value) => setFormData({ ...formData, monthlyDay: value as WeekDay })}
                     >
                       <SelectTrigger className="mt-2">
                         <SelectValue />
@@ -733,20 +827,7 @@ const FoodSafety: React.FC = () => {
                     <Label htmlFor="itemType">Type</Label>
                     <Select
                       value={newItem.type}
-                      onValueChange={(value) => setNewItem(prev => ({ 
-                        ...prev, 
-                        type: value,
-                        validation: {
-                          ...prev.validation,
-                          // Reset validation based on type
-                          requiredValue: value === 'yes_no' ? 'yes' : '',
-                          minTemp: value === 'temperature' ? 0 : 0,
-                          maxTemp: value === 'temperature' ? 0 : 0,
-                          warningThreshold: value === 'temperature' ? 0 : 0,
-                          criticalThreshold: value === 'temperature' ? 0 : 0,
-                          requiredPattern: value === 'text' ? '' : '',
-                        }
-                      }))}
+                      onValueChange={(value: CheckType) => handleTypeChange(value)}
                     >
                       <SelectTrigger className="mt-2">
                         <SelectValue />
@@ -764,11 +845,8 @@ const FoodSafety: React.FC = () => {
                     <div>
                       <Label htmlFor="requiredValue">Required Value</Label>
                       <Select
-                        value={newItem.validation.requiredValue}
-                        onValueChange={(value) => setNewItem(prev => ({
-                          ...prev,
-                          validation: { ...prev.validation, requiredValue: value }
-                        }))}
+                        value={newItem.validation.requiredValue || 'yes'}
+                        onValueChange={(value) => handleValidationChange('requiredValue', value as 'yes' | 'no')}
                       >
                         <SelectTrigger className="mt-2">
                           <SelectValue />
@@ -789,11 +867,8 @@ const FoodSafety: React.FC = () => {
                           <Input
                             id="minTemp"
                             type="number"
-                            value={newItem.validation.minTemp}
-                            onChange={(e) => setNewItem(prev => ({
-                              ...prev,
-                              validation: { ...prev.validation, minTemp: Number(e.target.value) }
-                            }))}
+                            value={newItem.validation.minTemp || 0}
+                            onChange={(e) => handleValidationChange('minTemp', Number(e.target.value))}
                             className="mt-2"
                           />
                         </div>
@@ -802,11 +877,8 @@ const FoodSafety: React.FC = () => {
                           <Input
                             id="maxTemp"
                             type="number"
-                            value={newItem.validation.maxTemp}
-                            onChange={(e) => setNewItem(prev => ({
-                              ...prev,
-                              validation: { ...prev.validation, maxTemp: Number(e.target.value) }
-                            }))}
+                            value={newItem.validation.maxTemp || 0}
+                            onChange={(e) => handleValidationChange('maxTemp', Number(e.target.value))}
                             className="mt-2"
                           />
                         </div>
@@ -817,11 +889,8 @@ const FoodSafety: React.FC = () => {
                           <Input
                             id="warningThreshold"
                             type="number"
-                            value={newItem.validation.warningThreshold}
-                            onChange={(e) => setNewItem(prev => ({
-                              ...prev,
-                              validation: { ...prev.validation, warningThreshold: Number(e.target.value) }
-                            }))}
+                            value={newItem.validation.warningThreshold || 0}
+                            onChange={(e) => handleValidationChange('warningThreshold', Number(e.target.value))}
                             className="mt-2"
                           />
                         </div>
@@ -830,11 +899,8 @@ const FoodSafety: React.FC = () => {
                           <Input
                             id="criticalThreshold"
                             type="number"
-                            value={newItem.validation.criticalThreshold}
-                            onChange={(e) => setNewItem(prev => ({
-                              ...prev,
-                              validation: { ...prev.validation, criticalThreshold: Number(e.target.value) }
-                            }))}
+                            value={newItem.validation.criticalThreshold || 0}
+                            onChange={(e) => handleValidationChange('criticalThreshold', Number(e.target.value))}
                             className="mt-2"
                           />
                         </div>
@@ -847,11 +913,8 @@ const FoodSafety: React.FC = () => {
                       <Label htmlFor="requiredPattern">Required Pattern (optional)</Label>
                       <Input
                         id="requiredPattern"
-                        value={newItem.validation.requiredPattern}
-                        onChange={(e) => setNewItem(prev => ({
-                          ...prev,
-                          validation: { ...prev.validation, requiredPattern: e.target.value }
-                        }))}
+                        value={newItem.validation.requiredPattern || ''}
+                        onChange={(e) => handleValidationChange('requiredPattern', e.target.value)}
                         className="mt-2"
                         placeholder="Regular expression pattern"
                       />

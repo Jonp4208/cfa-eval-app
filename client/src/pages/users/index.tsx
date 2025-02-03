@@ -35,6 +35,7 @@ import {
 import api from '@/lib/axios';
 import AddUserDialog from './components/AddUserDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import PageHeader from '@/components/PageHeader';
 
 interface UserType {
   _id: string;
@@ -285,35 +286,28 @@ export default function Users() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-          <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Team Management</h1>
-                <p className="text-white/80 mt-2 text-lg">Manage your team members and their roles</p>
-              </div>
-              <div className="flex flex-col max-[430px]:w-full sm:flex-row gap-4">
-                <Button
-                  variant="secondary"
-                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 w-full sm:w-auto"
-                  onClick={() => navigate('/users/assign-managers')}
-                >
-                  <User className="w-5 h-5 mr-2" />
-                  Assign Managers
-                </Button>
-                <Button
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
-                  onClick={() => setShowAddDialog(true)}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add User
-                </Button>
-              </div>
+        <PageHeader
+          title="Team Management"
+          subtitle="Manage your team members and their roles"
+          actions={
+            <div className="flex flex-col max-[430px]:w-full sm:flex-row gap-4">
+              <button
+                onClick={() => navigate('/users/assign-managers')}
+                className="w-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
+              >
+                <User className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base font-medium">Assign Managers</span>
+              </button>
+              <button
+                onClick={() => setShowAddDialog(true)}
+                className="w-full bg-white hover:bg-gray-50 text-[#E51636] flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
+              >
+                <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base font-medium">Add User</span>
+              </button>
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Filters Section */}
         <Card className="bg-white rounded-[20px] shadow-md">

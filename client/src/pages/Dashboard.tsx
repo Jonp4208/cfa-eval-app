@@ -22,6 +22,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Progress } from '@/components/ui/progress';
 import api from '../lib/axios';
 import { useNotification } from '@/contexts/NotificationContext';
+import PageHeader from '@/components/PageHeader';
 
 interface DashboardStats {
   pendingEvaluations: number;
@@ -109,35 +110,28 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-4 sm:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-          <div className="relative">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
-              <div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Welcome back, {user?.name}</h1>
-                <p className="text-white/80 mt-1 sm:mt-2 text-base sm:text-lg">CFA Store #{user?.store?.storeNumber}</p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  variant="secondary" 
-                  className="bg-white/10 hover:bg-white/20 text-white border-0 h-10 sm:h-12 px-4 sm:px-6 w-full sm:w-auto"
-                  onClick={() => navigate('/evaluations/new')}
-                >
-                  <ClipboardList className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  New Evaluation
-                </Button>
-                <Button 
-                  className="bg-white text-[#E51636] hover:bg-white/90 h-10 sm:h-12 px-4 sm:px-6 w-full sm:w-auto"
-                  onClick={() => navigate('/disciplinary/new')}
-                >
-                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  New Incident
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title={`Welcome back, ${user?.name}`}
+          subtitle={`CFA Store #${user?.store?.storeNumber}`}
+          actions={
+            <>
+              <button
+                onClick={() => navigate('/evaluations/new')}
+                className="w-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
+              >
+                <ClipboardList className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base font-medium">New Evaluation</span>
+              </button>
+              <button
+                onClick={() => navigate('/disciplinary/new')}
+                className="w-full bg-white hover:bg-gray-50 text-[#E51636] flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
+              >
+                <AlertCircle className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base font-medium">New Incident</span>
+              </button>
+            </>
+          }
+        />
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

@@ -48,6 +48,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import api from '@/lib/axios';
 import CreatePlanDialog from './components/CreatePlanDialog';
 import { toast } from '@/components/ui/use-toast';
+import PageHeader from '@/components/PageHeader';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -479,27 +480,21 @@ const TrainingProgress: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F7F7F7]">
       <div className="container mx-auto py-4 md:py-8 px-4 md:px-8 space-y-4 md:space-y-6">
-        {/* Header Banner */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[12px] md:rounded-[20px] p-4 md:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-          <div className="relative">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h1 className="text-2xl md:text-4xl font-bold">Training</h1>
-                <p className="text-white/80 mt-1 md:mt-2 text-base md:text-lg">Manage and track team training progress</p>
-              </div>
-              {user?.position !== 'Team Member' && (
-                <button
-                  onClick={() => setIsCreatePlanOpen(true)}
-                  className="w-full bg-white hover:bg-gray-50 text-[#E51636] flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
-                >
-                  <Plus className="w-4 h-4 md:w-5 md:h-5" />
-                  <span className="text-sm md:text-base font-medium">New Training Plan</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Training"
+          subtitle="Manage and track team training progress"
+          actions={
+            user?.position !== 'Team Member' && (
+              <button
+                onClick={() => setIsCreatePlanOpen(true)}
+                className="w-full bg-white hover:bg-gray-50 text-[#E51636] flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
+              >
+                <Plus className="w-4 h-4 md:w-5 md:h-5" />
+                <span className="text-sm md:text-base font-medium">New Training Plan</span>
+              </button>
+            )
+          }
+        />
 
         {/* Main Content */}
         <Card className="bg-white rounded-[12px] md:rounded-[20px] shadow-md">

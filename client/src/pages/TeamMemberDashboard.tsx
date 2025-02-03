@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 
 interface TeamMemberDashboardData {
   name: string;
@@ -162,24 +163,19 @@ export default function TeamMemberDashboard() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-          <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold">Welcome back, {dashboardData.name}!</h1>
-                <p className="text-white/80 mt-2 text-lg">{dashboardData.position} • {dashboardData.departments.join(', ')}</p>
-              </div>
-              <Button 
-                className="bg-white text-[#E51636] hover:bg-white/90 h-12 px-6 w-full sm:w-auto"
-                onClick={() => navigate(`/users/${user?._id}`)}
-              >
-                View Full Profile
-              </Button>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title={`Welcome back, ${dashboardData.name}!`}
+          subtitle={`${dashboardData.position} • ${dashboardData.departments.join(', ')}`}
+          actions={
+            <button
+              onClick={() => navigate(`/users/${user?._id}`)}
+              className="w-full bg-white hover:bg-gray-50 text-[#E51636] flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
+            >
+              <User className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="text-sm md:text-base font-medium">View Full Profile</span>
+            </button>
+          }
+        />
 
         {/* Performance Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

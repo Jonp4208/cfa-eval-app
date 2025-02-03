@@ -28,6 +28,7 @@ import { Progress } from '@/components/ui/progress';
 import api from '@/lib/axios';
 import { handleError } from '@/lib/utils/error-handler';
 import { toast } from '@/components/ui/use-toast';
+import PageHeader from '@/components/PageHeader';
 
 interface Evaluation {
   _id: string;
@@ -389,25 +390,19 @@ export default function Evaluations() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-4 sm:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-          <div className="relative">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
-              <div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Performance Reviews</h1>
-                <p className="text-white/80 mt-1 sm:mt-2 text-base sm:text-lg">Track and manage employee evaluations</p>
-              </div>
-              <Button 
-                className="bg-white text-[#E51636] hover:bg-white/90 h-10 sm:h-12 px-4 sm:px-6 rounded-xl inline-flex items-center justify-center font-medium transition-colors"
-                onClick={() => navigate('/evaluations/new')}
-              >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                New Evaluation
-              </Button>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Performance Reviews"
+          subtitle="Track and manage employee evaluations"
+          actions={
+            <button
+              onClick={() => navigate('/evaluations/new')}
+              className="w-full bg-white hover:bg-gray-50 text-[#E51636] flex items-center justify-center gap-2 py-2 md:py-2.5 px-3 md:px-4 rounded-[6px] md:rounded-[8px] transition-colors"
+            >
+              <Plus className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="text-sm md:text-base font-medium">New Evaluation</span>
+            </button>
+          }
+        />
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

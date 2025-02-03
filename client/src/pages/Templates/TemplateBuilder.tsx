@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
+import PageHeader from '@/components/PageHeader';
 
 
 interface Section {
@@ -653,26 +654,20 @@ export default function TemplateBuilder() {
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] rounded-[20px] p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" />
-          <div className="relative">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold">{isEditMode ? 'Edit Template' : 'Create Template'}</h1>
-                <p className="text-white/80 mt-2 text-lg">Design evaluation templates for your team</p>
-              </div>
-              <Button 
-                variant="secondary"
-                className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
-                onClick={() => navigate('/templates')}
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                Back to Templates
-              </Button>
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title={isEditMode ? 'Edit Template' : 'Create Template'}
+          subtitle="Design evaluation templates for your team"
+          actions={
+            <Button 
+              variant="secondary"
+              className="bg-white/10 hover:bg-white/20 text-white border-0 h-12 px-6 flex-1 md:flex-none"
+              onClick={() => navigate('/templates')}
+            >
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              Back to Templates
+            </Button>
+          }
+        />
 
         {/* Main Content */}
         <Card className="bg-white rounded-[20px] shadow-md">

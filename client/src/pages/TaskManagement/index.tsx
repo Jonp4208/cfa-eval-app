@@ -17,6 +17,7 @@ import { cn } from '../../lib/utils';
 import { MongoId } from '../../types/task';
 import userService from '../../services/userService';
 import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '@/components/PageHeader';
 
 const getIdString = (id: string | MongoId | undefined): string => {
   if (!id) return '';
@@ -502,24 +503,24 @@ const TaskManagement = () => {
   const activeInstance = activeInstances[0];
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4]">
-      {/* Header Section */}
-      <div className="bg-[#E51636] rounded-[20px] m-4 p-6">
-        <h1 className="text-2xl font-bold text-white mb-2">Task Management</h1>
-        <p className="text-white/80">Track and manage team tasks</p>
-        <div className="bg-white rounded-xl mt-6 py-3 px-4 flex items-center justify-center hover:bg-white/90 transition-colors cursor-pointer"
-          onClick={() => {
-            setSelectedList(null);
-            setCreateDialogOpen(true);
-          }}
-        >
-          <Plus className="w-5 h-5 mr-2 text-[#E51636]" />
-          <span className="text-[#E51636] font-medium">New Task List</span>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <PageHeader
+          title="Task Management"
+          subtitle="Create and manage team tasks"
+          actions={
+            <div className="max-w-[400px] mx-auto w-full">
+              <button
+                onClick={() => setCreateDialogOpen(true)}
+                className="w-full bg-white hover:bg-white/90 text-[#E51636] h-12 rounded-xl inline-flex items-center justify-center font-medium transition-colors w-full"
+              >
+                <Plus className="w-5 h-5" />
+                <span>New Task List</span>
+              </button>
+            </div>
+          }
+        />
 
-      {/* Content Section */}
-      <div className="max-w-7xl mx-auto px-6 space-y-6">
         {/* Filter Section */}
         <div className="mb-6">
           <Card className="bg-white rounded-[20px]">
