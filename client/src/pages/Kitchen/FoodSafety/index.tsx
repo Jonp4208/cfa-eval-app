@@ -399,6 +399,7 @@ const FoodSafety: React.FC = () => {
         <PageHeader
           title="Food Safety"
           subtitle="Manage and track kitchen food safety checklists"
+          showBackButton={false}
           actions={
             <button
               onClick={() => handleOpenDialog()}
