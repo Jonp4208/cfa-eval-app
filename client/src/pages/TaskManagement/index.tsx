@@ -17,7 +17,7 @@ import { cn } from '../../lib/utils';
 import { MongoId } from '../../types/task';
 import userService from '../../services/userService';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader } from '@/components/PageHeader';
+import PageHeader from '@/components/PageHeader';
 
 const getIdString = (id: string | MongoId | undefined): string => {
   if (!id) return '';
