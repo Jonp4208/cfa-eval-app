@@ -27,7 +27,12 @@ export const auth = async (req, res, next) => {
       
     if (!user) {
       console.log('Auth middleware - user not found for id:', decoded.userId);
-      throw new Error('User not found');
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    if (!user.store) {
+      console.log('Auth middleware - store not found for user:', user._id);
+      return res.status(400).json({ message: 'User has no associated store' });
     }
 
     console.log('Auth middleware - user details:', {
@@ -38,9 +43,7 @@ export const auth = async (req, res, next) => {
       position: user.position,
       departments: user.departments,
       manager: user.manager,
-      evaluator: user.evaluator,
-      positionType: typeof user.position,
-      positionExists: 'position' in user
+      evaluator: user.evaluator
     });
 
     req.user = {
@@ -57,6 +60,6 @@ export const auth = async (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ message: 'Token expired' });
     }
-    res.status(401).json({ message: 'Please authenticate' });
+    res.status(500).json({ message: 'Server error in auth middleware', error: error.message });
   }
 };

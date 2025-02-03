@@ -323,7 +323,14 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
 
             <Collapse in={expandedPlan === plan.id}>
               <List sx={{ mt: 2 }}>
-                {/* Add module list items here */}
+                {plan.modules?.map((module, index) => (
+                  <ListItem key={`${plan.id}-module-${index}`}>
+                    <ListItemText
+                      primary={module.name}
+                      secondary={`${module.estimatedDuration} minutes`}
+                    />
+                  </ListItem>
+                ))}
               </List>
             </Collapse>
           </CardContent>
@@ -358,19 +365,25 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
         onClose={() => setDeleteDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        keepMounted={false}
+        disablePortal={false}
         PaperProps={{
           sx: {
             borderRadius: '20px',
             boxShadow: '0px 1px 3px rgba(16, 24, 40, 0.1), 0px 1px 2px rgba(16, 24, 40, 0.06)'
           }
         }}
+        aria-labelledby="delete-dialog-title"
       >
-        <DialogTitle sx={{ 
-          p: 3,
-          color: '#27251F',
-          borderBottom: '1px solid',
-          borderColor: 'rgba(39, 37, 31, 0.1)'
-        }}>
+        <DialogTitle 
+          id="delete-dialog-title"
+          sx={{ 
+            p: 3,
+            color: '#27251F',
+            borderBottom: '1px solid',
+            borderColor: 'rgba(39, 37, 31, 0.1)'
+          }}
+        >
           Delete Training Plan
         </DialogTitle>
         <DialogContent sx={{ p: 3, mt: 2 }}>
@@ -411,12 +424,14 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
       </Dialog>
 
       {/* Edit Plan Dialog */}
-      <EditPlanDialog
-        open={!!planToEdit}
-        onClose={() => setPlanToEdit(null)}
-        plan={planToEdit}
-        onPlanUpdated={onPlanUpdated}
-      />
+      {planToEdit && (
+        <EditPlanDialog
+          open={true}
+          onClose={() => setPlanToEdit(null)}
+          plan={planToEdit}
+          onPlanUpdated={onPlanUpdated}
+        />
+      )}
     </Box>
   );
 };

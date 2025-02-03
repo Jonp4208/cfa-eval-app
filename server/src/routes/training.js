@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import TrainingProgress from '../models/TrainingProgress.js';
 import * as schedule from 'node-schedule';
 import emailTemplates from '../utils/emailTemplates.js';
+import { handleAsync } from '../utils/errorHandler.js';
 
 const router = express.Router();
 
@@ -189,19 +190,17 @@ router.post('/templates/:id/duplicate', auth, async (req, res) => {
 });
 
 // Get all training plans for the store
-router.get('/plans', auth, async (req, res) => {
-  try {
-    const plans = await TrainingPlan.find({
-      store: req.user.store._id
-    })
-    .populate('createdBy', 'firstName lastName')
-    .sort({ createdAt: -1 });
-    res.json(plans);
-  } catch (error) {
-    console.error('Error fetching training plans:', error);
-    res.status(500).json({ message: 'Error fetching training plans' });
-  }
-});
+router.get('/plans', auth, handleAsync(async (req, res) => {
+  console.log('Fetching training plans for store:', req.user.store._id);
+  const plans = await TrainingPlan.find({
+    store: req.user.store._id
+  })
+  .populate('createdBy', 'firstName lastName')
+  .sort({ createdAt: -1 });
+  
+  console.log(`Found ${plans.length} training plans`);
+  res.json(plans);
+}));
 
 // Get active training plans
 router.get('/plans/active', auth, async (req, res) => {
@@ -223,42 +222,31 @@ router.get('/plans/active', auth, async (req, res) => {
 });
 
 // Get employee training progress
-router.get('/employees/training-progress', auth, async (req, res) => {
-  try {
-    const employees = await User.find({
-      store: req.user.store._id,
-      status: 'active'
+router.get('/employees/training-progress', auth, handleAsync(async (req, res) => {
+  console.log('Fetching training progress for store:', req.user.store._id);
+  const employees = await User.find({
+    store: req.user.store._id,
+    status: 'active'
+  })
+    .populate({
+      path: 'trainingProgress',
+      populate: [{
+        path: 'trainingPlan',
+        populate: {
+          path: 'modules'
+        }
+      }, {
+        path: 'moduleProgress.completedBy',
+        model: 'User',
+        select: 'firstName lastName name'
+      }]
     })
-      .populate({
-        path: 'trainingProgress',
-        populate: [{
-          path: 'trainingPlan',
-          populate: {
-            path: 'modules'
-          }
-        }, {
-          path: 'moduleProgress.completedBy',
-          model: 'User',
-          select: 'firstName lastName name'
-        }]
-      })
-      .select('name position department trainingProgress startDate')
-      .sort({ name: 1 });
+    .select('name position department trainingProgress startDate')
+    .sort({ name: 1 });
 
-    console.log('Found employees:', employees.length);
-    console.log('Employee details:', employees.map(e => ({ 
-      name: e.name, 
-      position: e.position,
-      department: e.department,
-      hasTrainingProgress: e.trainingProgress && e.trainingProgress.length > 0
-    })));
-    
-    res.json(employees);
-  } catch (error) {
-    console.error('Error fetching employee training progress:', error);
-    res.status(500).json({ message: 'Error fetching employee training progress' });
-  }
-});
+  console.log(`Found ${employees.length} employees with training progress`);
+  res.json(employees);
+}));
 
 // Create a new training plan
 router.post('/plans', auth, async (req, res) => {

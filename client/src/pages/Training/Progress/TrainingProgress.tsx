@@ -34,7 +34,7 @@ import {
   Description as DescriptionIcon,
   CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
-import { Employee } from '../../../types';
+import { Employee } from '../../../types/training';
 import { TrainingPlan, NewTrainingPlan, TraineeProgress } from '../../../types/training';
 import { SimplifiedTrainingPlan, EmployeeWithProgress } from './types';
 import TrainingPlanList from './components/TrainingPlanList';
@@ -153,6 +153,7 @@ const TrainingProgress: React.FC = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Create a cache key
       const cacheKey = `training_data_${user?._id}`;
@@ -171,62 +172,102 @@ const TrainingProgress: React.FC = () => {
         }
       }
 
+      console.log('Fetching fresh training data...');
+
       // If no cache or cache is old, fetch fresh data
-      const [plans, employees, progress] = await Promise.all([
-        api.get('/training/plans').then(res => res.data),
-        api.get('/employees').then(res => res.data),
-        api.get('/training/progress').then(res => res.data)
+      const [plansRes, employeesRes, progressRes] = await Promise.all([
+        api.get('/api/training/plans'),
+        api.get('/api/users'),
+        api.get('/api/training/employees/training-progress')
       ]);
+
+      console.log('API Responses:', {
+        plans: plansRes.data,
+        employees: employeesRes.data,
+        progress: progressRes.data
+      });
+
+      const plans = plansRes.data;
+      const employees = employeesRes.data.users;
+      const progress = progressRes.data;
+
+      if (!Array.isArray(plans)) {
+        throw new Error('Training plans data is not an array');
+      }
+
+      if (!Array.isArray(employees)) {
+        throw new Error('Employees data is not an array');
+      }
+
+      if (!Array.isArray(progress)) {
+        throw new Error('Training progress data is not an array');
+      }
 
       // Pre-compute progress maps
       const employeeProgressMap = new Map();
       const planProgressMap = new Map();
       const departmentProgressMap = new Map();
       
+      console.log('Processing progress data...', progress);
+
       progress.forEach((p: TraineeProgress) => {
-        // Employee progress
-        const completedModules = p.moduleProgress.filter(m => m.completed).length;
-        const plan = typeof p.trainingPlanId === 'object' ? 
-          p.trainingPlanId as TrainingPlanWithModules : null;
-        const totalModules = plan?.modules?.length || 0;
-        
-        employeeProgressMap.set(p.traineeId, {
-          completed: completedModules,
-          total: totalModules,
-          rate: totalModules > 0 ? (completedModules / totalModules) * 100 : 0
-        });
-        
-        // Plan progress
-        const planId = plan ? plan._id : p.trainingPlanId as string;
-        if (!planProgressMap.has(planId)) {
-          planProgressMap.set(planId, {
-            assignedCount: 0,
-            completedCount: 0,
-            trainees: new Set()
+        try {
+          // Employee progress
+          const completedModules = p.moduleProgress?.filter(m => m.completed)?.length || 0;
+          const plan = typeof p.trainingPlanId === 'object' ? 
+            p.trainingPlanId as TrainingPlanWithModules : null;
+          const totalModules = plan?.modules?.length || 0;
+          
+          employeeProgressMap.set(p.traineeId, {
+            completed: completedModules,
+            total: totalModules,
+            rate: totalModules > 0 ? (completedModules / totalModules) * 100 : 0
           });
-        }
-        const planStats = planProgressMap.get(planId);
-        planStats.assignedCount++;
-        planStats.trainees.add(p.traineeId);
-        if (p.moduleProgress.every(m => m.completed)) {
-          planStats.completedCount++;
-        }
-        
-        // Department progress
-        const employee = employees.find((e: Employee) => e.id === p.traineeId);
-        if (employee?.department) {
-          if (!departmentProgressMap.has(employee.department)) {
-            departmentProgressMap.set(employee.department, {
-              totalModules: 0,
-              completedModules: 0,
-              employees: new Set()
+          
+          // Plan progress
+          const planId = plan ? plan._id : p.trainingPlanId as string;
+          if (!planProgressMap.has(planId)) {
+            planProgressMap.set(planId, {
+              assignedCount: 0,
+              completedCount: 0,
+              trainees: new Set()
             });
           }
-          const deptStats = departmentProgressMap.get(employee.department);
-          deptStats.totalModules += totalModules;
-          deptStats.completedModules += completedModules;
-          deptStats.employees.add(employee.id);
+          const planStats = planProgressMap.get(planId);
+          if (planStats) {
+            planStats.assignedCount++;
+            planStats.trainees.add(p.traineeId);
+            if (p.moduleProgress?.every(m => m.completed)) {
+              planStats.completedCount++;
+            }
+          }
+          
+          // Department progress
+          const employee = employees.find((e) => e._id === p.traineeId);
+          if (employee?.department) {
+            if (!departmentProgressMap.has(employee.department)) {
+              departmentProgressMap.set(employee.department, {
+                totalModules: 0,
+                completedModules: 0,
+                employees: new Set()
+              });
+            }
+            const deptStats = departmentProgressMap.get(employee.department);
+            if (deptStats) {
+              deptStats.totalModules += totalModules;
+              deptStats.completedModules += completedModules;
+              deptStats.employees.add(employee._id);
+            }
+          }
+        } catch (err) {
+          console.error('Error processing progress item:', err, p);
         }
+      });
+
+      console.log('Progress Maps:', {
+        employeeProgress: Array.from(employeeProgressMap.entries()),
+        planProgress: Array.from(planProgressMap.entries()),
+        departmentProgress: Array.from(departmentProgressMap.entries())
       });
 
       // Cache the results
@@ -246,9 +287,10 @@ const TrainingProgress: React.FC = () => {
       departmentProgressMapRef.current = departmentProgressMap;
     } catch (error) {
       console.error('Error fetching training data:', error);
+      setError('Failed to load training data. Please try again.');
       toast({
         title: "Error",
-        description: "Failed to load training data",
+        description: "Failed to load training data. Please try again.",
         variant: "destructive",
       });
     } finally {

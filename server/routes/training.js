@@ -71,8 +71,8 @@ router.post('/plans/assign', auth, async (req, res) => {
   try {
     const { employeeId, planId, startDate } = req.body;
 
-    const employee = await Employee.findById(employeeId);
-    const plan = await TrainingPlan.findById(planId);
+    const employee = await User.findById(employeeId);
+    const plan = await TrainingPlan.findById(planId).populate('modules');
 
     if (!employee || !plan) {
       return res.status(404).json({ message: 'Employee or plan not found' });
@@ -81,26 +81,39 @@ router.post('/plans/assign', auth, async (req, res) => {
     // Create initial progress entries for each module
     const moduleProgress = plan.modules.map(module => ({
       moduleId: module._id,
-      moduleName: module.name,
       completed: false,
+      completionPercentage: 0
     }));
 
-    // Update employee with new training plan
-    employee.trainingPlan = {
-      id: plan._id,
-      name: plan.name,
+    // Create new training progress document
+    const trainingProgress = new TrainingProgress({
+      trainee: employee._id,
+      trainingPlan: plan._id,
       startDate,
-      modules: plan.modules,
-    };
-    employee.moduleProgress = moduleProgress;
+      assignedTrainer: req.user._id, // The person assigning the training
+      status: 'IN_PROGRESS',
+      moduleProgress,
+      store: employee.store
+    });
 
+    await trainingProgress.save();
+
+    // Add training progress to employee's training progress array
+    employee.trainingProgress.push(trainingProgress._id);
     await employee.save();
 
     // Send notification
     await NotificationService.notifyTrainingAssigned(employee, plan, startDate);
 
-    res.json(employee);
+    // Return the populated training progress
+    const populatedProgress = await TrainingProgress.findById(trainingProgress._id)
+      .populate('trainingPlan')
+      .populate('trainee')
+      .populate('assignedTrainer');
+
+    res.json(populatedProgress);
   } catch (err) {
+    console.error('Error assigning training plan:', err);
     res.status(400).json({ message: 'Error assigning training plan' });
   }
 });
@@ -160,13 +173,14 @@ router.get('/employees/training-progress', auth, async (req, res) => {
     })
       .populate({
         path: 'trainingProgress',
-        populate: {
+        populate: [{
           path: 'trainingPlan',
           populate: {
             path: 'modules',
             select: 'name position completed'
           }
-        }
+        }],
+        select: 'status moduleProgress startDate trainingPlan'
       })
       .select('name position departments role trainingProgress')
       .sort({ name: 1 });

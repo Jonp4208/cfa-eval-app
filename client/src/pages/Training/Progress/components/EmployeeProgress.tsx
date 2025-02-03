@@ -172,7 +172,7 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
                             mb: 2
                           }}>
                             <Chip
-                              label={progress.status.replace('_', ' ')}
+                              label={(progress.status || 'IN_PROGRESS').replace('_', ' ')}
                               size="small"
                               sx={{
                                 borderRadius: '16px',
