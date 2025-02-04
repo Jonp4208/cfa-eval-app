@@ -70,7 +70,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
     if (!planToDelete) return;
 
     try {
-      await api.delete(`/api/training/plans/${planToDelete.id}`);
+      await api.delete(`/api/training/plans/${planToDelete._id}`);
       setDeleteDialogOpen(false);
       setPlanToDelete(null);
       if (onPlanUpdated) {
@@ -199,7 +199,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
 
       {filteredPlans.map((plan) => (
         <Card 
-          key={plan.id} 
+          key={plan._id} 
           sx={{ 
             mb: 2,
             mx: { xs: 2, sm: 0 },
@@ -238,7 +238,6 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                   mb: { xs: 1, sm: 0 }
                 }}>
                   <Chip
-                    key={`${plan.id}-department`}
                     icon={<CategoryIcon />}
                     label={plan.name}
                     size="small"
@@ -254,7 +253,6 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                     }}
                   />
                   <Chip
-                    key={`${plan.id}-duration`}
                     icon={<AccessTimeIcon />}
                     label={`${calculateTotalDuration(plan)} minutes total`}
                     size="small"
@@ -278,7 +276,6 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                 alignSelf: { xs: 'flex-end', sm: 'center' }
               }}>
                 <IconButton 
-                  key={`${plan.id}-edit`}
                   onClick={() => handleEditClick(plan)} 
                   size="small"
                   sx={{
@@ -292,7 +289,6 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                   <Edit2 size={18} />
                 </IconButton>
                 <IconButton 
-                  key={`${plan.id}-delete`}
                   onClick={() => handleDeleteClick(plan)} 
                   size="small"
                   sx={{
@@ -306,8 +302,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                   <Trash2 size={18} />
                 </IconButton>
                 <IconButton
-                  key={`${plan.id}-expand`}
-                  onClick={() => handleExpandClick(plan.id)}
+                  onClick={() => handleExpandClick(plan._id)}
                   size="small"
                   sx={{
                     color: 'rgba(39, 37, 31, 0.6)',
@@ -317,7 +312,7 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
                     },
                   }}
                 >
-                  {expandedPlan === plan.id ? (
+                  {expandedPlan === plan._id ? (
                     <ExpandLessIcon sx={{ fontSize: 18 }} />
                   ) : (
                     <ExpandMoreIcon sx={{ fontSize: 18 }} />
@@ -326,11 +321,11 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
               </Box>
             </Box>
 
-            <Collapse in={expandedPlan === plan.id}>
+            <Collapse in={expandedPlan === plan._id}>
               <List sx={{ mt: 2 }}>
                 {plan.modules?.map((module, index) => (
                   <ListItem 
-                    key={`${plan.id}-module-${index}-${module.name}`}
+                    key={`${plan._id}-module-${index}`}
                     disablePadding
                     sx={{ mb: 1 }}
                   >
