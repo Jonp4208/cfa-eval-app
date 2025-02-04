@@ -71,8 +71,11 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
       isValid = false;
     }
 
-    if (modules.length === 0) {
-      newErrors.modules = ['At least one module is required'];
+    // Filter out modules with empty names
+    const validModules = modules.filter(module => module.name.trim() !== '');
+    
+    if (validModules.length === 0) {
+      newErrors.modules = ['At least one module with a name is required'];
       isValid = false;
     }
 
@@ -81,34 +84,56 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
       isValid = false;
     }
 
+    // Update modules state to remove empty ones
+    setModules(validModules);
+
     setErrors(newErrors);
     return isValid;
   };
 
   const handleSubmit = async () => {
-    if (!plan || !validateForm()) return;
+    if (!plan) return;
 
-    try {
+    // Clean up empty modules before validation
+    const cleanedModules = modules.map(module => ({
+      ...module,
+      name: module.name.trim(),
+      description: module.description.trim()
+    })).filter(module => module.name.trim() !== '');
+    
+    setModules(cleanedModules);
+
+    // If no valid modules remain, show error
+    if (cleanedModules.length === 0) {
+      setErrors({
+        modules: ['At least one training module with a name is required']
+      });
+      return;
+    }
+
+    if (validateForm()) {
       setSubmitting(true);
       setError(null);
 
-      await api.put(`/api/training/plans/${plan.id}`, {
-        name,
-        description,
-        department,
-        type,
-        numberOfDays,
-        modules,
-      });
+      try {
+        await api.put(`/api/training/plans/${plan.id}`, {
+          name: name.trim(),
+          description: description.trim(),
+          department,
+          type,
+          numberOfDays,
+          modules: cleanedModules,
+        });
 
-      if (onPlanUpdated) {
-        onPlanUpdated();
+        if (onPlanUpdated) {
+          onPlanUpdated();
+        }
+        handleClose();
+      } catch (err) {
+        setError('Failed to update training plan');
+      } finally {
+        setSubmitting(false);
       }
-      handleClose();
-    } catch (err) {
-      setError('Failed to update training plan');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -139,32 +164,46 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
     ]);
   };
 
-  const updateModule = (index: number, field: keyof TrainingPlan['modules'][0], value: string | any) => {
-    const updatedModules = [...modules];
-    if (field === 'pathwayUrl') {
-      // Update or create the Pathway material
-      const module = updatedModules[index];
-      const pathwayMaterial = module.materials?.find(m => m.type === 'PATHWAY_LINK') || {
-        type: 'PATHWAY_LINK',
-        title: module.name,
-        category: 'Pathway'
-      };
-      pathwayMaterial.url = value;
+  const updateModule = (moduleToUpdate: TrainingPlan['modules'][0], field: keyof TrainingPlan['modules'][0], value: string | any) => {
+    const updatedModules = modules.map(module => {
+      if (module === moduleToUpdate) {
+        if (field === 'pathwayUrl') {
+          // Update or create the Pathway material
+          const pathwayMaterial = module.materials?.find(m => m.type === 'PATHWAY_LINK') || {
+            type: 'PATHWAY_LINK',
+            title: module.name,
+            category: 'Pathway'
+          };
+          pathwayMaterial.url = value;
 
-      // Update materials array
-      module.materials = module.materials || [];
-      const materialIndex = module.materials.findIndex(m => m.type === 'PATHWAY_LINK');
-      if (materialIndex >= 0) {
-        module.materials[materialIndex] = pathwayMaterial;
-      } else {
-        module.materials.push(pathwayMaterial);
+          // Update materials array
+          const materials = module.materials || [];
+          const materialIndex = materials.findIndex(m => m.type === 'PATHWAY_LINK');
+          if (materialIndex >= 0) {
+            materials[materialIndex] = pathwayMaterial;
+          } else {
+            materials.push(pathwayMaterial);
+          }
+
+          return {
+            ...module,
+            materials
+          };
+        } else if (field === 'description') {
+          // Don't trim the description value immediately
+          return {
+            ...module,
+            description: value
+          };
+        } else {
+          return {
+            ...module,
+            [field]: value,
+          };
+        }
       }
-    } else {
-      updatedModules[index] = {
-        ...updatedModules[index],
-        [field]: value,
-      };
-    }
+      return module;
+    });
     setModules(updatedModules);
   };
 
@@ -173,8 +212,8 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
     return module.materials?.find(m => m.type === 'PATHWAY_LINK')?.url || '';
   };
 
-  const removeModule = (index: number) => {
-    const updatedModules = modules.filter((_, i) => i !== index);
+  const removeModule = (moduleToRemove: TrainingPlan['modules'][0]) => {
+    const updatedModules = modules.filter(module => module !== moduleToRemove);
     setModules(updatedModules);
   };
 
@@ -253,6 +292,29 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
           rows={2}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={(e) => {
+            // Prevent default behavior only for specific keys we want to handle differently
+            if (e.key === 'Enter') {
+              e.preventDefault();
+            }
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
+              '& fieldset': {
+                borderColor: 'rgba(39, 37, 31, 0.2)',
+              },
+              '&:hover fieldset': {
+                borderColor: 'rgba(39, 37, 31, 0.3)',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#E51636',
+              }
+            },
+            '& .MuiInputLabel-root.Mui-focused': {
+              color: '#E51636',
+            }
+          }}
         />
 
         <FormControl fullWidth margin="dense" error={!!errors.department}>
@@ -368,7 +430,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                     <TextField
                       label="Module Name"
                       value={module.name}
-                      onChange={(e) => updateModule(modules.indexOf(module), 'name', e.target.value)}
+                      onChange={(e) => updateModule(module, 'name', e.target.value)}
                       fullWidth
                       sx={{
                         flexGrow: 1,
@@ -398,7 +460,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                         label="Duration (min)"
                         type="number"
                         value={module.estimatedDuration}
-                        onChange={(e) => updateModule(modules.indexOf(module), 'estimatedDuration', e.target.value)}
+                        onChange={(e) => updateModule(module, 'estimatedDuration', e.target.value)}
                         sx={{
                           flexGrow: { xs: 1, sm: 0 },
                           width: { sm: 140 },
@@ -420,7 +482,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                         }}
                       />
                       <IconButton 
-                        onClick={() => removeModule(modules.indexOf(module))}
+                        onClick={() => removeModule(module)}
                         sx={{
                           alignSelf: 'center',
                           color: 'rgba(39, 37, 31, 0.4)',
@@ -438,10 +500,16 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                     <TextField
                       label="Description"
                       value={module.description}
-                      onChange={(e) => updateModule(modules.indexOf(module), 'description', e.target.value)}
+                      onChange={(e) => updateModule(module, 'description', e.target.value)}
                       fullWidth
                       multiline
                       rows={2}
+                      onKeyDown={(e) => {
+                        // Prevent default behavior only for specific keys we want to handle differently
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                        }
+                      }}
                       sx={{
                         '& .MuiOutlinedInput-root': {
                           borderRadius: '12px',
@@ -464,7 +532,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                   <TextField
                     label="Pathway URL"
                     value={getPathwayUrl(module)}
-                    onChange={(e) => updateModule(modules.indexOf(module), 'pathwayUrl', e.target.value)}
+                    onChange={(e) => updateModule(module, 'pathwayUrl', e.target.value)}
                     fullWidth
                     placeholder="https://pathway.chick-fil-a.com/..."
                     sx={{

@@ -33,11 +33,13 @@ import {
   Category as CategoryIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
-import { PersonOutline, MailOutline, Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import { TrainingPlan } from '../../../../types/training';
 import { SimplifiedTrainingPlan } from '../types';
 import api from '@/lib/axios';
 import EditPlanDialog from './EditPlanDialog';
+import { toast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TrainingPlanListProps {
   plans: SimplifiedTrainingPlan[];
@@ -45,6 +47,7 @@ interface TrainingPlanListProps {
 }
 
 const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdated }) => {
+  const { user } = useAuth();
   const [expandedPlan, setExpandedPlan] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
@@ -52,6 +55,12 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
   const [planToDelete, setPlanToDelete] = useState<SimplifiedTrainingPlan | null>(null);
   const [planToEdit, setPlanToEdit] = useState<SimplifiedTrainingPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [localPlans, setLocalPlans] = useState<SimplifiedTrainingPlan[]>(plans);
+
+  // Update local plans when props change
+  React.useEffect(() => {
+    setLocalPlans(plans);
+  }, [plans]);
 
   const handleExpandClick = (planId: string) => {
     setExpandedPlan(expandedPlan === planId ? null : planId);
@@ -67,21 +76,44 @@ const TrainingPlanList: React.FC<TrainingPlanListProps> = ({ plans, onPlanUpdate
   };
 
   const handleConfirmDelete = async () => {
-    if (!planToDelete) return;
+    if (!planToDelete || !planToDelete._id) {
+      setError('Invalid training plan ID');
+      setDeleteDialogOpen(false);
+      setPlanToDelete(null);
+      return;
+    }
 
     try {
       await api.delete(`/api/training/plans/${planToDelete._id}`);
+      
+      // Update local state immediately
+      setLocalPlans(prevPlans => prevPlans.filter(plan => plan._id !== planToDelete._id));
+      
       setDeleteDialogOpen(false);
       setPlanToDelete(null);
+      
+      // Show success notification
+      toast({
+        title: "Success",
+        description: `Training plan "${planToDelete.name}" has been deleted.`,
+      });
+
+      // Clear cache and refresh in background
+      sessionStorage.removeItem(`training_data_${user?._id}`);
       if (onPlanUpdated) {
         onPlanUpdated();
       }
     } catch (err) {
       setError('Failed to delete training plan');
+      toast({
+        title: "Error",
+        description: "Failed to delete training plan. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  const filteredPlans = plans.filter(plan => {
+  const filteredPlans = localPlans.filter(plan => {
     const matchesSearch = 
       plan.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDepartment = !departmentFilter || plan.name.toLowerCase().includes(departmentFilter.toLowerCase());
