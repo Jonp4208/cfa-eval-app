@@ -82,58 +82,27 @@ const canManageUsers = (user) => {
 // Get all users
 router.get('/', auth, async (req, res) => {
   try {
-    console.log('\n=== GET /users Request ===');
-    console.log('Headers:', req.headers);
-    console.log('Query params:', req.query);
-    console.log('User from auth middleware:', {
-      _id: req.user._id,
-      name: req.user.name,
-      position: req.user.position,
-      role: req.user.role,
-      store: req.user.store
-    });
-    
     const { managerId } = req.query;
     let query = { store: req.user.store._id };
 
-    console.log('Initial query filter:', JSON.stringify(query, null, 2));
-
     // Check if user can manage users
     if (!canManageUsers(req.user)) {
-      console.log('Unauthorized role/position attempted to fetch users:', 
-                 { role: req.user.role, position: req.user.position });
       return res.status(403).json({ message: 'Not authorized to view users' });
     }
 
     // If a specific manager's team is requested
     if (managerId && canManageUsers(req.user)) {
       query.manager = managerId;
-      console.log('Filtering by specific manager:', managerId);
     }
-
-    console.log('Final query:', JSON.stringify(query, null, 2));
     
     const users = await User.find(query)
       .populate('manager', 'name _id')  // Populate manager field with name and _id
       .populate('store', 'name storeNumber')
       .sort({ name: 1 });  // Sort by name ascending
 
-    console.log(`Found ${users.length} users with query:`, JSON.stringify(query, null, 2));
-    console.log('Users:', JSON.stringify(users.map(u => ({ 
-      _id: u._id, 
-      name: u.name, 
-      email: u.email,
-      store: u.store?._id,
-      role: u.role,
-      position: u.position,
-      manager: u.manager?._id
-    })), null, 2));
-
-    console.log('=== Sending Response ===\n');
     res.json({ users });
   } catch (error) {
     console.error('Error in GET /users:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({ 
       message: 'Failed to fetch users', 
       error: error.message,

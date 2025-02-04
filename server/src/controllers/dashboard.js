@@ -18,11 +18,6 @@ export const getDashboardStats = async (req, res) => {
             }
             return acc;
         }, {});
-
-        // Get counts
-        console.log('Getting pending evaluations for user:', req.user._id);
-        console.log('User role:', req.user.role);
-        console.log('User store:', store);
         
         // Build query based on user role
         let evaluationQuery = { 
@@ -39,21 +34,12 @@ export const getDashboardStats = async (req, res) => {
             ];
         }
         
-        // Debug query to see all matching evaluations
+        // Get matching evaluations
         const matchingEvaluations = await Evaluation.find(evaluationQuery)
             .populate('employee', 'name')
             .populate('evaluator', 'name');
-        
-        console.log('Matching evaluations:', matchingEvaluations.map(e => ({
-            id: e._id,
-            employee: e.employee?.name,
-            evaluator: e.evaluator?.name,
-            status: e.status
-        })));
 
         const pendingEvaluations = await Evaluation.countDocuments(evaluationQuery);
-
-        console.log('Pending evaluations count:', pendingEvaluations);
         
         // Get the start of the current quarter
         const now = new Date();
@@ -75,9 +61,6 @@ export const getDashboardStats = async (req, res) => {
         });
 
         // Get disciplinary stats
-        console.log('Querying disciplinary incidents for store:', store);
-        
-        // Build query based on user role
         let disciplinaryQuery = { store };
         
         // If user is not an admin/manager/evaluator, only show their own incidents
@@ -104,17 +87,14 @@ export const getDashboardStats = async (req, res) => {
             .sort('-date')
             .limit(5);
 
-        console.log('Open disciplinary incidents count:', openDisciplinaryIncidents);
-
         const totalEmployees = await User.countDocuments({ 
             store,
             status: 'active'  // Only count active employees
         });
         
-        // Use our existing Template model
         const activeTemplates = await Template.countDocuments({ 
             store, 
-            isActive: true  // Note: our model uses isActive, not active
+            isActive: true
         });
 
         // Get upcoming evaluations for next 7 days
@@ -176,7 +156,6 @@ export const getDashboardStats = async (req, res) => {
 
             // If notification already exists, return it regardless of status
             if (existingNotification) {
-                console.log('Found existing notification:', existingNotification._id, 'for evaluation:', evaluation._id);
                 return {
                     ...evaluation,
                     notificationId: existingNotification._id
@@ -202,7 +181,6 @@ export const getDashboardStats = async (req, res) => {
             }).lean();
 
             if (doubleCheck) {
-                console.log('Found notification in double-check:', doubleCheck._id, 'for evaluation:', evaluation._id);
                 return {
                     ...evaluation,
                     notificationId: doubleCheck._id
@@ -246,7 +224,6 @@ export const getDashboardStats = async (req, res) => {
 
         // Save all new notifications in bulk
         if (notificationsToCreate.length > 0) {
-            console.log('Creating new notifications:', notificationsToCreate.length);
             await Notification.insertMany(notificationsToCreate);
         }
 

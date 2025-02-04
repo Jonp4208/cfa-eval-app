@@ -4,8 +4,6 @@ import Evaluation from '../models/Evaluation.js';
 // Get all notifications for the authenticated user
 export const getNotifications = async (req, res) => {
   try {
-    console.log('Fetching notifications for user:', req.user._id);
-    
     // First, get all notifications for the user
     const allNotifications = await Notification.find({
       $or: [
@@ -14,43 +12,13 @@ export const getNotifications = async (req, res) => {
       ]
     }).lean();
 
-    console.log('All notifications before filtering:', {
-      count: allNotifications.length,
-      notifications: allNotifications.map(n => ({
-        id: n._id,
-        type: n.type,
-        status: n.status,
-        title: n.title,
-        read: n.read
-      }))
-    });
-
     // Filter out read notifications
     const unreadNotifications = allNotifications.filter(n => {
       // Consider a notification unread if:
       // 1. It has status 'UNREAD' OR
       // 2. It has no status and read is false/undefined
       const isUnread = (n.status === 'UNREAD' || (!n.status && !n.read));
-      
-      if (!isUnread) {
-        console.log('Filtering out read notification:', {
-          id: n._id,
-          status: n.status,
-          read: n.read
-        });
-      }
       return isUnread;
-    });
-
-    console.log('Unread notifications:', {
-      count: unreadNotifications.length,
-      notifications: unreadNotifications.map(n => ({
-        id: n._id,
-        type: n.type,
-        title: n.title,
-        status: n.status,
-        read: n.read
-      }))
     });
 
     // Sort by creation date

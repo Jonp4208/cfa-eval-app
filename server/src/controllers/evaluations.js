@@ -216,16 +216,6 @@ export const getEvaluations = async (req, res) => {
     try {
         const isDirector = req.user.position === 'Director';
         
-        // Add detailed debug logging
-        console.log('User details:', {
-            id: req.user._id,
-            name: req.user.name,
-            role: req.user.role,
-            position: req.user.position,
-            store: req.user.store._id,
-            isDirector
-        });
-        
         // Base query - always filter by store
         let query = { store: req.user.store._id };
         
@@ -236,8 +226,6 @@ export const getEvaluations = async (req, res) => {
                 { evaluator: req.user._id }
             ];
         }
-
-        console.log('Final query:', JSON.stringify(query, null, 2));
 
         let evaluations = await Evaluation.find(query)
             .populate({
@@ -252,22 +240,10 @@ export const getEvaluations = async (req, res) => {
             .populate('template')
             .sort('-createdAt');
 
-        // Log final filtered evaluations
-        console.log('Final filtered evaluations:', evaluations.map(evaluation => ({
-            id: evaluation._id,
-            employeeName: evaluation.employee?.name,
-            employeeId: evaluation.employee?._id,
-            employeeManagerId: evaluation.employee?.manager?._id,
-            employeeManagerName: evaluation.employee?.manager?.name,
-            evaluatorName: evaluation.evaluator?.name,
-            evaluatorId: evaluation.evaluator?._id,
-            status: evaluation.status
-        })));
-
         res.json({ evaluations });
 
     } catch (error) {
-        console.error('Get evaluations error:', error);
+        console.error('Error getting evaluations:', error);
         res.status(500).json({ message: 'Error getting evaluations' });
     }
 };

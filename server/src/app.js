@@ -52,10 +52,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Debug middleware for route matching
 app.use((req, res, next) => {
-  console.log('Request URL:', req.url);
-  console.log('Request Method:', req.method);
-  console.log('Request Headers:', req.headers);
-  console.log('Request Body:', req.body);
+  console.log(`${req.method} ${req.url}`);
   next();
 });
 

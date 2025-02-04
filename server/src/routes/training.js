@@ -196,10 +196,22 @@ router.get('/plans', auth, handleAsync(async (req, res) => {
     store: req.user.store._id
   })
   .populate('createdBy', 'firstName lastName')
-  .sort({ createdAt: -1 });
+  .sort({ createdAt: -1 })
+  .lean();  // Convert to plain JavaScript objects
+  
+  // Transform the plans to match the client-side interface
+  const transformedPlans = plans.map(plan => ({
+    ...plan,
+    _id: plan._id.toString(),  // Convert ObjectId to string
+    id: plan._id.toString(),   // Add id field for backward compatibility
+    createdBy: {
+      ...plan.createdBy,
+      _id: plan.createdBy._id.toString()
+    }
+  }));
   
   console.log(`Found ${plans.length} training plans`);
-  res.json(plans);
+  res.json(transformedPlans);
 }));
 
 // Get active training plans
@@ -263,7 +275,7 @@ router.post('/plans', auth, async (req, res) => {
     const modules = days.flatMap((day) => 
       day.modules.map(module => ({
         name: module.name,
-        description: module.name, // Use module name as description
+        description: module.description,
         department,
         estimatedDuration: `${module.duration} minutes`,
         dayNumber: day.dayNumber,

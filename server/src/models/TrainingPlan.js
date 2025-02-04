@@ -28,6 +28,7 @@ const trainingModuleSchema = new Schema({
 
 const trainingPlanSchema = new Schema({
     name: { type: String, required: true },
+    description: { type: String },
     type: { 
         type: String, 
         enum: ['NEW_HIRE', 'REGULAR'], 

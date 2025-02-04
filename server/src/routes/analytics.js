@@ -1200,11 +1200,6 @@ router.get('/performance-trends', auth, async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 28); // 4 weeks ago
 
-    console.log('Fetching evaluations between:', {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString()
-    });
-
     const evaluations = await Evaluation.find({
       store: req.user.store._id,
       status: 'completed',
@@ -1220,8 +1215,6 @@ router.get('/performance-trends', auth, async (req, res) => {
     })
     .sort({ completedDate: -1 }); // Sort by most recent first
 
-    console.log(`Found ${evaluations.length} evaluations`);
-
     // Get default grading scale
     const defaultScale = await GradingScale.findOne({ 
       store: req.user.store._id,
@@ -1236,7 +1229,6 @@ router.get('/performance-trends', auth, async (req, res) => {
 
     evaluations.forEach(evaluation => {
       if (!evaluation.employee?.departments) {
-        console.log('Skipping evaluation - no employee departments:', evaluation._id);
         return;
       }
 
@@ -1310,8 +1302,6 @@ router.get('/performance-trends', auth, async (req, res) => {
       };
     }).reverse(); // Reverse so Week 1 is oldest
 
-    console.log('Final performance trends:', performanceTrends);
-
     res.json({ performanceTrends });
   } catch (error) {
     console.error('Error fetching performance trends:', error);
@@ -1343,9 +1333,7 @@ const mapScoreToNumeric = (score) => {
 router.get('/shift-comparison', auth, async (req, res) => {
   try {
     const { timeframe = 'month', store } = req.query;
-    const storeId = store || req.user.store._id; // Get the actual ObjectId
-
-    console.log('Querying with storeId:', storeId);
+    const storeId = store || req.user.store._id;
 
     // Get the date range based on timeframe
     const endDate = new Date();
@@ -1371,18 +1359,14 @@ router.get('/shift-comparison', auth, async (req, res) => {
     const dayShiftEmployees = await User.find({
       store: storeId,
       shift: 'day',
-      status: 'active' // Only get active employees
+      status: 'active'
     }).select('_id name position');
-
-    console.log('Day shift employees found:', dayShiftEmployees.length);
 
     const nightShiftEmployees = await User.find({
       store: storeId,
       shift: 'night',
-      status: 'active' // Only get active employees
+      status: 'active'
     }).select('_id name position');
-
-    console.log('Night shift employees found:', nightShiftEmployees.length);
 
     // Get evaluations for day shift employees
     const dayShiftEvaluations = await Evaluation.find({
@@ -1392,8 +1376,6 @@ router.get('/shift-comparison', auth, async (req, res) => {
       status: 'completed'
     }).populate('template');
 
-    console.log('Day shift evaluations found:', dayShiftEvaluations.length);
-
     // Get evaluations for night shift employees
     const nightShiftEvaluations = await Evaluation.find({
       store: storeId,
@@ -1401,8 +1383,6 @@ router.get('/shift-comparison', auth, async (req, res) => {
       createdAt: { $gte: startDate, $lte: endDate },
       status: 'completed'
     }).populate('template');
-
-    console.log('Night shift evaluations found:', nightShiftEvaluations.length);
 
     // Initialize metrics
     const dayShiftScores = [];
@@ -1496,8 +1476,8 @@ router.get('/shift-comparison', auth, async (req, res) => {
     // Calculate averages for each category
     const metricsArray = Object.entries(metrics).map(([category, scores]) => ({
       category,
-      day: scores.day.length ? (scores.day.reduce((a, b) => a + b, 0) / scores.day.length) * 20 : 0,
-      night: scores.night.length ? (scores.night.reduce((a, b) => a + b, 0) / scores.night.length) * 20 : 0
+      day: scores.day.length ? (scores.day.reduce((a, b) => a + b, 0) / scores.day.length) : 0,
+      night: scores.night.length ? (scores.night.reduce((a, b) => a + b, 0) / scores.night.length) : 0
     }));
 
     // Sort performers by score
