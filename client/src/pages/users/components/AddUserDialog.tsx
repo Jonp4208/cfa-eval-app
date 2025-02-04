@@ -175,15 +175,9 @@ export default function AddUserDialog({ open, onOpenChange, user }: AddUserDialo
           position: formData.position,
           role: formData.role,
           shift: formData.shift,
-          startDate: formData.startDate
+          startDate: formData.startDate,
+          manager: formData.managerId || null
         });
-
-        // Set manager for new user if selected
-        if (formData.managerId) {
-          await api.patch(`/api/users/${response.data.user.id}`, {
-            managerId: formData.managerId
-          });
-        }
 
         setStatusMessage({ type: 'success', text: 'Team member has been added successfully!' });
       }
