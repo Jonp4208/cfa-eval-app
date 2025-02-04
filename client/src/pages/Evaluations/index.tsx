@@ -547,13 +547,7 @@ export default function Evaluations() {
                       <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
                       <p className="text-sm text-[#27251F]/60">{evaluation.employee.position}</p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      evaluation.status === 'completed' 
-                        ? 'bg-green-100 text-green-800'
-                        : evaluation.status === 'in_review_session'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(evaluation.status)}`}>
                       {evaluation.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </div>
                   </div>
