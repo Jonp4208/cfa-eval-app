@@ -214,15 +214,21 @@ export default function Evaluations() {
     .map(dept => ({ value: dept, label: dept }));
 
   const sortEvaluations = (a: Evaluation, b: Evaluation) => {
+    // Skip sorting if required data is missing
+    if (!a.employee || !b.employee || !a.template || !b.template) {
+      return 0;
+    }
+
     switch (sortField) {
       case 'date':
+        if (!a.scheduledDate || !b.scheduledDate) return 0;
         return sortOrder === 'asc'
           ? new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()
           : new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime();
       case 'name':
         return sortOrder === 'asc'
-          ? (a.employee?.name || '').localeCompare(b.employee?.name || '')
-          : (b.employee?.name || '').localeCompare(a.employee?.name || '');
+          ? a.employee.name.localeCompare(b.employee.name)
+          : b.employee.name.localeCompare(a.employee.name);
       case 'status':
         return sortOrder === 'asc'
           ? a.status.localeCompare(b.status)
@@ -234,6 +240,12 @@ export default function Evaluations() {
 
   const filteredEvaluations = evaluations
     ?.filter((evaluation: Evaluation) => {
+      // First check if evaluation has required data
+      if (!evaluation.employee?.name || !evaluation.template?.name || !evaluation.evaluator?.name) {
+        console.log('Filtering out evaluation due to missing data:', evaluation);
+        return false;
+      }
+
       let shouldShow = true;
 
       // Status filter
@@ -245,15 +257,15 @@ export default function Evaluations() {
 
       // Department filter
       if (shouldShow && departmentFilter !== 'all') {
-        const employeeDepartment = evaluation.employee?.position?.split(' ')[0];
+        const employeeDepartment = evaluation.employee.position?.split(' ')[0];
         shouldShow = employeeDepartment === departmentFilter;
       }
 
       // Search filter
       if (shouldShow && searchQuery) {
         const searchLower = searchQuery.toLowerCase();
-        shouldShow = evaluation.employee?.name?.toLowerCase().includes(searchLower) ||
-                    evaluation.template?.name?.toLowerCase().includes(searchLower);
+        shouldShow = evaluation.employee.name.toLowerCase().includes(searchLower) ||
+                    evaluation.template.name.toLowerCase().includes(searchLower);
       }
 
       return shouldShow;
@@ -544,8 +556,8 @@ export default function Evaluations() {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="font-medium text-[#27251F]">{evaluation.employee.name}</h3>
-                      <p className="text-sm text-[#27251F]/60">{evaluation.employee.position}</p>
+                      <h3 className="font-medium text-[#27251F]">{evaluation.employee?.name}</h3>
+                      <p className="text-sm text-[#27251F]/60">{evaluation.employee?.position}</p>
                     </div>
                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(evaluation.status)}`}>
                       {evaluation.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -554,17 +566,17 @@ export default function Evaluations() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-[#27251F]/60">Template:</span>
-                      <span className="font-medium text-[#27251F]">{evaluation.template.name}</span>
+                      <span className="font-medium text-[#27251F]">{evaluation.template?.name}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-[#27251F]/60">Scheduled:</span>
                       <span className="font-medium text-[#27251F]">
-                        {new Date(evaluation.scheduledDate).toLocaleDateString()}
+                        {evaluation.scheduledDate ? new Date(evaluation.scheduledDate).toLocaleDateString() : 'Not scheduled'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-[#27251F]/60">Evaluator:</span>
-                      <span className="font-medium text-[#27251F]">{evaluation.evaluator.name}</span>
+                      <span className="font-medium text-[#27251F]">{evaluation.evaluator?.name}</span>
                     </div>
                   </div>
                 </CardContent>
