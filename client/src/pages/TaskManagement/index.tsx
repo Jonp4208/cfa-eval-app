@@ -18,10 +18,294 @@ import { MongoId } from '../../types/task';
 import userService from '../../services/userService';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '@/components/PageHeader';
+import { Textarea } from '../../components/ui/textarea';
+import { ScrollArea } from '../../components/ui/scroll-area';
 
 const getIdString = (id: string | MongoId | undefined): string => {
   if (!id) return '';
   return typeof id === 'string' ? id : id.toString();
+};
+
+const EditTaskListDialog = ({ 
+  open, 
+  onOpenChange, 
+  taskList, 
+  onSave 
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void; 
+  taskList: TaskListType | null;
+  onSave: (updatedList: Partial<TaskListType>) => void;
+}) => {
+  const [formData, setFormData] = useState({
+    name: taskList?.name || '',
+    department: taskList?.department || 'Front Counter',
+    shift: taskList?.shift || 'AM',
+    isRecurring: taskList?.isRecurring || false,
+    recurringType: taskList?.recurringType,
+    recurringDays: taskList?.recurringDays || [],
+    monthlyDate: taskList?.monthlyDate || 1,
+    tasks: taskList?.tasks || []
+  });
+
+  useEffect(() => {
+    if (taskList) {
+      setFormData({
+        name: taskList.name,
+        department: taskList.department,
+        shift: taskList.shift,
+        isRecurring: taskList.isRecurring,
+        recurringType: taskList.recurringType,
+        recurringDays: taskList.recurringDays || [],
+        monthlyDate: taskList.monthlyDate || 1,
+        tasks: taskList.tasks
+      });
+    }
+  }, [taskList]);
+
+  const handleSave = () => {
+    onSave(formData);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[800px] h-[90vh] sm:h-[80vh] flex flex-col overflow-hidden p-0 bg-white border-0 shadow-2xl rounded-3xl">
+        <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] px-8 py-6">
+          <DialogTitle className="text-xl font-semibold text-white">Edit Task List</DialogTitle>
+        </div>
+      
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+            <div className="space-y-2">
+              <Label className="text-[#27251F]/60 font-medium text-sm">Task List Name</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter task list name"
+                className="rounded-[14px] border-[#27251F]/10 h-10"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[#27251F]/60 font-medium text-sm">Department</Label>
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, department: value as Department }))}
+                >
+                  <SelectTrigger className="rounded-[14px] border-[#27251F]/10 h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-[14px]">
+                    <SelectItem value="Front Counter">Front Counter</SelectItem>
+                    <SelectItem value="Drive Thru">Drive Thru</SelectItem>
+                    <SelectItem value="Kitchen">Kitchen</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[#27251F]/60 font-medium text-sm">Shift</Label>
+                <Select
+                  value={formData.shift}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, shift: value as Shift }))}
+                >
+                  <SelectTrigger className="rounded-[14px] border-[#27251F]/10 h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-[14px]">
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="PM">PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="recurring"
+                  checked={formData.isRecurring}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      isRecurring: checked as boolean,
+                      recurringType: checked ? 'daily' : undefined
+                    }))
+                  }
+                  className="rounded-[6px] border-[#27251F]/10 data-[state=checked]:bg-[#E51636] data-[state=checked]:border-[#E51636]"
+                />
+                <Label htmlFor="recurring" className="text-[#27251F]/60 font-medium text-sm">Recurring Task List</Label>
+              </div>
+
+              {formData.isRecurring && (
+                <div className="space-y-4 pl-4 sm:pl-6">
+                  <div className="space-y-2">
+                    <Label className="text-[#27251F]/60 font-medium text-sm">Recurring Type</Label>
+                    <Select
+                      value={formData.recurringType}
+                      onValueChange={(value) => 
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          recurringType: value as 'daily' | 'weekly' | 'monthly'
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="rounded-[14px] border-[#27251F]/10 h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-[14px]">
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.recurringType === 'weekly' && (
+                    <div className="space-y-2">
+                      <Label className="text-[#27251F]/60 font-medium text-sm">Select Days</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                          <div key={day} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={day}
+                              checked={formData.recurringDays.includes(day)}
+                              onCheckedChange={(checked) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  recurringDays: checked 
+                                    ? [...prev.recurringDays, day]
+                                    : prev.recurringDays.filter(d => d !== day)
+                                }));
+                              }}
+                              className="rounded-[6px] border-[#27251F]/10 data-[state=checked]:bg-[#E51636] data-[state=checked]:border-[#E51636]"
+                            />
+                            <Label htmlFor={day} className="capitalize text-[#27251F]/60">
+                              {day}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.recurringType === 'monthly' && (
+                    <div className="space-y-2">
+                      <Label className="text-[#27251F]/60 font-medium text-sm">Day of Month</Label>
+                      <Select
+                        value={formData.monthlyDate.toString()}
+                        onValueChange={(value) => 
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            monthlyDate: parseInt(value)
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="rounded-[14px] border-[#27251F]/10 h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-[14px]">
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                            <SelectItem key={day} value={day.toString()}>
+                              {day}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <Label className="text-[#27251F]/60 font-medium text-sm">Tasks</Label>
+              {formData.tasks.map((task, index) => (
+                <div key={index} className="space-y-3 p-3 sm:p-4 bg-[#F4F4F4] rounded-[14px]">
+                  <Input
+                    value={task.title}
+                    onChange={(e) => {
+                      const newTasks = [...formData.tasks];
+                      newTasks[index] = { ...task, title: e.target.value };
+                      setFormData(prev => ({ ...prev, tasks: newTasks }));
+                    }}
+                    placeholder="Task title"
+                    className="rounded-[14px] border-[#27251F]/10 h-10"
+                  />
+                  <Textarea
+                    value={task.description || ''}
+                    onChange={(e) => {
+                      const newTasks = [...formData.tasks];
+                      newTasks[index] = { ...task, description: e.target.value };
+                      setFormData(prev => ({ ...prev, tasks: newTasks }));
+                    }}
+                    placeholder="Task description"
+                    className="rounded-[14px] border-[#27251F]/10 min-h-[60px] sm:min-h-[80px] resize-none"
+                  />
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="flex-1">
+                      <Label className="text-[#27251F]/60 font-medium text-sm">Time (min)</Label>
+                      <Input
+                        type="number"
+                        value={task.estimatedTime || ''}
+                        onChange={(e) => {
+                          const newTasks = [...formData.tasks];
+                          newTasks[index] = { ...task, estimatedTime: parseInt(e.target.value) };
+                          setFormData(prev => ({ ...prev, tasks: newTasks }));
+                        }}
+                        className="rounded-[14px] border-[#27251F]/10 h-10"
+                      />
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => {
+                        const newTasks = formData.tasks.filter((_, i) => i !== index);
+                        setFormData(prev => ({ ...prev, tasks: newTasks }));
+                      }}
+                      className="rounded-[14px] h-10 w-10 mt-6"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    tasks: [...prev.tasks, { title: '', status: 'pending' }]
+                  }));
+                }}
+                className="rounded-[14px] border-[#27251F]/10 w-full h-10"
+              >
+                Add Task
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 sm:gap-4 p-4 sm:p-6 border-t mt-auto bg-gray-50/80">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className="rounded-[14px] border-[#27251F]/10 h-10"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            className="rounded-[14px] bg-[#E51636] hover:bg-[#E51636]/90 text-white h-10"
+          >
+            Save Changes
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 const TaskManagement = () => {
@@ -41,6 +325,7 @@ const TaskManagement = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [completedByUsers, setCompletedByUsers] = useState<Record<string, { name: string }>>({});
   const navigate = useNavigate();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Available departments
   const departments: Department[] = ['Front Counter', 'Drive Thru', 'Kitchen'];
@@ -72,6 +357,65 @@ const TaskManagement = () => {
     area: undefined,
     view: 'current'
   });
+
+  // Add state for custom notification
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'success' | 'error' | 'warning';
+    show: boolean;
+  }>({ message: '', type: 'success', show: false });
+
+  // Add notification timeout cleanup
+  useEffect(() => {
+    if (notification.show) {
+      const timer = setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification.show]);
+
+  // Add custom notification component
+  const CustomNotification = () => {
+    if (!notification.show) return null;
+
+    const bgColor = notification.type === 'success' ? 'bg-green-500' :
+                   notification.type === 'error' ? 'bg-red-500' :
+                   'bg-yellow-500';
+
+    return (
+      <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg text-white shadow-lg transform transition-transform duration-300 ${bgColor}`}
+           style={{ animation: 'slideIn 0.3s ease-out' }}>
+        <div className="flex items-center gap-2">
+          {notification.type === 'success' && <CheckCircle className="h-5 w-5" />}
+          {notification.type === 'error' && <XCircle className="h-5 w-5" />}
+          {notification.type === 'warning' && <Clock className="h-5 w-5" />}
+          <span>{notification.message}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Add animation styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Optimize data fetching with better caching and batching
   const fetchData = useCallback(async () => {
@@ -296,46 +640,49 @@ const TaskManagement = () => {
     }
   }, [taskDialogOpen, selectedInstance]);
 
-  // Handle creating a task list
-  const handleCreateTaskList = async () => {
+  // Update the handleEditClick function
+  const handleEditClick = (e: React.MouseEvent, list: TaskListType) => {
+    e.stopPropagation();
+    setSelectedList(list);
+    setEditDialogOpen(true);
+  };
+
+  // Add handleSaveEdit function
+  const handleSaveEdit = async (updatedList: Partial<TaskListType>) => {
+    if (!selectedList?._id) return;
+
     try {
-      if (!newTaskList.name || !newTaskList.department || !newTaskList.shift) {
-        return;
-      }
+      // Optimistically update UI
+      const listId = getIdString(selectedList._id);
+      setTaskLists(prev => prev.map(l => 
+        getIdString(l._id) === listId ? { ...l, ...updatedList } : l
+      ));
 
-      const taskListToSave = {
-        name: newTaskList.name,
-        department: newTaskList.department,
-        shift: newTaskList.shift,
-        isActive: true,
-        isRecurring: newTaskList.isRecurring,
-        tasks: newTaskList.tasks.map(task => ({
-          title: task.title,
-          description: task.description,
-          estimatedTime: task.estimatedTime,
-          scheduledTime: task.scheduledTime,
-          status: 'pending' as const
-        })),
-        recurringType: newTaskList.isRecurring ? newTaskList.recurringType : undefined,
-        recurringDays: newTaskList.isRecurring && newTaskList.recurringType === 'weekly' ? newTaskList.recurringDays : undefined,
-        monthlyDate: newTaskList.isRecurring && newTaskList.recurringType === 'monthly' ? newTaskList.monthlyDate : undefined
-      };
-
-      await taskService.createList(taskListToSave);
-      await fetchData(); // Refresh data after creating
-      setCreateDialogOpen(false);
-      setNewTaskList({
-        name: '',
-        department: departments[0],
-        shift: '' as Shift,
-        isRecurring: false,
-        recurringType: undefined,
-        recurringDays: [],
-        monthlyDate: 1,
-        tasks: []
+      setNotification({
+        message: "Saving changes...",
+        type: 'warning',
+        show: true
       });
+
+      await taskService.updateList(listId, updatedList);
+
+      setNotification({
+        message: "Task list updated successfully!",
+        type: 'success',
+        show: true
+      });
+
+      // Refresh data in the background
+      fetchData();
     } catch (error) {
-      console.error('Error creating task list:', error);
+      console.error('Error updating task list:', error);
+      // Revert optimistic update
+      fetchData();
+      setNotification({
+        message: `Failed to update task list: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error',
+        show: true
+      });
     }
   };
 
@@ -385,54 +732,85 @@ const TaskManagement = () => {
     }
   };
 
-  // Add delete instance handler
-  const handleDeleteInstance = async (instanceId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click event
-    
+  // Update the handleDeleteInstance function
+  const handleDeleteInstance = async (instanceId: string) => {
     try {
-      const taskList = taskLists.find(list => {
-        const instance = activeInstances.find(i => i._id === instanceId);
-        if (instance && list._id === (typeof instance.taskList === 'string' ? instance.taskList : instance.taskList._id)) {
-          return true;
-        }
-        return false;
+      setNotification({
+        message: "Deleting task instance...",
+        type: 'warning',
+        show: true
       });
+      
+      console.log('Attempting to delete instance:', instanceId);
+      await taskService.deleteInstance(instanceId);
+      console.log('Successfully deleted instance');
+      await fetchData();
+      setTaskDialogOpen(false);
+      
+      setNotification({
+        message: "Task instance deleted successfully!",
+        type: 'success',
+        show: true
+      });
+    } catch (error) {
+      console.error('Delete error:', error);
+      setNotification({
+        message: `Failed to delete task instance: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error',
+        show: true
+      });
+    }
+  };
 
-      if (taskList && !window.confirm(`Are you sure you want to delete this task instance for "${taskList.name}"? This action cannot be undone.`)) {
-        return;
+  // Update the delete button click handler
+  const handleDeleteClick = (e: React.MouseEvent, instance: TaskInstance | null, list: TaskListType) => {
+    e.stopPropagation();
+    
+    if (window.confirm(`Are you sure you want to delete "${list.name}"? This will delete the task list and all its instances. This action cannot be undone.`)) {
+      try {
+        // Optimistically update UI
+        const listId = getIdString(list._id);
+        setTaskLists(prev => prev.filter(l => getIdString(l._id) !== listId));
+        setActiveInstances(prev => prev.filter(i => {
+          const instanceListId = typeof i.taskList === 'string' 
+            ? i.taskList 
+            : getIdString(i.taskList?._id);
+          return instanceListId !== listId;
+        }));
+
+        setNotification({
+          message: "Deleting task list...",
+          type: 'warning',
+          show: true
+        });
+
+        taskService.deleteList(listId)
+          .then(() => {
+            setNotification({
+              message: "Task list and all instances deleted successfully!",
+              type: 'success',
+              show: true
+            });
+          })
+          .catch((error) => {
+            console.error('Delete error:', error);
+            // Revert optimistic update by refreshing data
+            fetchData();
+            setNotification({
+              message: `Failed to delete task list: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              type: 'error',
+              show: true
+            });
+          });
+      } catch (error) {
+        console.error('Delete error:', error);
+        fetchData();
+        setNotification({
+          message: `Failed to delete task list: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          type: 'error',
+          show: true
+        });
       }
-      
-      const response = await taskService.deleteInstance(instanceId);
-      toast({
-        title: "Task Instance Deleted",
-        description: (
-          <div className="mt-1 flex items-center gap-2 text-green-600">
-            <CheckCircle className="h-4 w-4" />
-            <span>{response.message}</span>
-          </div>
-        ),
-        variant: "default",
-        className: "bg-green-50 border-green-200",
-        duration: 4000,
-      });
-      await fetchData(); // Refresh the data
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 
-        typeof error === 'object' && error && 'response' in error ? (error.response as any)?.data?.message : 
-        'An unexpected error occurred';
-      
-      console.error('Error:', error);
-      toast({
-        title: "Error Deleting Task Instance",
-        description: (
-          <div className="mt-1 flex items-center gap-2 text-destructive">
-            <XCircle className="h-4 w-4" />
-            <span>{errorMessage}</span>
-          </div>
-        ),
-        variant: "destructive",
-        duration: 4000,
-      });
     }
   };
 
@@ -504,6 +882,7 @@ const TaskManagement = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] p-4 md:p-6">
+      <CustomNotification />
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         <PageHeader
           title="Task Management"
@@ -887,18 +1266,21 @@ const TaskManagement = () => {
                         {user?.position && ['Leader', 'Director'].includes(user.position) && (
                           <div className="flex items-center gap-4">
                             <button
-                              className="text-blue-600 hover:text-blue-700 transition-colors"
+                              className="text-[#27251F]/60 hover:text-[#E51636] transition-colors"
                               title="Edit List"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedList(list);
-                                setCreateDialogOpen(true);
-                              }}
+                              onClick={(e) => handleEditClick(e, list)}
                             >
-                              <Pencil className="h-5 w-5" />
+                              <Pencil className="h-4 w-4" />
                             </button>
                             <button
-                              className="text-blue-600 hover:text-blue-700 transition-colors"
+                              className="text-[#27251F]/60 hover:text-[#E51636] transition-colors"
+                              title="Delete List"
+                              onClick={(e) => handleDeleteClick(e, instance, list)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              className="text-[#27251F]/60 hover:text-[#E51636] transition-colors"
                               title="Assign Tasks"
                               onClick={async (e) => {
                                 e.stopPropagation();
@@ -937,17 +1319,17 @@ const TaskManagement = () => {
                                 }
                               }}
                             >
-                              <Users className="h-5 w-5" />
+                              <Users className="h-4 w-4" />
                             </button>
                           </div>
                         )}
                         {list.isRecurring ? (
-                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <Clock className="h-4 w-4 text-green-600" />
+                          <div className="h-6 w-6 bg-[#27251F]/10 rounded-full flex items-center justify-center">
+                            <Clock className="h-3 w-3 text-[#27251F]/60" />
                           </div>
                         ) : instance?.status === 'completed' ? (
-                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          <div className="h-6 w-6 bg-[#27251F]/10 rounded-full flex items-center justify-center">
+                            <CheckCircle className="h-3 w-3 text-[#27251F]/60" />
                           </div>
                         ) : null}
                       </div>
@@ -977,33 +1359,30 @@ const TaskManagement = () => {
           }
           setTaskDialogOpen(open);
         }}>
-          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col rounded-[20px] border-0 shadow-xl">
-            <DialogHeader className="bg-gradient-to-r from-[#E51636] to-[#DD0031] text-white p-6 rounded-t-[20px] relative">
-              <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10 rounded-t-[20px]" />
-              <div className="relative">
-                <DialogTitle className="text-lg font-bold">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                      <span>
-                        {selectedInstance && selectedInstance.taskList && typeof selectedInstance.taskList === 'object' && 'name' in selectedInstance.taskList
-                          ? selectedInstance.taskList.name
-                          : selectedList?.name || 'Task List'}
+          <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-hidden flex flex-col bg-white border-0 shadow-2xl rounded-3xl">
+            <div className="bg-gradient-to-r from-[#E51636] to-[#DD0031] px-8 py-6">
+              <DialogTitle className="text-xl font-semibold text-white">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-3">
+                    <span>
+                      {selectedInstance && selectedInstance.taskList && typeof selectedInstance.taskList === 'object' && 'name' in selectedInstance.taskList
+                        ? selectedInstance.taskList.name
+                        : selectedList?.name || 'Task List'}
+                    </span>
+                    {selectedInstance?.status === 'completed' && (
+                      <span className="bg-white/20 text-white text-sm px-2 py-0.5 rounded-full font-medium">
+                        Completed
                       </span>
-                      {selectedInstance?.status === 'completed' && (
-                        <span className="bg-white/20 text-white text-sm px-2 py-0.5 rounded-full font-medium">
-                          Completed
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-white/80 text-sm">
-                      <span>{selectedInstance?.department || selectedList?.department}</span>
-                      <span>•</span>
-                      <span className="capitalize">{selectedInstance?.shift || selectedList?.shift} Shift</span>
-                    </div>
+                    )}
                   </div>
-                </DialogTitle>
-              </div>
-            </DialogHeader>
+                  <div className="flex items-center gap-2 text-white/80 text-sm">
+                    <span>{selectedInstance?.department || selectedList?.department}</span>
+                    <span>•</span>
+                    <span className="capitalize">{selectedInstance?.shift || selectedList?.shift} Shift</span>
+                  </div>
+                </div>
+              </DialogTitle>
+            </div>
 
             {/* Task List Content */}
             <div className="flex-1 overflow-hidden flex flex-col">
@@ -1195,10 +1574,19 @@ const TaskManagement = () => {
                                     'completed'
                                   );
                                 }}
-                                className="text-[#E51636] hover:text-[#DD0031] transition-colors"
+                                className={cn(
+                                  "transition-colors",
+                                  task.status === 'completed'
+                                    ? "text-green-600 hover:text-green-700"
+                                    : "text-[#E51636] hover:text-[#DD0031]"
+                                )}
                                 title="Mark Complete"
                               >
-                                <CheckCircle className="h-5 w-5" />
+                                {task.status === 'completed' ? (
+                                  <XCircle className="h-5 w-5" />
+                                ) : (
+                                  <CheckCircle className="h-5 w-5" />
+                                )}
                               </button>
                             </div>
                           </div>
@@ -1384,6 +1772,14 @@ const TaskManagement = () => {
             shift={selectedInstance.shift}
           />
         )}
+
+        {/* Edit Task List Dialog */}
+        <EditTaskListDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          taskList={selectedList}
+          onSave={handleSaveEdit}
+        />
       </div>
     </div>
   );

@@ -80,18 +80,32 @@ router.put('/lists/:id', auth, isLeaderOrDirector, async (req, res) => {
 // Delete task list (Leaders/Directors only)
 router.delete('/lists/:id', auth, isLeaderOrDirector, async (req, res) => {
   try {
-    const taskList = await TaskList.findOneAndUpdate(
-      { _id: req.params.id, store: req.user.store },
-      { isActive: false },
-      { new: true }
-    );
+    // Find the task list first
+    const taskList = await TaskList.findOne({
+      _id: req.params.id,
+      store: req.user.store
+    });
     
     if (!taskList) {
       return res.status(404).json({ message: 'Task list not found' });
     }
+
+    // Delete all associated instances
+    await TaskInstance.deleteMany({
+      taskList: taskList._id,
+      store: req.user.store
+    });
+
+    // Soft delete the task list
+    taskList.isActive = false;
+    await taskList.save();
     
-    res.json({ message: 'Task list deleted successfully' });
+    res.json({ 
+      message: 'Task list and all associated instances deleted successfully',
+      deletedAt: new Date()
+    });
   } catch (error) {
+    console.error('Error deleting task list:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -342,22 +356,18 @@ router.delete('/instances/:instanceId', auth, isLeaderOrDirector, async (req, re
     const instance = await TaskInstance.findOne({
       _id: req.params.instanceId,
       store: req.user.store
-    }).populate('taskList', 'name');
+    });
     
     if (!instance) {
       return res.status(404).json({ 
         message: 'Task instance not found. It may have been already deleted.' 
       });
     }
-
-    // Get task list name for the success message
-    const taskListName = instance.taskList?.name || 'Unknown task list';
     
     await TaskInstance.deleteOne({ _id: instance._id });
     
     res.json({ 
-      message: `Successfully deleted task instance for "${taskListName}"`,
-      taskListName,
+      message: `Successfully deleted task instance`,
       deletedAt: new Date()
     });
   } catch (error) {

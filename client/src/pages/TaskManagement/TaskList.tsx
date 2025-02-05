@@ -1,17 +1,30 @@
 import React from 'react';
-import { TaskInstance, TaskItem } from '../../types/task';
+import { TaskInstance, TaskItem, MongoId } from '../../types/task';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Button } from '../../components/ui/button';
-import { Clock, User } from 'lucide-react';
+import { Clock, User, Pencil, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+
+const getIdString = (id: string | MongoId | undefined): string => {
+  if (!id) return '';
+  return typeof id === 'string' ? id : id.toString();
+};
 
 interface TaskListProps {
   instance: TaskInstance;
   onTaskComplete: (taskId: string, status: 'pending' | 'completed') => void;
   onAssignTask: (taskId: string, userId: string) => void;
+  onEditTask?: (task: TaskItem) => void;
+  onDeleteTask?: (taskId: string) => void;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ instance, onTaskComplete, onAssignTask }) => {
+const TaskList: React.FC<TaskListProps> = ({ 
+  instance, 
+  onTaskComplete, 
+  onAssignTask,
+  onEditTask,
+  onDeleteTask
+}) => {
   // Group tasks by their completion status
   const groupedTasks = instance.tasks.reduce((acc, task) => {
     const status = task.status;
@@ -23,20 +36,48 @@ const TaskList: React.FC<TaskListProps> = ({ instance, onTaskComplete, onAssignT
   }, {} as Record<string, TaskItem[]>);
 
   const renderTask = (task: TaskItem) => (
-    <div key={task._id} className="p-2 sm:p-4 bg-gray-50 rounded-lg">
+    <div key={getIdString(task._id)} className="p-2 sm:p-4 bg-gray-50 rounded-lg">
       <div className="flex items-start gap-2 sm:gap-3">
         <Checkbox
           checked={task.status === 'completed'}
           onCheckedChange={(checked) => 
-            onTaskComplete(task._id!, checked ? 'completed' : 'pending')
+            onTaskComplete(getIdString(task._id), checked ? 'completed' : 'pending')
           }
           className="mt-1"
         />
         <div className="flex-1 min-w-0">
-          <p className="font-medium break-words">{task.title}</p>
-          {task.description && (
-            <p className="text-sm text-gray-500 break-words">{task.description}</p>
-          )}
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="font-medium break-words">{task.title}</p>
+              {task.description && (
+                <p className="text-sm text-gray-500 break-words">{task.description}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              {onEditTask && (
+                <button
+                  onClick={() => onEditTask(task)}
+                  className="text-blue-600 hover:text-blue-700 transition-colors p-1"
+                  title="Edit Task"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
+              {onDeleteTask && (
+                <button
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this task?')) {
+                      onDeleteTask(getIdString(task._id));
+                    }
+                  }}
+                  className="text-red-600 hover:text-red-700 transition-colors p-1"
+                  title="Delete Task"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
             {task.estimatedTime && (
               <div className="flex items-center text-xs sm:text-sm text-gray-500">
@@ -63,7 +104,9 @@ const TaskList: React.FC<TaskListProps> = ({ instance, onTaskComplete, onAssignT
             )}
             {task.completedBy && task.completedAt && (
               <div className="text-xs sm:text-sm text-gray-500 w-full sm:w-auto mt-1 sm:mt-0">
-                Completed by <span className="truncate">{task.completedBy.name}</span>{' '}
+                Completed by <span className="truncate">
+                  {typeof task.completedBy === 'object' ? task.completedBy.name : task.completedBy}
+                </span>{' '}
                 {formatDistanceToNow(new Date(task.completedAt))} ago
               </div>
             )}

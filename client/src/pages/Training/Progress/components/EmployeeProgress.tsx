@@ -58,16 +58,39 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!deleteProgress?._id) return;
+    if (!deleteProgress) {
+      console.error('No progress selected for deletion');
+      return;
+    }
+
+    const progressId = typeof deleteProgress === 'string' ? deleteProgress : deleteProgress._id;
+    if (!progressId) {
+      console.error('No progress ID available:', deleteProgress);
+      return;
+    }
 
     try {
-      await api.delete(`/api/training/trainee-progress/${deleteProgress._id}`);
+      console.log('Attempting to delete training progress:', progressId);
+      const response = await api.delete(`/api/training/trainee-progress/${progressId}`);
+      console.log('Delete response:', response);
       setDeleteProgress(null);
       onUpdateProgress();
     } catch (err) {
-      console.error('Error deleting training progress:', err);
+      console.error('Error deleting training progress:', {
+        error: err,
+        progressId
+      });
       setError('Failed to delete training progress. Please try again.');
     }
+  };
+
+  // Find progress by ID helper
+  const findProgressById = (progressId: string): ExtendedTraineeProgress | null => {
+    for (const employee of localEmployees) {
+      const found = employee.trainingProgress.find(p => p._id === progressId);
+      if (found) return found;
+    }
+    return null;
   };
 
   const handleProgressUpdate = (updatedProgress: ExtendedTraineeProgress) => {
@@ -114,10 +137,10 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
 
       <Grid container spacing={3}>
         {filteredEmployees.map((employee) => (
-          <Grid item xs={12} key={employee._id}>
+          <Grid item xs={12} key={`employee-${employee._id}`}>
             <Grid container spacing={2}>
               {employee.trainingProgress.map((progress) => (
-                <Grid item xs={12} sm={6} md={4} key={progress._id}>
+                <Grid item xs={12} sm={6} md={4} key={`progress-${progress._id}`}>
                   <Card 
                     sx={{ 
                       backgroundColor: 'white',
@@ -195,7 +218,10 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
                         {canDelete && (
                           <IconButton
                             size="small"
-                            onClick={() => setDeleteProgress(progress)}
+                            onClick={() => {
+                              console.log('Delete icon clicked, setting progress:', progress);
+                              setDeleteProgress(progress);
+                            }}
                             sx={{
                               color: 'rgba(39, 37, 31, 0.6)',
                               '&:hover': {
@@ -272,6 +298,9 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
         maxWidth="md"
         fullWidth
         fullScreen={isMobile}
+        keepMounted={false}
+        disablePortal={false}
+        aria-labelledby="training-progress-dialog-title"
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 0 : '20px',
@@ -279,21 +308,24 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
           }
         }}
       >
-        <DialogTitle sx={{ 
-          p: 3,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid',
-          borderColor: 'rgba(39, 37, 31, 0.1)'
-        }}>
+        <DialogTitle 
+          id="training-progress-dialog-title"
+          sx={{ 
+            p: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid',
+            borderColor: 'rgba(39, 37, 31, 0.1)'
+          }}
+        >
           <Typography variant="h6" sx={{ fontWeight: 500 }}>
             {selectedProgress?.trainingPlan?.name}
           </Typography>
           <IconButton
             edge="end"
             onClick={() => setSelectedProgress(null)}
-            aria-label="close"
+            aria-label="close dialog"
           >
             <CloseIcon />
           </IconButton>
@@ -320,6 +352,10 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
         onClose={() => setDeleteProgress(null)}
         maxWidth="sm"
         fullWidth
+        keepMounted={false}
+        disablePortal={false}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
         PaperProps={{
           sx: {
             borderRadius: '20px',
@@ -327,15 +363,18 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
           }
         }}
       >
-        <DialogTitle sx={{ 
-          p: 3,
-          borderBottom: '1px solid',
-          borderColor: 'rgba(39, 37, 31, 0.1)'
-        }}>
+        <DialogTitle 
+          id="delete-dialog-title"
+          sx={{ 
+            p: 3,
+            borderBottom: '1px solid',
+            borderColor: 'rgba(39, 37, 31, 0.1)'
+          }}
+        >
           Delete Training Progress
         </DialogTitle>
         <DialogContent sx={{ p: 3, mt: 2 }}>
-          <Typography>
+          <Typography id="delete-dialog-description">
             Are you sure you want to delete this training progress? This action cannot be undone.
           </Typography>
         </DialogContent>
@@ -352,6 +391,7 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
                 backgroundColor: 'rgba(39, 37, 31, 0.05)'
               }
             }}
+            aria-label="cancel deletion"
           >
             Cancel
           </Button>
@@ -365,6 +405,7 @@ const EmployeeProgress: React.FC<EmployeeProgressProps> = ({
                 backgroundColor: '#B91C1C'
               }
             }}
+            aria-label="confirm deletion"
           >
             Delete
           </Button>

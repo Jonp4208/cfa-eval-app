@@ -330,16 +330,43 @@ const TrainingProgress: React.FC = () => {
   const handleCreatePlan = async (plan: NewTrainingPlan) => {
     try {
       const response = await api.post('/api/training/plans', plan);
-      const newPlan = {
-        id: response.data._id,
-        name: response.data.name,
-        startDate: response.data.createdAt || new Date().toISOString(),
-        severity: response.data.severity || 1
-      } as SimplifiedTrainingPlan;
-      setTrainingPlans([...trainingPlans, newPlan]);
+      
+      // Show success notification
+      toast({
+        title: "Success",
+        description: "Training plan created successfully",
+      });
+
+      // Close the dialog
+      setIsCreatePlanOpen(false);
+
+      // Clear the cache to force a fresh fetch
+      sessionStorage.removeItem(`training_data_${user?._id}`);
+
+      // Immediately update local state with the new plan
+      const newPlan = response.data;
+      setTrainingPlans(prevPlans => [...prevPlans, {
+        ...newPlan,
+        _id: newPlan._id,
+        id: newPlan._id,
+        startDate: newPlan.createdAt,
+        modules: newPlan.modules || [],
+        createdBy: {
+          _id: user?._id || '',
+          firstName: user?.firstName || '',
+          lastName: user?.lastName || ''
+        }
+      }]);
+
+      // Refresh data in background
+      fetchData();
     } catch (err) {
       console.error('Error creating training plan:', err);
-      setError('Failed to create training plan');
+      toast({
+        title: "Error",
+        description: "Failed to create training plan. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
