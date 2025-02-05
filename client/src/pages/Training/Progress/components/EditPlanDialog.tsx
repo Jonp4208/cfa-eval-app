@@ -355,15 +355,9 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
           type="text"
           fullWidth
           multiline
-          rows={2}
+          rows={3}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={(e) => {
-            // Prevent default behavior only for specific keys we want to handle differently
-            if (e.key === 'Enter') {
-              e.preventDefault();
-            }
-          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: '12px',
@@ -584,13 +578,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                                   onChange={(e) => updateModule(module, 'description', e.target.value)}
                                   fullWidth
                                   multiline
-                                  rows={2}
-                                  onKeyDown={(e) => {
-                                    // Prevent default behavior only for specific keys we want to handle differently
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                    }
-                                  }}
+                                  rows={3}
                                   sx={{
                                     '& .MuiOutlinedInput-root': {
                                       borderRadius: '12px',
