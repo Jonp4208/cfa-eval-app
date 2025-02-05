@@ -16,7 +16,8 @@ import {
   FormHelperText,
   Alert,
 } from '@mui/material';
-import { Close as CloseIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Close as CloseIcon, Add as AddIcon, Delete as DeleteIcon, DragIndicator as DragIndicatorIcon } from '@mui/icons-material';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { TrainingPlan } from '../../../../types/training';
 import { SimplifiedTrainingPlan } from '../types';
 import api from '@/lib/axios';
@@ -35,13 +36,32 @@ interface EditPlanDialogProps {
   onPlanUpdated?: () => void;
 }
 
+interface TrainingModule extends Omit<TrainingPlan['modules'][0], 'id'> {
+  id: string;
+}
+
+const StrictModeDroppable = ({ children, ...props }: any) => {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
+  if (!enabled) {
+    return null;
+  }
+  return <Droppable {...props}>{children}</Droppable>;
+};
+
 const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, onPlanUpdated }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [department, setDepartment] = useState('');
   const [type, setType] = useState<'NEW_HIRE' | 'REGULAR'>('REGULAR');
   const [numberOfDays, setNumberOfDays] = useState(1);
-  const [modules, setModules] = useState<TrainingPlan['modules']>([]);
+  const [modules, setModules] = useState<TrainingModule[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +74,10 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
       setDepartment(plan.department || '');
       setType(plan.type || 'REGULAR');
       setNumberOfDays(plan.numberOfDays || 1);
-      setModules(plan.modules || []);
+      setModules((plan.modules || []).map(module => ({
+        ...module,
+        id: Math.random().toString(36).substr(2, 9)
+      })));
     }
   }, [plan]);
 
@@ -86,7 +109,10 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
     }
 
     // Update modules state to remove empty ones
-    setModules(validModules);
+    setModules(validModules.map(module => ({
+      ...module,
+      id: Math.random().toString(36).substr(2, 9)
+    })));
 
     setErrors(newErrors);
     return isValid;
@@ -102,7 +128,10 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
       description: module.description.trim()
     })).filter(module => module.name.trim() !== '');
     
-    setModules(cleanedModules);
+    setModules(cleanedModules.map(module => ({
+      ...module,
+      id: Math.random().toString(36).substr(2, 9)
+    })));
 
     // If no valid modules remain, show error
     if (cleanedModules.length === 0) {
@@ -154,6 +183,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
     setModules([
       ...modules,
       {
+        id: Math.random().toString(36).substr(2, 9),
         name: '',
         description: '',
         department,
@@ -228,6 +258,40 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
       return acc;
     }, {} as Record<number, TrainingPlan['modules']>);
   }, [modules]);
+
+  const handleDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+
+    const sourceDay = parseInt(result.source.droppableId);
+    const destinationDay = parseInt(result.destination.droppableId);
+    
+    setModules(prevModules => {
+      const newModules = [...prevModules];
+      const moduleIndex = newModules.findIndex(m => m.id === result.draggableId);
+      if (moduleIndex === -1) return prevModules;
+
+      const [moduleToMove] = newModules.splice(moduleIndex, 1);
+      moduleToMove.dayNumber = destinationDay;
+
+      // Find all modules in the destination day
+      const destinationModules = newModules.filter(m => m.dayNumber === destinationDay);
+      
+      // Find where to insert the module
+      let insertIndex = moduleIndex;
+      if (destinationModules.length > 0) {
+        if (result.destination.index === 0) {
+          insertIndex = newModules.indexOf(destinationModules[0]);
+        } else if (result.destination.index >= destinationModules.length) {
+          insertIndex = newModules.indexOf(destinationModules[destinationModules.length - 1]) + 1;
+        } else {
+          insertIndex = newModules.indexOf(destinationModules[result.destination.index]);
+        }
+      }
+
+      newModules.splice(insertIndex, 0, moduleToMove);
+      return newModules;
+    });
+  }, []);
 
   if (!plan) return null;
 
@@ -363,207 +427,245 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
             Training Schedule
           </Typography>
           
-          {Array.from({ length: numberOfDays }, (_, i) => i + 1).map((day) => (
-            <Box key={day} sx={{ 
-              mb: 3, 
-              p: 3, 
-              bgcolor: 'rgba(39, 37, 31, 0.02)', 
-              borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'rgba(39, 37, 31, 0.1)'
-            }}>
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                mb: 2 
+          <DragDropContext onDragEnd={handleDragEnd}>
+            {Array.from({ length: numberOfDays }, (_, i) => i + 1).map((day) => (
+              <Box key={day} sx={{ 
+                mb: 3, 
+                p: 3, 
+                bgcolor: 'rgba(39, 37, 31, 0.02)', 
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'rgba(39, 37, 31, 0.1)'
               }}>
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    color: '#27251F',
-                    fontWeight: 500
-                  }}
-                >
-                  Day {day}
-                </Typography>
-              </Box>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  mb: 2 
+                }}>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      color: '#27251F',
+                      fontWeight: 500
+                    }}
+                  >
+                    Day {day}
+                  </Typography>
+                </Box>
 
-              {(modulesByDay[day] || []).map((module, moduleIndex) => (
-                <Box 
-                  key={moduleIndex} 
-                  sx={{ 
-                    mb: 2, 
-                    p: { xs: 1.5, sm: 2.5 },
-                    bgcolor: 'white', 
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'rgba(39, 37, 31, 0.1)',
-                    transition: 'all 0.2s ease-in-out',
+                <StrictModeDroppable droppableId={`${day}`}>
+                  {(provided, snapshot) => (
+                    <Box
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      sx={{
+                        minHeight: '50px',
+                        backgroundColor: snapshot.isDraggingOver ? 'rgba(229, 22, 54, 0.04)' : 'transparent',
+                        transition: 'background-color 0.2s ease',
+                        borderRadius: 1,
+                        p: 1
+                      }}
+                    >
+                      {(modulesByDay[day] || []).map((module, moduleIndex) => (
+                        <Draggable
+                          key={module.id}
+                          draggableId={module.id}
+                          index={moduleIndex}
+                        >
+                          {(provided, snapshot) => (
+                            <Box 
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              sx={{ 
+                                mb: moduleIndex < (modulesByDay[day] || []).length - 1 ? 2 : 0,
+                                p: { xs: 1.5, sm: 2.5 },
+                                bgcolor: snapshot.isDragging ? 'rgba(229, 22, 54, 0.04)' : 'white', 
+                                borderRadius: 2,
+                                border: '1px solid',
+                                borderColor: snapshot.isDragging ? '#E51636' : 'rgba(39, 37, 31, 0.1)',
+                                transition: 'all 0.2s ease-in-out',
+                                '&:hover': {
+                                  boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
+                                  borderColor: 'rgba(39, 37, 31, 0.2)'
+                                }
+                              }}
+                            >
+                              <Box sx={{ 
+                                display: 'flex', 
+                                flexDirection: { xs: 'column', sm: 'row' },
+                                gap: 2, 
+                                mb: 2 
+                              }}>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center',
+                                  color: 'rgba(39, 37, 31, 0.4)',
+                                  cursor: 'grab',
+                                  mr: 1
+                                }}>
+                                  <DragIndicatorIcon />
+                                </Box>
+                                <TextField
+                                  label="Module Name"
+                                  value={module.name}
+                                  onChange={(e) => updateModule(module, 'name', e.target.value)}
+                                  fullWidth
+                                  sx={{
+                                    flexGrow: 1,
+                                    '& .MuiOutlinedInput-root': {
+                                      borderRadius: '12px',
+                                      '& fieldset': {
+                                        borderColor: 'rgba(39, 37, 31, 0.2)',
+                                      },
+                                      '&:hover fieldset': {
+                                        borderColor: 'rgba(39, 37, 31, 0.3)',
+                                      },
+                                      '&.Mui-focused fieldset': {
+                                        borderColor: '#E51636',
+                                      }
+                                    },
+                                    '& .MuiInputLabel-root.Mui-focused': {
+                                      color: '#E51636',
+                                    }
+                                  }}
+                                />
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  gap: 1,
+                                  width: { xs: '100%', sm: 'auto' }
+                                }}>
+                                  <TextField
+                                    label="Duration (min)"
+                                    type="number"
+                                    value={module.estimatedDuration}
+                                    onChange={(e) => updateModule(module, 'estimatedDuration', e.target.value)}
+                                    sx={{
+                                      flexGrow: { xs: 1, sm: 0 },
+                                      width: { sm: 140 },
+                                      '& .MuiOutlinedInput-root': {
+                                        borderRadius: '12px',
+                                        '& fieldset': {
+                                          borderColor: 'rgba(39, 37, 31, 0.2)',
+                                        },
+                                        '&:hover fieldset': {
+                                          borderColor: 'rgba(39, 37, 31, 0.3)',
+                                        },
+                                        '&.Mui-focused fieldset': {
+                                          borderColor: '#E51636',
+                                        }
+                                      },
+                                      '& .MuiInputLabel-root.Mui-focused': {
+                                        color: '#E51636',
+                                      }
+                                    }}
+                                  />
+                                  <IconButton 
+                                    onClick={() => removeModule(module)}
+                                    disabled={submitting}
+                                    sx={{
+                                      alignSelf: 'center',
+                                      color: 'rgba(39, 37, 31, 0.4)',
+                                      '&:hover': {
+                                        color: '#E51636',
+                                        bgcolor: 'rgba(229, 22, 54, 0.04)'
+                                      }
+                                    }}
+                                  >
+                                    <DeleteIcon />
+                                  </IconButton>
+                                </Box>
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                                <TextField
+                                  label="Description"
+                                  value={module.description}
+                                  onChange={(e) => updateModule(module, 'description', e.target.value)}
+                                  fullWidth
+                                  multiline
+                                  rows={2}
+                                  onKeyDown={(e) => {
+                                    // Prevent default behavior only for specific keys we want to handle differently
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                    }
+                                  }}
+                                  sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                      borderRadius: '12px',
+                                      '& fieldset': {
+                                        borderColor: 'rgba(39, 37, 31, 0.2)',
+                                      },
+                                      '&:hover fieldset': {
+                                        borderColor: 'rgba(39, 37, 31, 0.3)',
+                                      },
+                                      '&.Mui-focused fieldset': {
+                                        borderColor: '#E51636',
+                                      }
+                                    },
+                                    '& .MuiInputLabel-root.Mui-focused': {
+                                      color: '#E51636',
+                                    }
+                                  }}
+                                />
+                              </Box>
+                              <TextField
+                                label="Pathway URL"
+                                value={getPathwayUrl(module)}
+                                onChange={(e) => updateModule(module, 'pathwayUrl', e.target.value)}
+                                fullWidth
+                                placeholder="https://pathway.chick-fil-a.com/..."
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    borderRadius: '12px',
+                                    '& fieldset': {
+                                      borderColor: 'rgba(39, 37, 31, 0.2)',
+                                    },
+                                    '&:hover fieldset': {
+                                      borderColor: 'rgba(39, 37, 31, 0.3)',
+                                    },
+                                    '&.Mui-focused fieldset': {
+                                      borderColor: '#E51636',
+                                    }
+                                  },
+                                  '& .MuiInputLabel-root.Mui-focused': {
+                                    color: '#E51636',
+                                  }
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </Box>
+                  )}
+                </StrictModeDroppable>
+
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={() => addModule(day)}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    mt: 2,
+                    borderRadius: '12px',
+                    borderColor: 'rgba(39, 37, 31, 0.2)',
+                    color: '#27251F',
+                    height: '48px',
                     '&:hover': {
-                      boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
-                      borderColor: 'rgba(39, 37, 31, 0.2)'
+                      borderColor: '#E51636',
+                      color: '#E51636',
+                      bgcolor: 'rgba(229, 22, 54, 0.04)'
                     }
                   }}
                 >
-                  <Box sx={{ 
-                    display: 'flex', 
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: 2, 
-                    mb: 2 
-                  }}>
-                    <TextField
-                      label="Module Name"
-                      value={module.name}
-                      onChange={(e) => updateModule(module, 'name', e.target.value)}
-                      fullWidth
-                      sx={{
-                        flexGrow: 1,
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '12px',
-                          '& fieldset': {
-                            borderColor: 'rgba(39, 37, 31, 0.2)',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: 'rgba(39, 37, 31, 0.3)',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#E51636',
-                          }
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#E51636',
-                        }
-                      }}
-                    />
-                    <Box sx={{ 
-                      display: 'flex', 
-                      gap: 1,
-                      width: { xs: '100%', sm: 'auto' }
-                    }}>
-                      <TextField
-                        label="Duration (min)"
-                        type="number"
-                        value={module.estimatedDuration}
-                        onChange={(e) => updateModule(module, 'estimatedDuration', e.target.value)}
-                        sx={{
-                          flexGrow: { xs: 1, sm: 0 },
-                          width: { sm: 140 },
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            '& fieldset': {
-                              borderColor: 'rgba(39, 37, 31, 0.2)',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'rgba(39, 37, 31, 0.3)',
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: '#E51636',
-                            }
-                          },
-                          '& .MuiInputLabel-root.Mui-focused': {
-                            color: '#E51636',
-                          }
-                        }}
-                      />
-                      <IconButton 
-                        onClick={() => removeModule(module)}
-                        disabled={submitting}
-                        sx={{
-                          alignSelf: 'center',
-                          color: 'rgba(39, 37, 31, 0.4)',
-                          '&:hover': {
-                            color: '#E51636',
-                            bgcolor: 'rgba(229, 22, 54, 0.04)'
-                          }
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                    <TextField
-                      label="Description"
-                      value={module.description}
-                      onChange={(e) => updateModule(module, 'description', e.target.value)}
-                      fullWidth
-                      multiline
-                      rows={2}
-                      onKeyDown={(e) => {
-                        // Prevent default behavior only for specific keys we want to handle differently
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                        }
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: '12px',
-                          '& fieldset': {
-                            borderColor: 'rgba(39, 37, 31, 0.2)',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: 'rgba(39, 37, 31, 0.3)',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#E51636',
-                          }
-                        },
-                        '& .MuiInputLabel-root.Mui-focused': {
-                          color: '#E51636',
-                        }
-                      }}
-                    />
-                  </Box>
-                  <TextField
-                    label="Pathway URL"
-                    value={getPathwayUrl(module)}
-                    onChange={(e) => updateModule(module, 'pathwayUrl', e.target.value)}
-                    fullWidth
-                    placeholder="https://pathway.chick-fil-a.com/..."
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '12px',
-                        '& fieldset': {
-                          borderColor: 'rgba(39, 37, 31, 0.2)',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: 'rgba(39, 37, 31, 0.3)',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#E51636',
-                        }
-                      },
-                      '& .MuiInputLabel-root.Mui-focused': {
-                        color: '#E51636',
-                      }
-                    }}
-                  />
-                </Box>
-              ))}
-
-              <Button
-                startIcon={<AddIcon />}
-                onClick={() => addModule(day)}
-                variant="outlined"
-                fullWidth
-                sx={{
-                  mt: 2,
-                  borderRadius: '12px',
-                  borderColor: 'rgba(39, 37, 31, 0.2)',
-                  color: '#27251F',
-                  height: '48px',
-                  '&:hover': {
-                    borderColor: '#E51636',
-                    color: '#E51636',
-                    bgcolor: 'rgba(229, 22, 54, 0.04)'
-                  }
-                }}
-              >
-                Add Module
-              </Button>
-            </Box>
-          ))}
+                  Add Module
+                </Button>
+              </Box>
+            ))}
+          </DragDropContext>
         </Box>
       </DialogContent>
 
