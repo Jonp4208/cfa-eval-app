@@ -14,7 +14,7 @@ const trainingMaterialSchema = new Schema({
 
 const trainingModuleSchema = new Schema({
     name: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String },
     department: { 
         type: String, 
         enum: ['FOH', 'BOH'], 
