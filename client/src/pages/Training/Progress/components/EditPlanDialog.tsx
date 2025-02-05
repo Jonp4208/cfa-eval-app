@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -45,6 +45,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (plan) {
@@ -91,7 +92,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
     return isValid;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!plan) return;
 
     // Clean up empty modules before validation
@@ -135,7 +136,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
         setSubmitting(false);
       }
     }
-  };
+  }, [plan, modules, name, description, department, type, numberOfDays, validateForm, onPlanUpdated]);
 
   const handleClose = () => {
     setName('');
@@ -212,20 +213,21 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
     return module.materials?.find(m => m.type === 'PATHWAY_LINK')?.url || '';
   };
 
-  const removeModule = (moduleToRemove: TrainingPlan['modules'][0]) => {
-    const updatedModules = modules.filter(module => module !== moduleToRemove);
-    setModules(updatedModules);
-  };
+  const removeModule = useCallback((moduleToRemove: TrainingPlan['modules'][0]) => {
+    setModules(prevModules => prevModules.filter(module => module !== moduleToRemove));
+  }, []);
 
-  // Group modules by day
-  const modulesByDay = modules.reduce((acc, module) => {
-    const day = module.dayNumber || 1;
-    if (!acc[day]) {
-      acc[day] = [];
-    }
-    acc[day].push(module);
-    return acc;
-  }, {} as Record<number, TrainingPlan['modules']>);
+  // Group modules by day using useMemo
+  const modulesByDay = useMemo(() => {
+    return modules.reduce((acc, module) => {
+      const day = module.dayNumber || 1;
+      if (!acc[day]) {
+        acc[day] = [];
+      }
+      acc[day].push(module);
+      return acc;
+    }, {} as Record<number, TrainingPlan['modules']>);
+  }, [modules]);
 
   if (!plan) return null;
 
@@ -466,6 +468,7 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                       />
                       <IconButton 
                         onClick={() => removeModule(module)}
+                        disabled={submitting}
                         sx={{
                           alignSelf: 'center',
                           color: 'rgba(39, 37, 31, 0.4)',
