@@ -385,23 +385,6 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                 >
                   Day {day}
                 </Typography>
-                <Button
-                  startIcon={<AddIcon />}
-                  onClick={() => addModule(day)}
-                  variant="outlined"
-                  sx={{
-                    borderRadius: '12px',
-                    borderColor: 'rgba(39, 37, 31, 0.2)',
-                    color: '#27251F',
-                    '&:hover': {
-                      borderColor: '#E51636',
-                      color: '#E51636',
-                      bgcolor: 'rgba(229, 22, 54, 0.04)'
-                    }
-                  }}
-                >
-                  Add Module
-                </Button>
               </Box>
 
               {(modulesByDay[day] || []).map((module, moduleIndex) => (
@@ -555,6 +538,27 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                   />
                 </Box>
               ))}
+
+              <Button
+                startIcon={<AddIcon />}
+                onClick={() => addModule(day)}
+                variant="outlined"
+                fullWidth
+                sx={{
+                  mt: 2,
+                  borderRadius: '12px',
+                  borderColor: 'rgba(39, 37, 31, 0.2)',
+                  color: '#27251F',
+                  height: '48px',
+                  '&:hover': {
+                    borderColor: '#E51636',
+                    color: '#E51636',
+                    bgcolor: 'rgba(229, 22, 54, 0.04)'
+                  }
+                }}
+              >
+                Add Module
+              </Button>
             </Box>
           ))}
         </Box>
