@@ -16,8 +16,12 @@ import {
   FormHelperText,
   Alert,
   Link,
+  FormControlLabel,
+  Checkbox,
+  Grid,
 } from '@mui/material';
 import { Close as CloseIcon, Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 interface CreatePlanDialogProps {
   open: boolean;
@@ -29,29 +33,40 @@ interface NewTrainingPlan {
   name: string;
   description: string;
   department: string;
+  position: string;
   type: 'New Hire' | 'Regular';
   days: TrainingDay[];
+  includesCoreValues: boolean;
+  includesBrandStandards: boolean;
+  includesSecondMileService: boolean;
+  requiredCertifications: {
+    foodSafety: boolean;
+    servSafe: boolean;
+    allergenAwareness: boolean;
+  };
 }
 
 interface TrainingDay {
   dayNumber: number;
-  modules: TrainingModule[];
+  tasks: TrainingTask[];
 }
 
-interface TrainingModule {
+interface TrainingTask {
   name: string;
   description: string;
   duration: number;
   pathwayUrl?: string;
+  competencyChecklist?: string[];
 }
 
 interface FormErrors {
   name?: string;
   department?: string;
+  position?: string;
   days?: {
     dayIndex: number;
-    moduleErrors?: {
-      moduleIndex: number;
+    taskErrors?: {
+      taskIndex: number;
       error: string;
     }[];
   }[];
@@ -59,18 +74,29 @@ interface FormErrors {
 
 const initialTrainingDay: TrainingDay = {
   dayNumber: 1,
-  modules: [],
+  tasks: [],
 };
 
 const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSubmit }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [department, setDepartment] = useState('');
+  const [position, setPosition] = useState('');
   const [type, setType] = useState<'New Hire' | 'Regular'>('New Hire');
   const [days, setDays] = useState<TrainingDay[]>([{ ...initialTrainingDay }]);
+  const [includesCoreValues, setIncludesCoreValues] = useState(false);
+  const [includesBrandStandards, setIncludesBrandStandards] = useState(false);
+  const [includesSecondMileService, setIncludesSecondMileService] = useState(false);
+  const [requiredCertifications, setRequiredCertifications] = useState({
+    foodSafety: false,
+    servSafe: false,
+    allergenAwareness: false,
+  });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -86,42 +112,45 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
       isValid = false;
     }
 
+    if (!position) {
+      newErrors.position = 'Position is required';
+      isValid = false;
+    }
+
     const dayErrors: FormErrors['days'] = [];
     days.forEach((day, dayIndex) => {
-      const moduleErrors: { moduleIndex: number; error: string; }[] = [];
+      const taskErrors: { taskIndex: number; error: string; }[] = [];
       
-      // Filter out empty modules
-      const validModules = day.modules.filter((module, moduleIndex) => {
-        if (!module.name.trim()) {
-          moduleErrors.push({
-            moduleIndex,
-            error: 'Module name is required'
+      const validTasks = day.tasks.filter((task, taskIndex) => {
+        if (!task.name.trim()) {
+          taskErrors.push({
+            taskIndex,
+            error: 'Task name is required'
           });
           return false;
         }
         return true;
       });
 
-      if (validModules.length === 0) {
+      if (validTasks.length === 0) {
         dayErrors.push({
           dayIndex,
-          moduleErrors: [{
-            moduleIndex: 0,
-            error: 'At least one module with a name is required'
+          taskErrors: [{
+            taskIndex: 0,
+            error: 'At least one training task is required'
           }]
         });
         isValid = false;
-      } else if (moduleErrors.length > 0) {
+      } else if (taskErrors.length > 0) {
         dayErrors.push({
           dayIndex,
-          moduleErrors
+          taskErrors
         });
         isValid = false;
       }
 
-      // Update the day's modules to only include valid ones
       const updatedDays = [...days];
-      updatedDays[dayIndex].modules = validModules;
+      updatedDays[dayIndex].tasks = validTasks;
       setDays(updatedDays);
     });
 
@@ -134,69 +163,31 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
   };
 
   const handleSubmit = async () => {
-    // Clean up empty modules before validation
-    const cleanedDays = days.map(day => ({
-      ...day,
-      modules: day.modules.filter(module => module.name.trim() !== '')
-    })).filter(day => day.modules.length > 0);
+    if (!validateForm()) return;
 
-    // Update the days state with cleaned data
-    setDays(cleanedDays);
-
-    // If no days with modules remain, show error
-    if (cleanedDays.length === 0) {
-      setErrors({
-        days: [{
-          dayIndex: 0,
-          moduleErrors: [{
-            moduleIndex: 0,
-            error: 'At least one training module is required'
-          }]
-        }]
-      });
-      return;
-    }
-
-    if (validateForm()) {
+    try {
       setSubmitting(true);
       setSubmitError(null);
-      try {
-        await onSubmit({ 
-          name, 
-          description, 
-          department, 
-          type, 
-          days: cleanedDays 
-        });
-        handleClose();
-      } catch (error: any) {
-        console.error('Error submitting plan:', error);
-        if (error?.response?.data?.message?.includes('No training position found')) {
-          setSubmitError(
-            <span>
-              No training position found for this department. Please{' '}
-              <Link 
-                href="/training/positions" 
-                target="_blank"
-                sx={{ 
-                  color: '#E51636',
-                  textDecoration: 'underline',
-                  '&:hover': {
-                    color: '#DD0031'
-                  }
-                }}
-              >
-                create a training position
-              </Link>
-              {' '}first.
-            </span>
-          );
-        } else {
-          setSubmitError('Failed to create training plan. Please try again.');
-        }
-      } finally {
-        setSubmitting(false);
-      }
+
+      await onSubmit({
+        name,
+        description,
+        department,
+        position,
+        type,
+        days,
+        includesCoreValues,
+        includesBrandStandards,
+        includesSecondMileService,
+        requiredCertifications,
+      });
+
+      handleClose();
+    } catch (err) {
+      console.error('Error submitting training plan:', err);
+      setSubmitError('Failed to create training plan. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -205,15 +196,24 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
     setName('');
     setDescription('');
     setDepartment('');
+    setPosition('');
     setType('New Hire');
     setDays([{ ...initialTrainingDay }]);
+    setIncludesCoreValues(false);
+    setIncludesBrandStandards(false);
+    setIncludesSecondMileService(false);
+    setRequiredCertifications({
+      foodSafety: false,
+      servSafe: false,
+      allergenAwareness: false,
+    });
     setErrors({});
     setSubmitError(null);
     onClose();
   };
 
   const addTrainingDay = () => {
-    setDays([...days, { dayNumber: days.length + 1, modules: [] }]);
+    setDays([...days, { dayNumber: days.length + 1, tasks: [] }]);
   };
 
   const removeTrainingDay = (index: number) => {
@@ -222,12 +222,12 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
     setDays(updatedDays);
   };
 
-  const addModule = (dayIndex: number) => {
+  const addTask = (dayIndex: number) => {
     const updatedDays = [...days];
-    const updatedModules = [...updatedDays[dayIndex].modules];
+    const updatedTasks = [...updatedDays[dayIndex].tasks];
     
-    // Create a new module with explicit field assignments
-    const newModule = {
+    // Create a new task with explicit field assignments
+    const newTask = {
       name: '',
       description: '',
       duration: 30,
@@ -235,37 +235,186 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
       _id: undefined as string | undefined
     };
     
-    // Update the modules array and then the days array
-    updatedModules.push(newModule);
+    // Update the tasks array and then the days array
+    updatedTasks.push(newTask);
     updatedDays[dayIndex] = {
       ...updatedDays[dayIndex],
-      modules: updatedModules
+      tasks: updatedTasks
     };
     
     setDays(updatedDays);
   };
 
-  const updateModule = (dayIndex: number, moduleIndex: number, field: keyof TrainingModule, value: string | number) => {
+  const updateTask = (dayIndex: number, taskIndex: number, updatedTask: TrainingTask) => {
     const updatedDays = [...days];
-    const moduleToUpdate = updatedDays[dayIndex].modules[moduleIndex];
-    
-    updatedDays[dayIndex].modules = updatedDays[dayIndex].modules.map(module => {
-      if (module === moduleToUpdate) {
-        return {
-          ...module,
-          [field]: value
-        };
-      }
-      return module;
-    });
-    
+    updatedDays[dayIndex].tasks[taskIndex] = updatedTask;
     setDays(updatedDays);
   };
 
-  const removeModule = (dayIndex: number, moduleIndex: number) => {
+  const removeTask = (dayIndex: number, taskIndex: number) => {
     const updatedDays = [...days];
-    updatedDays[dayIndex].modules.splice(moduleIndex, 1);
+    updatedDays[dayIndex].tasks.splice(taskIndex, 1);
     setDays(updatedDays);
+  };
+
+  const TaskForm: React.FC<{
+    task: TrainingTask;
+    onUpdate: (updatedTask: TrainingTask) => void;
+    onDelete: () => void;
+    error?: string;
+    isMobile?: boolean;
+  }> = ({ task, onUpdate, onDelete, error, isMobile }) => {
+    const handleAddCompetency = () => {
+      const checklist = task.competencyChecklist || [];
+      onUpdate({
+        ...task,
+        competencyChecklist: [...checklist, '']
+      });
+    };
+
+    const handleUpdateCompetency = (index: number, value: string) => {
+      const checklist = [...(task.competencyChecklist || [])];
+      checklist[index] = value;
+      onUpdate({ ...task, competencyChecklist: checklist });
+    };
+
+    const handleDeleteCompetency = (index: number) => {
+      const checklist = [...(task.competencyChecklist || [])];
+      checklist.splice(index, 1);
+      onUpdate({ ...task, competencyChecklist: checklist });
+    };
+
+    return (
+      <Box sx={{ 
+        mb: isMobile ? 3 : 2, 
+        p: isMobile ? 2 : 3,
+        border: '1px solid #e0e0e0', 
+        borderRadius: 1 
+      }}>
+        <Grid container spacing={isMobile ? 1.5 : 2}>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="Task Name"
+              value={task.name}
+              onChange={(e) => onUpdate({ ...task, name: e.target.value })}
+              error={!!error}
+              helperText={error}
+              required
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="Description"
+              value={task.description}
+              onChange={(e) => onUpdate({ ...task, description: e.target.value })}
+              multiline
+              rows={2}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Duration (minutes)"
+              type="number"
+              value={task.duration}
+              onChange={(e) => onUpdate({ ...task, duration: parseInt(e.target.value) || 0 })}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Pathway URL"
+              value={task.pathwayUrl || ''}
+              onChange={(e) => onUpdate({ ...task, pathwayUrl: e.target.value })}
+              placeholder="https://pathway.chick-fil-a.com/..."
+            />
+          </Grid>
+
+          {/* Competency Checklist Section */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" gutterBottom>
+              Competency Checklist
+            </Typography>
+            <Box sx={{ 
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              mt: 1
+            }}>
+              {task.competencyChecklist?.map((item, index) => (
+                <Box key={index} sx={{ 
+                  display: 'flex', 
+                  gap: 1,
+                  alignItems: 'center'
+                }}>
+                  <TextField
+                    sx={{ flex: 1 }}
+                    label={`Competency ${index + 1}`}
+                    value={item}
+                    onChange={(e) => handleUpdateCompetency(index, e.target.value)}
+                  />
+                  <IconButton 
+                    onClick={() => handleDeleteCompetency(index)}
+                    sx={{ 
+                      color: 'rgba(39, 37, 31, 0.4)',
+                      '&:hover': {
+                        color: '#E51636',
+                        bgcolor: 'rgba(229, 22, 54, 0.04)'
+                      }
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              ))}
+              <Button
+                startIcon={<AddIcon />}
+                onClick={handleAddCompetency}
+                variant="outlined"
+                size="small"
+                sx={{
+                  alignSelf: 'flex-start',
+                  borderColor: 'rgba(39, 37, 31, 0.2)',
+                  color: '#27251F',
+                  '&:hover': {
+                    borderColor: '#E51636',
+                    color: '#E51636',
+                    bgcolor: 'rgba(229, 22, 54, 0.04)'
+                  }
+                }}
+              >
+                Add Competency Item
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+
+        <Box sx={{ 
+          mt: 2, 
+          display: 'flex', 
+          justifyContent: 'flex-end',
+          position: isMobile ? 'sticky' : 'relative',
+          bottom: 0,
+          bgcolor: 'white',
+          pt: 1,
+          borderTop: '1px solid',
+          borderColor: 'rgba(39, 37, 31, 0.1)'
+        }}>
+          <Button
+            startIcon={<DeleteIcon />}
+            onClick={onDelete}
+            color="error"
+            sx={{
+              minHeight: isMobile ? '44px' : '36px'
+            }}
+          >
+            Delete Task
+          </Button>
+        </Box>
+      </Box>
+    );
   };
 
   return (
@@ -274,23 +423,40 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
       onClose={handleClose} 
       maxWidth="md" 
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
         sx: {
-          borderRadius: 2,
+          borderRadius: isMobile ? 0 : 2,
+          height: isMobile ? '100%' : 'auto',
+          margin: isMobile ? 0 : 2,
           overflow: 'hidden',
           '& .MuiDialogTitle-root': {
             bgcolor: '#E51636',
             color: 'white',
-            minHeight: '64px',
-            py: 2,
-            px: 3
+            minHeight: isMobile ? '56px' : '64px',
+            py: isMobile ? 1.5 : 2,
+            px: isMobile ? 2 : 3,
+            position: 'sticky',
+            top: 0,
+            zIndex: 1
           },
           '& .MuiDialogContent-root': {
             p: 0,
             mt: 0,
+            height: isMobile ? 'calc(100% - 56px)' : 'auto',
+            overflowY: 'auto',
             '&:first-of-type': {
               pt: 0
             }
+          },
+          '& .MuiDialogActions-root': {
+            position: isMobile ? 'sticky' : 'relative',
+            bottom: 0,
+            bgcolor: '#FAFAFA',
+            borderTop: '1px solid',
+            borderColor: 'rgba(39, 37, 31, 0.1)',
+            px: isMobile ? 2 : 3,
+            py: isMobile ? 1.5 : 2
           }
         }
       }}
@@ -304,7 +470,7 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
       }}>
         <Typography variant="h6" component="div" sx={{ 
           fontWeight: 600,
-          fontSize: '1.125rem',
+          fontSize: isMobile ? '1rem' : '1.125rem',
           lineHeight: 1.5
         }}>
           Create Training Plan Template
@@ -314,17 +480,23 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
           onClick={handleClose}
           sx={{
             color: 'white',
-            p: 1,
+            p: isMobile ? 0.5 : 1,
             '&:hover': {
               bgcolor: 'rgba(255, 255, 255, 0.08)',
             },
           }}
         >
-          <CloseIcon />
+          <CloseIcon fontSize={isMobile ? "small" : "medium"} />
         </IconButton>
       </DialogTitle>
       <DialogContent>
-        <Box sx={{ p: { xs: 2, sm: 3 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box sx={{ 
+          p: { xs: 2, sm: 3 }, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: { xs: 2, sm: 3 },
+          pb: isMobile ? 8 : 3 // Extra padding at bottom for mobile to account for fixed buttons
+        }}>
           {submitError && (
             <Alert 
               severity="error" 
@@ -524,178 +696,20 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
                   )}
                 </Box>
 
-                {day.modules.map((module, moduleIndex) => (
-                  <Box 
-                    key={moduleIndex} 
-                    sx={{ 
-                      mb: 3,
-                      bgcolor: 'white', 
-                      borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'rgba(39, 37, 31, 0.1)',
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
-                        borderColor: 'rgba(39, 37, 31, 0.2)'
-                      }
-                    }}
-                  >
-                    <Box sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      px: 3,
-                      py: 2
-                    }}>
-                      <Typography variant="subtitle1" sx={{ 
-                        color: 'rgba(39, 37, 31, 0.6)',
-                        fontWeight: 400
-                      }}>
-                        Module {moduleIndex + 1}
-                      </Typography>
-                      <IconButton 
-                        onClick={() => removeModule(dayIndex, moduleIndex)}
-                        sx={{
-                          color: 'rgba(39, 37, 31, 0.4)',
-                          padding: 0.5,
-                          '&:hover': {
-                            color: '#E51636',
-                            bgcolor: 'rgba(229, 22, 54, 0.04)'
-                          }
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-
-                    <Box sx={{ 
-                      px: 3,
-                      pb: 3,
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: 3 
-                    }}>
-                      <Box sx={{ 
-                        display: 'flex', 
-                        gap: 2,
-                        alignItems: 'flex-start'
-                      }}>
-                        <TextField
-                          label="Training Module Name"
-                          value={module.name}
-                          onChange={(e) => updateModule(dayIndex, moduleIndex, 'name', e.target.value)}
-                          fullWidth
-                          error={!!errors.days?.find(d => d.dayIndex === dayIndex)?.moduleErrors?.find(m => m.moduleIndex === moduleIndex)}
-                          helperText={errors.days?.find(d => d.dayIndex === dayIndex)?.moduleErrors?.find(m => m.moduleIndex === moduleIndex)?.error}
-                          sx={{
-                            flexGrow: 1,
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '12px',
-                              '& fieldset': {
-                                borderColor: (theme) => 
-                                  errors.days?.find(d => d.dayIndex === dayIndex)?.moduleErrors?.find(m => m.moduleIndex === moduleIndex)
-                                    ? theme.palette.error.main
-                                    : 'rgba(39, 37, 31, 0.2)',
-                              },
-                              '&:hover fieldset': {
-                                borderColor: 'rgba(39, 37, 31, 0.3)',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#E51636',
-                              }
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#E51636',
-                            },
-                            '& .MuiFormHelperText-root': {
-                              mx: 0,
-                              mt: 1
-                            }
-                          }}
-                        />
-                        <TextField
-                          label="Duration (min)"
-                          type="number"
-                          value={module.duration}
-                          onChange={(e) => updateModule(dayIndex, moduleIndex, 'duration', parseInt(e.target.value) || 0)}
-                          sx={{
-                            width: '140px',
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '12px',
-                              '& fieldset': {
-                                borderColor: 'rgba(39, 37, 31, 0.2)',
-                              },
-                              '&:hover fieldset': {
-                                borderColor: 'rgba(39, 37, 31, 0.3)',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#E51636',
-                              }
-                            },
-                            '& .MuiInputLabel-root.Mui-focused': {
-                              color: '#E51636',
-                            }
-                          }}
-                        />
-                      </Box>
-
-                      <TextField
-                        label="Description"
-                        value={module.description}
-                        onChange={(e) => updateModule(dayIndex, moduleIndex, 'description', e.target.value)}
-                        fullWidth
-                        multiline
-                        rows={3}
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            '& fieldset': {
-                              borderColor: 'rgba(39, 37, 31, 0.2)',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'rgba(39, 37, 31, 0.3)',
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: '#E51636',
-                            }
-                          },
-                          '& .MuiInputLabel-root.Mui-focused': {
-                            color: '#E51636',
-                          }
-                        }}
-                      />
-
-                      <TextField
-                        label="Pathway URL"
-                        value={module.pathwayUrl || ''}
-                        onChange={(e) => updateModule(dayIndex, moduleIndex, 'pathwayUrl', e.target.value)}
-                        fullWidth
-                        placeholder="https://pathway.chick-fil-a.com/..."
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '12px',
-                            '& fieldset': {
-                              borderColor: 'rgba(39, 37, 31, 0.2)',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'rgba(39, 37, 31, 0.3)',
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: '#E51636',
-                            }
-                          },
-                          '& .MuiInputLabel-root.Mui-focused': {
-                            color: '#E51636',
-                          }
-                        }}
-                      />
-                    </Box>
-                  </Box>
+                {day.tasks.map((task, taskIndex) => (
+                  <TaskForm
+                    key={taskIndex}
+                    task={task}
+                    onUpdate={(updatedTask) => updateTask(dayIndex, taskIndex, updatedTask)}
+                    onDelete={() => removeTask(dayIndex, taskIndex)}
+                    error={errors.days?.find(d => d.dayIndex === dayIndex)?.taskErrors?.find(t => t.taskIndex === taskIndex)?.error}
+                    isMobile={isMobile}
+                  />
                 ))}
                 
                 <Button
                   startIcon={<AddIcon />}
-                  onClick={() => addModule(dayIndex)}
+                  onClick={() => addTask(dayIndex)}
                   variant="outlined"
                   fullWidth
                   sx={{
@@ -711,7 +725,7 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
                     }
                   }}
                 >
-                  Add Training Module
+                  Add Training Task
                 </Button>
               </Box>
             ))}
@@ -734,12 +748,13 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: 2, bgcolor: '#FAFAFA' }}>
+      <DialogActions>
         <Button 
           onClick={handleClose}
           disabled={submitting}
           sx={{ 
             color: '#000000',
+            minHeight: isMobile ? '44px' : '36px',
             '&:hover': {
               bgcolor: 'rgba(0, 0, 0, 0.08)',
             }
@@ -753,6 +768,7 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
           disabled={submitting}
           sx={{ 
             bgcolor: '#E51636',
+            minHeight: isMobile ? '44px' : '36px',
             '&:hover': {
               bgcolor: '#DD0031',
             }
@@ -766,3 +782,4 @@ const CreatePlanDialog: React.FC<CreatePlanDialogProps> = ({ open, onClose, onSu
 };
 
 export default CreatePlanDialog; 
+

@@ -85,12 +85,16 @@ router.get('/', auth, async (req, res) => {
     const { managerId } = req.query;
     let query = { store: req.user.store._id };
 
-    // Check if user can manage users
-    if (!canManageUsers(req.user)) {
+    // If user is a team member, they can only see their own data
+    if (req.user.position === 'Team Member') {
+      query._id = req.user._id;
+    }
+    // If user is not a team member, check if they can manage users
+    else if (!canManageUsers(req.user)) {
       return res.status(403).json({ message: 'Not authorized to view users' });
     }
 
-    // If a specific manager's team is requested
+    // If a specific manager's team is requested (only for users who can manage)
     if (managerId && canManageUsers(req.user)) {
       query.manager = managerId;
     }
@@ -98,6 +102,13 @@ router.get('/', auth, async (req, res) => {
     const users = await User.find(query)
       .populate('manager', 'name _id')  // Populate manager field with name and _id
       .populate('store', 'name storeNumber')
+      .populate({
+        path: 'trainingProgress',
+        populate: {
+          path: 'trainingPlan',
+          select: 'name modules'
+        }
+      })
       .sort({ name: 1 });  // Sort by name ascending
 
     res.json({ users });

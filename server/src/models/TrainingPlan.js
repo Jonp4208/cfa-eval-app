@@ -23,7 +23,8 @@ const trainingModuleSchema = new Schema({
     estimatedDuration: { type: String, required: true },
     dayNumber: { type: Number, required: true },
     materials: [trainingMaterialSchema],
-    requiredForNewHire: { type: Boolean, default: false }
+    requiredForNewHire: { type: Boolean, default: false },
+    competencyChecklist: [{ type: String }]
 });
 
 const trainingPlanSchema = new Schema({
@@ -58,4 +59,34 @@ const trainingPlanSchema = new Schema({
     timestamps: true
 });
 
-export default mongoose.model('TrainingPlan', trainingPlanSchema); 
+// Add pre-remove hook to handle cascade deletion
+trainingPlanSchema.pre('remove', async function(next) {
+    try {
+        // Import TrainingProgress model here to avoid circular dependency
+        const TrainingProgress = mongoose.model('TrainingProgress');
+        
+        // Delete all training progress records associated with this plan
+        await TrainingProgress.deleteMany({ trainingPlan: this._id });
+        
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Add middleware to handle findOneAndDelete
+trainingPlanSchema.pre('findOneAndDelete', async function(next) {
+    try {
+        // Get the document that's about to be deleted
+        const doc = await this.model.findOne(this.getQuery());
+        if (doc) {
+            const TrainingProgress = mongoose.model('TrainingProgress');
+            await TrainingProgress.deleteMany({ trainingPlan: doc._id });
+        }
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+export default mongoose.model('TrainingPlan', trainingPlanSchema);

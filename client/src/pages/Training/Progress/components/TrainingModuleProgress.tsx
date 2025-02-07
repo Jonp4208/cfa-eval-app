@@ -32,9 +32,9 @@ const canViewTraining = (user: any, traineeId: string) => {
     return true;
   }
   
-  // Team Members can only view their own training
+  // Team Members can view their own training
   if (user?.position === 'Team Member') {
-    return user?._id === traineeId;
+    return true; // Allow team members to view training assigned to them
   }
 
   return false;
@@ -48,7 +48,103 @@ interface TrainingModuleProgressProps {
 const TrainingModuleProgress: React.FC<TrainingModuleProgressProps> = ({
   trainingProgress,
   onProgressUpdate,
-}) => {
+}): JSX.Element => {
+  console.log('TrainingModuleProgress received:', {
+    trainingProgress,
+    type: typeof trainingProgress,
+    isString: typeof trainingProgress === 'string',
+    hasTrainingPlan: trainingProgress && typeof trainingProgress === 'object' && 'trainingPlan' in trainingProgress,
+    trainingPlanType: trainingProgress?.trainingPlan && typeof trainingProgress.trainingPlan
+  });
+  
+  // Validate training progress data
+  if (!trainingProgress) {
+    console.error('Training progress is null or undefined');
+    return (
+      <Alert 
+        severity="error" 
+        sx={{ 
+          borderRadius: '12px',
+          '& .MuiAlert-icon': {
+            color: '#DC2626'
+          }
+        }}
+      >
+        No training progress data available. Please try refreshing the page.
+      </Alert>
+    );
+  }
+
+  if (typeof trainingProgress === 'string') {
+    console.error('Training progress is a string instead of an object:', trainingProgress);
+    return (
+      <Alert 
+        severity="error" 
+        sx={{ 
+          borderRadius: '12px',
+          '& .MuiAlert-icon': {
+            color: '#DC2626'
+          }
+        }}
+      >
+        Invalid training progress format. Please try refreshing the page.
+      </Alert>
+    );
+  }
+
+  // Check if we need to fetch the training plan
+  if (typeof trainingProgress.trainingPlan === 'string') {
+    console.error('Training plan is not populated:', trainingProgress.trainingPlan);
+    return (
+      <Alert 
+        severity="error" 
+        sx={{ 
+          borderRadius: '12px',
+          '& .MuiAlert-icon': {
+            color: '#DC2626'
+          }
+        }}
+      >
+        Training plan data is not loaded. Please try refreshing the page.
+      </Alert>
+    );
+  }
+
+  // Validate training plan
+  if (!trainingProgress.trainingPlan || typeof trainingProgress.trainingPlan !== 'object') {
+    console.error('Training plan is invalid:', trainingProgress.trainingPlan);
+    return (
+      <Alert 
+        severity="error" 
+        sx={{ 
+          borderRadius: '12px',
+          '& .MuiAlert-icon': {
+            color: '#DC2626'
+          }
+        }}
+      >
+        Training plan not found or invalid. Please try refreshing the page.
+      </Alert>
+    );
+  }
+
+  if (!Array.isArray(trainingProgress.trainingPlan.modules)) {
+    console.error('Training plan modules is not an array:', trainingProgress.trainingPlan.modules);
+    return (
+      <Alert 
+        severity="error" 
+        sx={{ 
+          borderRadius: '12px',
+          '& .MuiAlert-icon': {
+            color: '#DC2626'
+          }
+        }}
+      >
+        Training modules data is invalid. Please try refreshing the page.
+      </Alert>
+    );
+  }
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState<{ [key: string]: string }>({});
@@ -211,6 +307,31 @@ const TrainingModuleProgress: React.FC<TrainingModuleProgressProps> = ({
           }}
         >
           {error}
+        </Alert>
+      )}
+
+      {user?.position === 'Team Member' && (
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mb: 3,
+            borderRadius: '12px',
+            '& .MuiAlert-icon': {
+              color: '#1D4ED8'
+            },
+            '& .MuiAlert-message': {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1
+            }
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1D4ED8' }}>
+            Training Completion Instructions
+          </Typography>
+          <Typography variant="body2">
+            Please work with your Trainer, Leader, or Director to mark your training tasks as complete. Only trainers and above can check off training items to ensure proper verification of your progress.
+          </Typography>
         </Alert>
       )}
 

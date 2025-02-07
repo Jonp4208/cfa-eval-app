@@ -38,6 +38,7 @@ interface EditPlanDialogProps {
 
 interface TrainingModule extends Omit<TrainingPlan['modules'][0], 'id'> {
   id: string;
+  competencyChecklist?: string[];
 }
 
 const StrictModeDroppable = ({ children, ...props }: any) => {
@@ -190,7 +191,8 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
         estimatedDuration: '30',
         dayNumber,
         requiredForNewHire: type === 'NEW_HIRE',
-        materials: []
+        materials: [],
+        competencyChecklist: []
       },
     ]);
   };
@@ -292,6 +294,50 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
       return newModules;
     });
   }, []);
+
+  // Add competency checklist handlers
+  const handleAddCompetency = (moduleToUpdate: TrainingModule) => {
+    const updatedModules = modules.map(module => {
+      if (module === moduleToUpdate) {
+        return {
+          ...module,
+          competencyChecklist: [...(module.competencyChecklist || []), '']
+        };
+      }
+      return module;
+    });
+    setModules(updatedModules);
+  };
+
+  const handleUpdateCompetency = (moduleToUpdate: TrainingModule, index: number, value: string) => {
+    const updatedModules = modules.map(module => {
+      if (module === moduleToUpdate) {
+        const checklist = [...(module.competencyChecklist || [])];
+        checklist[index] = value;
+        return {
+          ...module,
+          competencyChecklist: checklist
+        };
+      }
+      return module;
+    });
+    setModules(updatedModules);
+  };
+
+  const handleDeleteCompetency = (moduleToUpdate: TrainingModule, index: number) => {
+    const updatedModules = modules.map(module => {
+      if (module === moduleToUpdate) {
+        const checklist = [...(module.competencyChecklist || [])];
+        checklist.splice(index, 1);
+        return {
+          ...module,
+          competencyChecklist: checklist
+        };
+      }
+      return module;
+    });
+    setModules(updatedModules);
+  };
 
   if (!plan) return null;
 
@@ -524,6 +570,9 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                                       color: '#E51636',
                                     }
                                   }}
+                                  error={!!errors.modules?.[moduleIndex]}
+                                  helperText={errors.modules?.[moduleIndex]}
+                                  required
                                 />
                                 <Box sx={{ 
                                   display: 'flex', 
@@ -622,6 +671,65 @@ const EditPlanDialog: React.FC<EditPlanDialogProps> = ({ open, onClose, plan, on
                                   }
                                 }}
                               />
+
+                              {/* Competency Checklist Section */}
+                              <Box sx={{ mt: 3 }}>
+                                <Typography variant="subtitle2" gutterBottom sx={{ color: 'rgba(39, 37, 31, 0.8)' }}>
+                                  Competency Checklist
+                                </Typography>
+                                <Box sx={{ 
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 2,
+                                  mt: 1
+                                }}>
+                                  {(module.competencyChecklist || []).map((item, index) => (
+                                    <Box key={index} sx={{ 
+                                      display: 'flex', 
+                                      gap: 1,
+                                      alignItems: 'center'
+                                    }}>
+                                      <TextField
+                                        sx={{ flex: 1 }}
+                                        label={`Competency ${index + 1}`}
+                                        value={item}
+                                        onChange={(e) => handleUpdateCompetency(module, index, e.target.value)}
+                                        placeholder="Enter competency requirement..."
+                                      />
+                                      <IconButton 
+                                        onClick={() => handleDeleteCompetency(module, index)}
+                                        sx={{ 
+                                          color: 'rgba(39, 37, 31, 0.4)',
+                                          '&:hover': {
+                                            color: '#E51636',
+                                            bgcolor: 'rgba(229, 22, 54, 0.04)'
+                                          }
+                                        }}
+                                      >
+                                        <DeleteIcon />
+                                      </IconButton>
+                                    </Box>
+                                  ))}
+                                  <Button
+                                    startIcon={<AddIcon />}
+                                    onClick={() => handleAddCompetency(module)}
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{
+                                      alignSelf: 'flex-start',
+                                      borderColor: 'rgba(39, 37, 31, 0.2)',
+                                      color: '#27251F',
+                                      '&:hover': {
+                                        borderColor: '#E51636',
+                                        color: '#E51636',
+                                        bgcolor: 'rgba(229, 22, 54, 0.04)'
+                                      }
+                                    }}
+                                  >
+                                    Add Competency Item
+                                  </Button>
+                                </Box>
+                              </Box>
                             </Box>
                           )}
                         </Draggable>

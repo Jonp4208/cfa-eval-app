@@ -236,28 +236,58 @@ router.get('/plans/active', auth, async (req, res) => {
 // Get employee training progress
 router.get('/employees/training-progress', auth, handleAsync(async (req, res) => {
   console.log('Fetching training progress for store:', req.user.store._id);
+  
+  // First get all active employees
   const employees = await User.find({
     store: req.user.store._id,
     status: 'active'
   })
-    .populate({
-      path: 'trainingProgress',
-      populate: [{
+  .select('name position department trainingProgress')
+  .populate({
+    path: 'trainingProgress',
+    match: { deleted: { $ne: true } },
+    populate: [
+      {
         path: 'trainingPlan',
-        populate: {
-          path: 'modules'
-        }
-      }, {
+        select: 'name modules',
+        match: { deleted: { $ne: true } }
+      },
+      {
         path: 'moduleProgress.completedBy',
         model: 'User',
         select: 'firstName lastName name'
-      }]
-    })
-    .select('name position department trainingProgress startDate')
-    .sort({ name: 1 });
+      }
+    ]
+  })
+  .lean();
 
-  console.log(`Found ${employees.length} employees with training progress`);
-  res.json(employees);
+  console.log('Found employees:', employees.map(e => ({
+    name: e.name,
+    progressCount: e.trainingProgress?.length || 0,
+    progressStatuses: e.trainingProgress?.map(p => p.status) || []  // Log statuses for debugging
+  })));
+
+  // Map employees with their training progress
+  const employeesWithProgress = employees.map(emp => {
+    // Filter out any training progress entries where the plan wasn't populated
+    const validProgress = (emp.trainingProgress || []).filter(p => p && p.trainingPlan);
+    
+    // Log detailed progress data for debugging
+    console.log(`Progress data for ${emp.name}:`, validProgress.map(p => ({
+      id: p._id,
+      planName: p.trainingPlan?.name,
+      status: p.status,
+      moduleCount: p.trainingPlan?.modules?.length || 0,
+      completedModules: p.moduleProgress?.filter(m => m.completed)?.length || 0
+    })));
+
+    return {
+      ...emp,
+      trainingProgress: validProgress
+    };
+  });
+
+  res.json(employeesWithProgress);
 }));
 
 // Create a new training plan
@@ -443,6 +473,18 @@ router.patch('/progress/:progressId/modules/:moduleId', auth, async (req, res) =
 
     if (allModulesCompleted) {
       trainingProgress.status = 'COMPLETED';
+      
+      // Send completion notification
+      try {
+        const trainee = await User.findById(trainingProgress.trainee).select('name email');
+        if (trainee) {
+          await NotificationService.notifyTrainingCompleted(trainee, trainingProgress.trainingPlan);
+          console.log(`Training completion notification sent to ${trainee.email}`);
+        }
+      } catch (notificationError) {
+        console.error('Error sending training completion notification:', notificationError);
+        // Continue execution even if notification fails
+      }
     } else {
       trainingProgress.status = 'IN_PROGRESS';
     }
@@ -573,27 +615,20 @@ router.post('/plans/assign', auth, async (req, res) => {
 // Delete training progress
 router.delete('/trainee-progress/:id', auth, async (req, res) => {
   try {
-    const trainingProgress = await TrainingProgress.findOne({
+    const trainingProgress = await TrainingProgress.findOne({ 
       _id: req.params.id,
-      store: req.user.store._id,
-    });
+      store: req.user.store._id
+    }).populate('trainee');
 
     if (!trainingProgress) {
       return res.status(404).json({ message: 'Training progress not found' });
     }
 
-    // Find the employee and remove the training progress from their array
-    const employee = await User.findOne({
-      _id: trainingProgress.trainee,
-      store: req.user.store._id,
-    });
-
-    if (employee) {
-      employee.trainingProgress = employee.trainingProgress.filter(
-        (progressId) => progressId.toString() !== trainingProgress._id.toString()
-      );
-      await employee.save();
-    }
+    // Remove the reference from the user's trainingProgress array
+    await User.updateOne(
+      { _id: trainingProgress.trainee._id },
+      { $pull: { trainingProgress: trainingProgress._id } }
+    );
 
     // Delete the training progress
     await TrainingProgress.deleteOne({ _id: trainingProgress._id });
@@ -624,6 +659,46 @@ router.get('/progress', auth, async (req, res) => {
     res.json(trainingProgress);
   } catch (error) {
     console.error('Error fetching user training progress:', error);
+    res.status(500).json({ message: 'Error fetching training progress' });
+  }
+});
+
+// Get a specific training progress
+router.get('/progress/:progressId', auth, async (req, res) => {
+  try {
+    const trainingProgress = await TrainingProgress.findOne({
+      _id: req.params.progressId,
+      store: req.user.store._id,
+    })
+    .populate({
+      path: 'trainingPlan',
+      populate: {
+        path: 'modules'
+      }
+    })
+    .populate({
+      path: 'moduleProgress.completedBy',
+      select: 'firstName lastName name position'
+    });
+
+    if (!trainingProgress) {
+      return res.status(404).json({ message: 'Training progress not found' });
+    }
+
+    // Log the progress data for debugging
+    console.log('Fetched training progress:', {
+      id: trainingProgress._id,
+      moduleProgress: trainingProgress.moduleProgress.map(mp => ({
+        moduleId: mp.moduleId,
+        completed: mp.completed,
+        completedBy: mp.completedBy,
+        completedAt: mp.completedAt
+      }))
+    });
+
+    res.json(trainingProgress);
+  } catch (error) {
+    console.error('Error fetching training progress:', error);
     res.status(500).json({ message: 'Error fetching training progress' });
   }
 });

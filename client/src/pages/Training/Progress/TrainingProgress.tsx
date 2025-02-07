@@ -150,154 +150,57 @@ const TrainingProgress: React.FC = () => {
   const planProgressMapRef = useRef(new Map<string, any>());
   const departmentProgressMapRef = useRef(new Map<string, any>());
 
-  // Optimize data fetching with better caching and batching
+  // Add effect to handle filter changes and log data
+  useEffect(() => {
+    console.log('Filter changed to:', filter);
+    console.log('Current employees data:', employees.map(emp => ({
+      name: emp.name,
+      progress: emp.trainingProgress?.map(p => ({
+        id: p._id,
+        status: p.status,
+        planName: p.trainingPlan?.name
+      }))
+    })));
+  }, [filter, employees]);
+
+  // Modify the fetchData function to better handle progress data
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Create a cache key
-      const cacheKey = `training_data_${user?._id}`;
-      
-      // Try to get data from sessionStorage first
-      const cachedData = sessionStorage.getItem(cacheKey);
-      if (cachedData) {
-        const { plans, employees, progress, timestamp } = JSON.parse(cachedData);
-        // Check if cache is less than 30 seconds old
-        if (Date.now() - timestamp < 30000) {
-          setTrainingPlans(plans);
-          setEmployees(employees);
-          setTraineeProgress(progress);
-          setLoading(false);
-          return;
-        }
-      }
 
       console.log('Fetching fresh training data...');
 
-      // If no cache or cache is old, fetch fresh data
+      // Always fetch fresh data
       const [plansRes, employeesRes, progressRes] = await Promise.all([
         api.get('/api/training/plans'),
         api.get('/api/users'),
         api.get('/api/training/employees/training-progress')
       ]);
 
-      console.log('API Responses:', {
-        plans: plansRes.data,
-        employees: employeesRes.data,
-        progress: progressRes.data
-      });
-
-      const plans = plansRes.data;
-      const employees = employeesRes.data.users;
       const progress = progressRes.data;
+      console.log('Raw progress data:', progress);
 
-      if (!Array.isArray(plans)) {
-        throw new Error('Training plans data is not an array');
-      }
-
-      if (!Array.isArray(employees)) {
-        throw new Error('Employees data is not an array');
-      }
-
-      if (!Array.isArray(progress)) {
-        throw new Error('Training progress data is not an array');
-      }
-
-      // Pre-compute progress maps
-      const employeeProgressMap = new Map();
-      const planProgressMap = new Map();
-      const departmentProgressMap = new Map();
-      
-      console.log('Processing progress data...', progress);
-
-      progress.forEach((p: TraineeProgress) => {
-        try {
-          // Employee progress
-          const completedModules = p.moduleProgress?.filter(m => m.completed)?.length || 0;
-          const plan = typeof p.trainingPlanId === 'object' ? 
-            p.trainingPlanId as TrainingPlanWithModules : null;
-          const totalModules = plan?.modules?.length || 0;
-          
-          employeeProgressMap.set(p.traineeId, {
-            completed: completedModules,
-            total: totalModules,
-            rate: totalModules > 0 ? (completedModules / totalModules) * 100 : 0
-          });
-          
-          // Plan progress
-          const planId = plan ? plan._id : p.trainingPlanId as string;
-          if (!planProgressMap.has(planId)) {
-            planProgressMap.set(planId, {
-              assignedCount: 0,
-              completedCount: 0,
-              trainees: new Set()
-            });
-          }
-          const planStats = planProgressMap.get(planId);
-          if (planStats) {
-            planStats.assignedCount++;
-            planStats.trainees.add(p.traineeId);
-            if (p.moduleProgress && Array.isArray(p.moduleProgress) && p.moduleProgress.every(m => m.completed)) {
-              planStats.completedCount++;
-            }
-          }
-          
-          // Department progress
-          const employee = employees.find((e) => e._id === p.traineeId);
-          if (employee?.department) {
-            if (!departmentProgressMap.has(employee.department)) {
-              departmentProgressMap.set(employee.department, {
-                totalModules: 0,
-                completedModules: 0,
-                employees: new Set()
-              });
-            }
-            const deptStats = departmentProgressMap.get(employee.department);
-            if (deptStats) {
-              deptStats.totalModules += totalModules;
-              deptStats.completedModules += completedModules;
-              deptStats.employees.add(employee._id);
-            }
-          }
-        } catch (err) {
-          console.error('Error processing progress item:', err, p);
-        }
-      });
-
-      console.log('Progress Maps:', {
-        employeeProgress: Array.from(employeeProgressMap.entries()),
-        planProgress: Array.from(planProgressMap.entries()),
-        departmentProgress: Array.from(departmentProgressMap.entries())
-      });
-
-      // Cache the results
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        plans,
-        employees,
-        progress,
-        timestamp: Date.now()
+      // Transform progress data to ensure status is set correctly
+      const validatedProgress = progress.map((emp: any) => ({
+        ...emp,
+        trainingProgress: (emp.trainingProgress || []).map((p: any) => ({
+          ...p,
+          // Ensure status is either IN_PROGRESS or COMPLETED
+          status: p.status || 'IN_PROGRESS'
+        }))
       }));
-      
-      // Update state and refs
-      setTrainingPlans(plans);
-      setEmployees(employees);
-      setTraineeProgress(progress);
-      employeeProgressMapRef.current = employeeProgressMap;
-      planProgressMapRef.current = planProgressMap;
-      departmentProgressMapRef.current = departmentProgressMap;
+
+      setEmployees(validatedProgress);
+      setTrainingPlans(plansRes.data);
+      setTraineeProgress(progress.flatMap((emp: any) => emp.trainingProgress || []));
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching training data:', error);
-      setError('Failed to load training data. Please try again.');
-      toast({
-        title: "Error",
-        description: "Failed to load training data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
+      console.error('Error fetching data:', error);
+      setError('Failed to fetch training data. Please try again.');
       setLoading(false);
     }
-  }, [user?._id]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -318,12 +221,24 @@ const TrainingProgress: React.FC = () => {
 
       console.log('Assignment response:', response.data);
       
-      // Refresh data after successful assignment
-      await fetchData();
+      // Show success message
+      toast({
+        title: "Success",
+        description: "Training plan assigned successfully",
+      });
+
+      // Close the dialog first
       setIsAssignDialogOpen(false);
+      
+      // Then refresh data
+      await fetchData();
     } catch (err) {
       console.error('Error assigning training plan:', err);
-      setError('Failed to assign training plan');
+      toast({
+        title: "Error",
+        description: "Failed to assign training plan",
+        variant: "destructive",
+      });
     }
   };
 
@@ -339,9 +254,6 @@ const TrainingProgress: React.FC = () => {
 
       // Close the dialog
       setIsCreatePlanOpen(false);
-
-      // Clear the cache to force a fresh fetch
-      sessionStorage.removeItem(`training_data_${user?._id}`);
 
       // Immediately update local state with the new plan
       const newPlan = response.data;
@@ -388,62 +300,16 @@ const TrainingProgress: React.FC = () => {
 
   const handleProgressUpdate = async () => {
     try {
-      // Only fetch employee progress data since that's what changed
-      const { data: employeesData } = await api.get('/api/training/employees/training-progress');
-      
-      // Update only the employees that have changed
-      const updatedEmployees: EmployeeWithProgress[] = employeesData.map((emp: any) => {
-        const mappedTrainingProgress = Array.isArray(emp.trainingProgress) 
-          ? emp.trainingProgress.map((progress: any) => ({
-              ...progress,
-              trainingPlan: progress.trainingPlan ? {
-                id: progress.trainingPlan._id,
-                _id: progress.trainingPlan._id,
-                name: progress.trainingPlan.name,
-                startDate: progress.trainingPlan.createdAt || new Date().toISOString(),
-                severity: progress.trainingPlan.severity || 1,
-                type: progress.trainingPlan.type || 'REGULAR',
-                department: progress.trainingPlan.department || 'FOH',
-                numberOfDays: progress.trainingPlan.numberOfDays || 1,
-                modules: progress.trainingPlan.modules || [],
-                includesCoreValues: Boolean(progress.trainingPlan.includesCoreValues),
-                includesBrandStandards: Boolean(progress.trainingPlan.includesBrandStandards),
-                isTemplate: Boolean(progress.trainingPlan.isTemplate),
-                createdBy: {
-                  _id: progress.trainingPlan.createdBy?._id || 'system',
-                  firstName: progress.trainingPlan.createdBy?.firstName || 'System',
-                  lastName: progress.trainingPlan.createdBy?.lastName || 'User'
-                },
-                store: progress.trainingPlan.store || 'default',
-                createdAt: new Date(progress.trainingPlan.createdAt || new Date()),
-                updatedAt: new Date(progress.trainingPlan.updatedAt || new Date()),
-                description: progress.trainingPlan.description
-              } : undefined,
-              moduleProgress: Array.isArray(progress.moduleProgress) ? progress.moduleProgress : []
-            }))
-          : [];
-        
-        return {
-          _id: emp._id,
-          id: emp._id,
-          name: emp.name,
-          position: emp.position,
-          department: emp.department || (Array.isArray(emp.departments) && emp.departments.length > 0 ? emp.departments[0] : 'FOH'),
-          startDate: emp.startDate,
-          trainingProgress: mappedTrainingProgress,
-          moduleProgress: Array.isArray(emp.moduleProgress) ? emp.moduleProgress : []
-        } as EmployeeWithProgress;
-      });
-
-      // Batch update the state with proper typing
-      setEmployees((prevEmployees: EmployeeWithProgress[]) => {
-        const employeeMap = new Map<string, EmployeeWithProgress>();
-        updatedEmployees.forEach(emp => employeeMap.set(emp._id, emp));
-        return prevEmployees.map(emp => employeeMap.get(emp._id) || emp);
-      });
+      // Fetch fresh data
+      await fetchData();
     } catch (err) {
       console.error('Error updating employee progress:', err);
       setError('Failed to update progress');
+      toast({
+        title: "Error",
+        description: "Failed to update progress. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -720,8 +586,10 @@ const TrainingProgress: React.FC = () => {
                   </div>
                   
                   <EmployeeProgress
+                    key={filter}
                     employees={filteredEmployees}
                     onUpdateProgress={handleProgressUpdate}
+                    filter={filter}
                   />
                 </div>
               </TabsContent>
