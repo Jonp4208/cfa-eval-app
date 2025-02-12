@@ -27,7 +27,7 @@ interface StatCardProps {
   title: string;
   value: number | string;
   subtitle: string;
-  icon: React.ComponentType;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   progress?: number;
   onClick: () => void;

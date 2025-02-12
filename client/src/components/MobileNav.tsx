@@ -15,6 +15,10 @@ export function MobileNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const handleNavigation = (href: string) => {
+    navigate(href);
+  };
+
   const navItems = [
     {
       icon: Home,
@@ -62,7 +66,7 @@ export function MobileNav() {
             return (
               <button
                 key={item.href}
-                onClick={() => navigate(item.href)}
+                onClick={() => handleNavigation(item.href)}
                 className={cn(
                   "flex flex-col items-center gap-1 p-2 min-w-[64px] min-h-[64px] touch-manipulation",
                   "transition-colors duration-200",

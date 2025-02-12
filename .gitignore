@@ -1,32 +1,30 @@
-# Dependencies
-node_modules/
-.pnp
+# dependencies
+/node_modules
+/.pnp
 .pnp.js
 
-# Environment files
+# testing
+/coverage
+
+# production
+/build
+/dist
+
+# misc
+.DS_Store
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Build outputs
-/client/dist
-/client/build
-/server/dist
-/server/build
-
-# Logs
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# IDE and Editor files
+# IDE
 .idea/
 .vscode/
 *.swp
-*.swo
-
-# OS files
-.DS_Store
-Thumbs.db 
+*.swo 

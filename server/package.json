@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "node src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "seed:leadership": "node src/scripts/seedLeadership.js"
   },
   "dependencies": {
     "@sentry/node": "^7.120.3",

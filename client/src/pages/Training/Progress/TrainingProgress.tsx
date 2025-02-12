@@ -49,6 +49,7 @@ import api from '@/lib/axios';
 import CreatePlanDialog from './components/CreatePlanDialog';
 import { toast } from '@/components/ui/use-toast';
 import PageHeader from '@/components/PageHeader';
+import { Navigate } from 'react-router-dom';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -130,18 +131,17 @@ interface TrainingPlanWithModules {
 
 const TrainingProgress: React.FC = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [trainingPlans, setTrainingPlans] = useState<SimplifiedTrainingPlan[]>([]);
   const [employees, setEmployees] = useState<EmployeeWithProgress[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
-  const { user } = useAuth();
   const [filter, setFilter] = useState<'active' | 'completed'>('active');
   const [traineeProgress, setTraineeProgress] = useState<TraineeProgress[]>([]);
 
@@ -362,12 +362,18 @@ const TrainingProgress: React.FC = () => {
     return departments.sort((a, b) => b.completionRate - a.completionRate);
   }, [traineeProgress]);
 
-  if (loading) {
+  // If auth is still loading, show loading state
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-[#F7F7F7] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#E51636]" />
       </div>
     );
+  }
+
+  // If auth is loaded but no user, redirect to login
+  if (!user) {
+    return <Navigate to="/login" />;
   }
 
   return (
@@ -610,20 +616,20 @@ const TrainingProgress: React.FC = () => {
       </div>
 
       {/* Mobile Navigation */}
-      {isMobile && (
+      {user && (
         <>
           <IconButton
             sx={{ position: 'fixed', bottom: 16, left: 16 }}
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => setMobileOpen(true)}
           >
             <MenuIcon />
           </IconButton>
           <MobileNav
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            open={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            onOpen={() => setDrawerOpen(true)}
+            open={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            onOpen={() => setMobileOpen(true)}
           />
         </>
       )}

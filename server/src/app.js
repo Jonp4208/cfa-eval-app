@@ -21,6 +21,7 @@ import notificationsRouter from './routes/notifications.js';
 import tasksRouter from './routes/tasks.js';
 import kitchenRouter from './routes/kitchen.js';
 import trainingRouter from './routes/training.js';
+import leadershipRouter from './routes/leadership.js';
 
 // Services
 import { initCronJobs } from './services/cronService.js';
@@ -75,6 +76,7 @@ apiRouter.use('/notifications', notificationsRouter);
 apiRouter.use('/tasks', tasksRouter);
 apiRouter.use('/kitchen', kitchenRouter);
 apiRouter.use('/training', trainingRouter);
+apiRouter.use('/leadership', leadershipRouter);
 
 // Test Email Configuration
 apiRouter.post('/test-email', async (req, res) => {

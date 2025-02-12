@@ -241,21 +241,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       href: '/development',
       show: true,
       badge: null,
-      submenu: user?.position === 'Team Member' ? [
-        {
-          icon: ClipboardList,
-          label: 'My Evaluations',
-          href: '/evaluations',
-          badge: pendingEvaluations > 0 ? pendingEvaluations.toString() : null,
-          color: pendingEvaluations > 0 ? 'text-red-600' : undefined
-        },
-        {
-          icon: ClipboardList,
-          label: 'My Training',
-          href: '/training',
-          badge: null
-        }
-      ] : [
+      submenu: [
         {
           icon: ClipboardList,
           label: 'Evaluations',
@@ -264,9 +250,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           color: pendingEvaluations > 0 ? 'text-red-600' : undefined
         },
         {
-          icon: ClipboardList,
+          icon: TrendingUp,
           label: 'Training',
           href: '/training',
+          badge: null
+        },
+        {
+          icon: Users,
+          label: 'Leadership Development',
+          href: '/development/leadership',
           badge: null
         },
         {

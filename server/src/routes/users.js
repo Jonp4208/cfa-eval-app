@@ -79,6 +79,53 @@ const canManageUsers = (user) => {
   return user.role === 'admin' || user.position === 'Director' || user.position === 'Leader';
 };
 
+// Get current user - MUST be before parameterized routes
+router.get('/current', auth, async (req, res) => {
+  try {
+    console.log('Fetching current user with ID:', req.user._id);
+    
+    const user = await User.findById(req.user._id)
+      .populate('store', '_id storeNumber name location')
+      .populate('manager', 'name _id')
+      .populate({
+        path: 'trainingProgress',
+        populate: {
+          path: 'trainingPlan',
+          select: 'name modules'
+        }
+      })
+      .lean();
+
+    if (!user) {
+      console.error('User not found in /current endpoint:', req.user._id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Ensure required fields exist
+    user.departments = user.departments || [];
+    user.position = user.position || 'Team Member';
+    user.role = user.role || 'user';
+    user.status = user.status || 'active';
+    user.trainingProgress = user.trainingProgress || [];
+
+    // Log successful fetch
+    console.log('Successfully fetched user:', {
+      id: user._id,
+      name: user.name,
+      position: user.position,
+      store: user.store?._id
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error in /current endpoint:', error);
+    res.status(500).json({ 
+      message: 'Error fetching user',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // Get all users
 router.get('/', auth, async (req, res) => {
   try {

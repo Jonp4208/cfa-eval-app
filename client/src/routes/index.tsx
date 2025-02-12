@@ -36,6 +36,7 @@ import FuturePage from '@/pages/FuturePage';
 import AssignManagers from '../pages/users/AssignManagers';
 import ViewCompletion from '@/pages/Kitchen/FoodSafety/ViewCompletion';
 import TrainingProgress from '@/pages/Training/Progress';
+import LeadershipDevelopment from '@/pages/Development/Leadership';
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -84,6 +85,11 @@ export default function AppRoutes() {
       
       <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/tasks" element={<PrivateRoute><TaskManagement /></PrivateRoute>} />
+      
+      <Route path="/development">
+        <Route path="leadership" element={<PrivateRoute><LeadershipDevelopment /></PrivateRoute>} />
+      </Route>
+
       <Route path="/evaluations" element={<PrivateRoute><Evaluations /></PrivateRoute>} />
       <Route path="/evaluations/new" element={<PrivateRoute><NewEvaluation /></PrivateRoute>} />
       <Route path="/evaluations/:id/review" element={<PrivateRoute><EmployeeReview /></PrivateRoute>} />
